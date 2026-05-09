@@ -39,28 +39,56 @@ document.addEventListener('DOMContentLoaded', () => {
       errEl.textContent = 'Email not recognised. Check with the club admin.';
       return;
     }
-    localStorage.setItem('sq_player', JSON.stringify(data));
+    saveSession(data);
     loginSuccess(data);
   });
 
   document.getElementById('btn-logout').addEventListener('click', () => {
     localStorage.removeItem('sq_player');
+    clearSessionCookie();
     ST.player = null;
     ST.players = [];
     document.getElementById('user-switcher').classList.add('hidden');
     showView('login');
   });
 
-  // Restore session across page refreshes
+  // Restore session across page refreshes / app restarts
   const saved = localStorage.getItem('sq_player');
   if (saved) {
-    try { loginSuccess(JSON.parse(saved)); } catch { showView('login'); }
+    try { loginSuccess(JSON.parse(saved)); } catch { localStorage.removeItem('sq_player'); tryAutoLogin(); }
   } else {
-    showView('login');
+    tryAutoLogin();
   }
 });
 
 // ── Auth ──────────────────────────────────────────────────────────────────
+function saveSession(player) {
+  localStorage.setItem('sq_player', JSON.stringify(player));
+  document.cookie = `sq_uid=${encodeURIComponent(player.id)}; max-age=31536000; path=/; SameSite=Lax`;
+}
+
+function clearSessionCookie() {
+  document.cookie = 'sq_uid=; max-age=0; path=/; SameSite=Lax';
+}
+
+function getSessionCookie() {
+  const m = document.cookie.match(/(?:^|;\s*)sq_uid=([^;]+)/);
+  return m ? decodeURIComponent(m[1]) : null;
+}
+
+async function tryAutoLogin() {
+  const uid = getSessionCookie();
+  if (!uid) { showView('login'); return; }
+  const { data } = await sb.from('players').select('*').eq('id', uid).eq('active', true).single();
+  if (data) {
+    saveSession(data);
+    loginSuccess(data);
+  } else {
+    clearSessionCookie();
+    showView('login');
+  }
+}
+
 function loginSuccess(player) {
   ST.player = player;
   document.getElementById('header-name').textContent =
@@ -104,7 +132,7 @@ async function switchUser(playerId) {
   const { data } = await sb.from('players').select('*').eq('id', playerId).single();
   if (!data) { alert('Player not found'); return; }
   ST.players = [];
-  localStorage.setItem('sq_player', JSON.stringify(data));
+  saveSession(data);
   loginSuccess(data);
 }
 
