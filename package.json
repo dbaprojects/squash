@@ -1,0 +1,17 @@
+{
+  "name": "squash-club",
+  "version": "1.0.0",
+  "description": "Squash court booking and handicap manager",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "seed": "node db/seed.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-session": "^1.18.0",
+    "memorystore": "^1.6.8",
+    "@supabase/supabase-js": "^2.43.4"
+  }
+}

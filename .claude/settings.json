@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git init *)",
+      "Bash(ssh -T git@github-personal)",
+      "Bash(ssh-keyscan -H github.com)",
+      "Bash(git remote *)",
+      "Bash(gh auth *)",
+      "Bash(gh repo *)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\I061437\\.ssh"
+    ]
+  }
+}

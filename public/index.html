@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Squash Club</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ── Login ─────────────────────────────────────────────────────────────── -->
+<div id="view-login" class="view">
+  <div class="login-box">
+    <h1>🎾 Squash Club</h1>
+    <p>Enter your email to sign in</p>
+    <form id="login-form">
+      <input type="email" id="login-email" placeholder="your@email.com" required autocomplete="email">
+      <button type="submit">Sign In</button>
+    </form>
+    <div id="login-error" class="error-msg"></div>
+  </div>
+</div>
+
+<!-- ── App shell (shown after login) ─────────────────────────────────────── -->
+<div id="view-app" class="view hidden">
+
+  <header>
+    <div class="header-left">
+      <span class="logo">🎾 Squash Club</span>
+      <span class="version-badge">v1.2</span>
+    </div>
+    <nav>
+      <button class="nav-btn active" data-view="schedule">Schedule</button>
+      <button class="nav-btn admin-only hidden" data-view="admin">Admin ▾</button>
+    </nav>
+    <div class="header-right">
+      <span id="header-name"></span>
+      <div id="user-switcher" class="hidden">
+        <button class="btn-text" id="btn-switcher-toggle">Switch ▾</button>
+        <div id="switcher-dropdown" class="switcher-dropdown hidden"></div>
+      </div>
+      <button id="btn-logout" class="btn-text">Sign out</button>
+    </div>
+  </header>
+
+  <!-- ── Schedule view ────────────────────────────────────────────────────── -->
+  <main id="view-schedule" class="section">
+    <div class="section-header">
+      <h2>Upcoming Sessions</h2>
+    </div>
+    <div id="event-list" class="card-grid"></div>
+  </main>
+
+  <!-- ── Event detail view ────────────────────────────────────────────────── -->
+  <main id="view-event" class="section hidden">
+    <button class="btn-back" id="btn-back-schedule">← Back to Schedule</button>
+    <div id="event-detail"></div>
+  </main>
+
+  <!-- ── Admin view ───────────────────────────────────────────────────────── -->
+  <main id="view-admin" class="section hidden admin-only">
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="tab-players">Players</button>
+      <button class="tab-btn" data-tab="tab-events">Events</button>
+      <button class="tab-btn" data-tab="tab-templates">Templates</button>
+    </div>
+
+    <!-- Players tab -->
+    <div id="tab-players" class="tab-panel">
+      <div class="panel-header">
+        <h3>Players</h3>
+        <button class="btn-primary" id="btn-add-player">+ Add Player</button>
+      </div>
+      <div id="players-table-wrap"></div>
+    </div>
+
+    <!-- Events tab -->
+    <div id="tab-events" class="tab-panel hidden">
+      <div class="panel-header">
+        <h3>Events</h3>
+        <div class="btn-row">
+          <button class="btn-primary" id="btn-generate-week">Generate Next Week</button>
+          <button class="btn-primary" id="btn-add-event">+ Add Event</button>
+        </div>
+      </div>
+      <div id="admin-event-list"></div>
+    </div>
+
+    <!-- Templates tab -->
+    <div id="tab-templates" class="tab-panel hidden">
+      <div class="panel-header">
+        <h3>Session Templates</h3>
+        <button class="btn-primary" id="btn-add-template">+ Add Template</button>
+      </div>
+      <div id="templates-list"></div>
+    </div>
+  </main>
+
+</div><!-- /#view-app -->
+
+<!-- ── Handicap history modal ──────────────────────────────────────────────── -->
+<div id="modal-overlay" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header">
+      <span id="modal-title">Handicap History</span>
+      <button class="modal-close" id="modal-close">✕</button>
+    </div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<!-- ── Generic form modal ──────────────────────────────────────────────────── -->
+<div id="form-overlay" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header">
+      <span id="form-title">Form</span>
+      <button class="modal-close" id="form-close">✕</button>
+    </div>
+    <div id="form-body"></div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
