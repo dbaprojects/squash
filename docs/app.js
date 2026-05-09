@@ -44,49 +44,67 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.getElementById('btn-logout').addEventListener('click', () => {
-    localStorage.removeItem('sq_player');
-    clearSessionCookie();
+    clearSession();
     ST.player = null;
     ST.players = [];
     document.getElementById('user-switcher').classList.add('hidden');
     showView('login');
   });
 
-  // Restore session across page refreshes / app restarts
-  const saved = localStorage.getItem('sq_player');
-  if (saved) {
-    try { loginSuccess(JSON.parse(saved)); } catch { localStorage.removeItem('sq_player'); tryAutoLogin(); }
-  } else {
-    tryAutoLogin();
-  }
+  // Restore session — fast path (localStorage) then cookie fallback
+  tryAutoLogin();
 });
 
 // ── Auth ──────────────────────────────────────────────────────────────────
-function saveSession(player) {
-  localStorage.setItem('sq_player', JSON.stringify(player));
-  document.cookie = `sq_uid=${encodeURIComponent(player.id)}; max-age=31536000; path=/; SameSite=Lax`;
+function setCookie(name, value) {
+  const exp = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toUTCString();
+  document.cookie = `${name}=${encodeURIComponent(value)}; expires=${exp}; path=/squash/; SameSite=Lax`;
 }
 
-function clearSessionCookie() {
-  document.cookie = 'sq_uid=; max-age=0; path=/; SameSite=Lax';
-}
-
-function getSessionCookie() {
-  const m = document.cookie.match(/(?:^|;\s*)sq_uid=([^;]+)/);
+function getCookie(name) {
+  const m = document.cookie.match(new RegExp('(?:^|;\\s*)' + name + '=([^;]+)'));
   return m ? decodeURIComponent(m[1]) : null;
 }
 
+function saveSession(player) {
+  try { localStorage.setItem('sq_player', JSON.stringify(player)); } catch {}
+  setCookie('bc_sq_email', player.email);
+}
+
+function clearSession() {
+  try { localStorage.removeItem('sq_player'); } catch {}
+  document.cookie = 'bc_sq_email=; max-age=0; path=/squash/; SameSite=Lax';
+  // clear old cookie names too
+  document.cookie = 'sq_uid=; max-age=0; path=/; SameSite=Lax';
+  document.cookie = 'sq_uid=; max-age=0; path=/squash/; SameSite=Lax';
+}
+
 async function tryAutoLogin() {
-  const uid = getSessionCookie();
-  if (!uid) { showView('login'); return; }
-  const { data } = await sb.from('players').select('*').eq('id', uid).eq('active', true).single();
-  if (data) {
-    saveSession(data);
-    loginSuccess(data);
-  } else {
-    clearSessionCookie();
-    showView('login');
+  // 1. Fast path: full player cached in localStorage (same context)
+  const saved = localStorage.getItem('sq_player');
+  if (saved) {
+    try {
+      loginSuccess(JSON.parse(saved));
+      return;
+    } catch {
+      localStorage.removeItem('sq_player');
+    }
   }
+
+  // 2. Cookie path: email persists across browser restarts and contexts
+  const email = getCookie('bc_sq_email');
+  if (email) {
+    const { data } = await sb.from('players')
+      .select('*').eq('email', email).eq('active', true).single();
+    if (data) {
+      saveSession(data);
+      loginSuccess(data);
+      return;
+    }
+    clearSession();
+  }
+
+  showView('login');
 }
 
 function loginSuccess(player) {
