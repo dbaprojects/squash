@@ -88,21 +88,20 @@ function setupUserSwitcher() {
 
 async function loadUserSwitcher() {
   const { data } = await sb.from('players')
-    .select('id, first_name, last_name, email')
+    .select('id, first_name, last_name')
     .eq('active', true).order('last_name');
   if (!data?.length) return;
   const dropdown = document.getElementById('switcher-dropdown');
   dropdown.innerHTML = data.map(p =>
     `<button class="switcher-item${p.id === ST.player.id ? ' active-user' : ''}"
-      onclick="switchUser(${JSON.stringify(JSON.stringify(p))})">${esc(p.first_name)} ${esc(p.last_name)}</button>`
+      onclick="switchUser('${p.id}')">${esc(p.first_name)} ${esc(p.last_name)}</button>`
   ).join('');
   document.getElementById('user-switcher').classList.remove('hidden');
 }
 
-async function switchUser(playerJson) {
+async function switchUser(playerId) {
   document.getElementById('switcher-dropdown').classList.add('hidden');
-  const partial = JSON.parse(playerJson);
-  const { data } = await sb.from('players').select('*').eq('id', partial.id).single();
+  const { data } = await sb.from('players').select('*').eq('id', playerId).single();
   if (!data) { alert('Player not found'); return; }
   ST.players = [];
   sessionStorage.setItem('sq_player', JSON.stringify(data));
