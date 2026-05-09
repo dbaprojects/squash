@@ -39,12 +39,12 @@ document.addEventListener('DOMContentLoaded', () => {
       errEl.textContent = 'Email not recognised. Check with the club admin.';
       return;
     }
-    sessionStorage.setItem('sq_player', JSON.stringify(data));
+    localStorage.setItem('sq_player', JSON.stringify(data));
     loginSuccess(data);
   });
 
   document.getElementById('btn-logout').addEventListener('click', () => {
-    sessionStorage.removeItem('sq_player');
+    localStorage.removeItem('sq_player');
     ST.player = null;
     ST.players = [];
     document.getElementById('user-switcher').classList.add('hidden');
@@ -52,7 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Restore session across page refreshes
-  const saved = sessionStorage.getItem('sq_player');
+  const saved = localStorage.getItem('sq_player');
   if (saved) {
     try { loginSuccess(JSON.parse(saved)); } catch { showView('login'); }
   } else {
@@ -104,7 +104,7 @@ async function switchUser(playerId) {
   const { data } = await sb.from('players').select('*').eq('id', playerId).single();
   if (!data) { alert('Player not found'); return; }
   ST.players = [];
-  sessionStorage.setItem('sq_player', JSON.stringify(data));
+  localStorage.setItem('sq_player', JSON.stringify(data));
   loginSuccess(data);
 }
 
