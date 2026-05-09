@@ -203,12 +203,13 @@ function eventCard(ev) {
   const mySignup  = signups.find(s => s.player_id === ST.player.id);
 
   const actionBtns = mySignup
-    ? `<button class="btn-leave" onclick="leaveEvent(event,'${mySignup.id}','${ev.id}')">Cancel</button>
-       <button class="btn-add-guest" onclick="addGuestInCard(event,'${ev.id}')">+ Guest</button>`
+    ? `<button class="btn-leave" onclick="leaveEvent(event,'${mySignup.id}','${ev.id}')">Cancel</button>`
     : `<button class="btn-join" onclick="joinEvent(event,'${ev.id}')">Join</button>`;
 
   const chips = signups.map(s => {
-    const name = s.player_first ? esc(s.player_first) : esc(s.guest_name || 'Guest');
+    const name = s.player_first
+      ? esc(shortName(s.player_first, s.player_last))
+      : esc(s.guest_name || 'Guest');
     const cls = !s.player_id ? 'chip-guest' : s.is_reserve ? 'chip-reserve' : 'chip-confirmed';
     return `<span class="attendee-chip ${cls}">${name}</span>`;
   }).join('');
@@ -225,13 +226,6 @@ function eventCard(ev) {
     <div class="ev-attendees">
       <span class="ev-count${full ? ' full' : ''}">${ev.max_signups ? `${count}/${ev.max_signups}` : count}</span>
       ${chips || '<span class="ev-no-signups">No signups yet</span>'}
-    </div>
-    <div id="ev-guest-form-${ev.id}" class="ev-guest-form hidden">
-      <input type="text" placeholder="Guest name" id="ev-guest-input-${ev.id}">
-      <button class="btn-primary" style="font-size:12px;padding:4px 10px"
-              onclick="submitGuestInCard('${ev.id}')">Add</button>
-      <button class="btn-text" style="color:#888;font-size:12px;padding:4px"
-              onclick="cancelGuestInCard('${ev.id}')">Cancel</button>
     </div>
   </div>`;
 }
@@ -282,35 +276,9 @@ async function leaveEvent(e, signupId, eventId) {
   } catch (err) { alert(err.message); }
 }
 
-function addGuestInCard(e, eventId) {
-  e.stopPropagation();
-  document.getElementById(`ev-guest-form-${eventId}`).classList.remove('hidden');
-  document.getElementById(`ev-guest-input-${eventId}`).focus();
-}
-
-function cancelGuestInCard(eventId) {
-  document.getElementById(`ev-guest-form-${eventId}`).classList.add('hidden');
-  document.getElementById(`ev-guest-input-${eventId}`).value = '';
-}
-
-async function submitGuestInCard(eventId) {
-  const input = document.getElementById(`ev-guest-input-${eventId}`);
-  const name  = input.value.trim();
-  if (!name) { alert('Enter a guest name'); return; }
-  try {
-    const { data: ev } = await sb.from('events').select('max_signups').eq('id', eventId).single();
-    const { count }    = await sb.from('signups')
-      .select('id', { count: 'exact', head: true })
-      .eq('event_id', eventId).eq('is_reserve', false);
-    const { error } = await sb.from('signups').insert({
-      event_id: eventId, signed_up_by: ST.player.id,
-      guest_name: name,
-      is_reserve: !!(ev.max_signups && count >= ev.max_signups)
-    });
-    if (error) throw error;
-    refreshCard(eventId, await fetchEventSignups(eventId));
-  } catch (err) { alert(err.message); }
-}
+function addGuestInCard() {}
+function cancelGuestInCard() {}
+async function submitGuestInCard() {}
 
 // ── Event detail ──────────────────────────────────────────────────────────
 async function openEvent(id) {
@@ -395,13 +363,6 @@ function renderSignupForm(ev) {
             <button class="btn-primary" onclick="submitSignup('${ev.id}','player')">Add</button>
           </div>
         </div>
-        <div class="form-group">
-          <label>A guest</label>
-          <div style="display:flex;gap:8px">
-            <input type="text" id="su-guest-name" placeholder="Guest name" style="flex:1">
-            <button class="btn-primary" onclick="submitSignup('${ev.id}','guest')">Add</button>
-          </div>
-        </div>
       </div>
     </details>
   </div>`;
@@ -422,10 +383,6 @@ async function submitSignup(eventId, type) {
     const pid = document.getElementById('su-player-id').value;
     if (!pid) { alert('Please select a player'); return; }
     row.player_id = pid;
-  } else if (type === 'guest') {
-    const name = document.getElementById('su-guest-name').value.trim();
-    if (!name) { alert('Please enter the guest name'); return; }
-    row.guest_name = name;
   }
 
   const { error } = await sb.from('signups').insert(row);
@@ -447,6 +404,7 @@ async function loadAdminTab(tabId) {
   if (tabId === 'tab-players')   await renderPlayersTab();
   if (tabId === 'tab-events')    await renderAdminEvents();
   if (tabId === 'tab-templates') await renderTemplatesTab();
+  if (tabId === 'tab-reports')   await renderReportsTab();
 }
 
 // ── Players tab ───────────────────────────────────────────────────────────
@@ -886,6 +844,11 @@ function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+function shortName(first, last) {
+  if (!first) return '';
+  return last ? `${first} ${String(last)[0].toUpperCase()}.` : first;
+}
+
 function fmtDate(dateStr) {
   if (!dateStr) return '';
   return new Date(dateStr + 'T12:00:00').toLocaleDateString(undefined,
@@ -906,3 +869,136 @@ async function ensurePlayers() {
 }
 
 document.getElementById('view-app').addEventListener('click', () => ensurePlayers(), { once: true });
+
+// ── Reports tab ───────────────────────────────────────────────────────────
+async function renderReportsTab() {
+  const el = document.getElementById('tab-reports');
+  el.innerHTML = '<p style="color:#888;padding:8px 0">Loading...</p>';
+
+  const cutoff  = new Date();
+  cutoff.setDate(cutoff.getDate() - 91);
+  const fromDate = cutoff.toISOString().slice(0, 10);
+  const today    = new Date().toISOString().slice(0, 10);
+
+  const [{ data: events }, { data: templates }] = await Promise.all([
+    sb.from('events')
+      .select('id, title, event_date, max_signups, template_id, signups(id, is_reserve)')
+      .gte('event_date', fromDate)
+      .lte('event_date', today)
+      .order('event_date'),
+    sb.from('session_templates').select('id, name')
+  ]);
+
+  if (!events?.length) {
+    el.innerHTML = '<p style="color:#888;padding:8px 0">No historical data yet.</p>';
+    return;
+  }
+
+  const weekMap   = {};
+  const tmplMap   = {};
+  const tmplNames = Object.fromEntries((templates || []).map(t => [t.id, t.name]));
+
+  for (const ev of events) {
+    const confirmed = (ev.signups || []).filter(s => !s.is_reserve).length;
+    const reserve   = (ev.signups || []).filter(s =>  s.is_reserve).length;
+    const d   = new Date(ev.event_date + 'T12:00:00');
+    const mon = getMondayOfDate(d);
+    const key = mon.toISOString().slice(0, 10);
+    if (!weekMap[key]) {
+      weekMap[key] = {
+        confirmed: 0, reserve: 0,
+        label: mon.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
+      };
+    }
+    weekMap[key].confirmed += confirmed;
+    weekMap[key].reserve   += reserve;
+    if (ev.template_id && ev.max_signups) {
+      if (!tmplMap[ev.template_id]) {
+        tmplMap[ev.template_id] = { name: tmplNames[ev.template_id] || ev.title, total: 0, count: 0 };
+      }
+      tmplMap[ev.template_id].total += Math.round((confirmed / ev.max_signups) * 100);
+      tmplMap[ev.template_id].count++;
+    }
+  }
+
+  const totalSessions  = events.length;
+  const totalConfirmed = events.reduce((s, ev) => s + (ev.signups||[]).filter(x=>!x.is_reserve).length, 0);
+  const totalCapacity  = events.reduce((s, ev) => s + (ev.max_signups || 0), 0);
+  const avgFill = totalCapacity ? Math.round((totalConfirmed / totalCapacity) * 100) : 0;
+
+  const weeks      = Object.keys(weekMap).sort();
+  const weekLabels = weeks.map(k => weekMap[k].label);
+  const weekConf   = weeks.map(k => weekMap[k].confirmed);
+  const weekRes    = weeks.map(k => weekMap[k].reserve);
+  const tmplIds    = Object.keys(tmplMap);
+  const tmplLabels = tmplIds.map(id => tmplMap[id].name);
+  const tmplAvg    = tmplIds.map(id => Math.round(tmplMap[id].total / tmplMap[id].count));
+
+  el.innerHTML = `
+    <div class="stats-row">
+      <div class="stat-box"><div class="stat-num">${totalSessions}</div><div class="stat-label">Sessions (13 wks)</div></div>
+      <div class="stat-box"><div class="stat-num">${totalConfirmed}</div><div class="stat-label">Total Attendees</div></div>
+      <div class="stat-box"><div class="stat-num">${avgFill}%</div><div class="stat-label">Avg Fill Rate</div></div>
+    </div>
+    <div class="reports-grid">
+      <div class="report-card">
+        <div class="report-title">Weekly Attendance</div>
+        <div class="chart-wrap"><canvas id="chart-weekly"></canvas></div>
+      </div>
+      <div class="report-card">
+        <div class="report-title">Avg Fill Rate by Session <span style="font-size:11px;font-weight:400;color:#888">(red = over capacity)</span></div>
+        <div class="chart-wrap"><canvas id="chart-fillrate"></canvas></div>
+      </div>
+    </div>`;
+
+  new Chart(document.getElementById('chart-weekly'), {
+    type: 'bar',
+    data: {
+      labels: weekLabels,
+      datasets: [
+        { label: 'Confirmed', data: weekConf, backgroundColor: 'rgba(27,42,107,0.85)', borderRadius: 3 },
+        { label: 'Reserve',   data: weekRes,  backgroundColor: 'rgba(196,147,42,0.75)', borderRadius: 3 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'top', labels: { font: { size: 12 } } } },
+      scales: {
+        x: { stacked: true, ticks: { font: { size: 11 } } },
+        y: { stacked: true, beginAtZero: true }
+      }
+    }
+  });
+
+  new Chart(document.getElementById('chart-fillrate'), {
+    type: 'bar',
+    data: {
+      labels: tmplLabels,
+      datasets: [{
+        label: 'Avg Fill %',
+        data: tmplAvg,
+        backgroundColor: tmplAvg.map(v => v > 100 ? 'rgba(192,57,43,0.8)' : 'rgba(27,42,107,0.8)'),
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: tmplAvg.length ? Math.max(130, ...tmplAvg) + 10 : 130,
+          ticks: { callback: v => v + '%' }
+        }
+      }
+    }
+  });
+}
+
+function getMondayOfDate(d) {
+  const day  = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  const mon  = new Date(d);
+  mon.setDate(d.getDate() + diff);
+  return mon;
+}
