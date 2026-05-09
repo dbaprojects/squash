@@ -5,7 +5,7 @@
 - **Owner:** David Barkess — personal project, unrelated to SAP/DealSensAI work
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management
 - **Location:** `C:\Users\I061437\OneDrive\Projects\Squash`
-- **Current version:** v1.0 (initial build)
+- **Current version:** v2.0 (Supabase + GitHub Pages)
 
 ---
 
@@ -171,3 +171,4 @@ Increment version comment in this file and add a note below for each meaningful 
 | v1.0 | Initial build — SQLite backend, all core features |
 | v1.1 | Schedule card redesign: Join/Cancel top-left, horizontal attendee chips (green=confirmed, amber=reserve, blue=guest), inline Add Guest when signed up; user switcher dropdown in header; 12 total test players in seed |
 | v1.2 | Join/Cancel button moved to RHS of card, larger; admin events filter (upcoming/past/date-range); `db/seed-history.js` generates 10 weeks past + next week at 80-110% capacity; fixed `forEvent` missing `player_first` field causing "Guest" chip bug |
+| v2.0 | Migrated to Supabase (DB + Auth) + GitHub Pages; removed Express backend from production path; Google OAuth replaces email login; user switcher removed; docs/app.js uses Supabase JS client directly; normaliseSignup/normaliseEvent map nested responses to existing field names |
