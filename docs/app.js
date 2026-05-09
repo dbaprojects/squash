@@ -1,67 +1,76 @@
-/* app.js — Squash Club SPA */
+/* app.js — Squash Club SPA (Supabase) */
 'use strict';
+
+// ── Supabase client ───────────────────────────────────────────────────────
+const { createClient } = window.supabase;
+const sb = createClient(
+  'https://ikfzmqtglgeotyooosur.supabase.co',
+  'sb_publishable_zs7ClfRPKw5TEaVSn2_oTA_kqVLhZfe'
+);
 
 // ── State ─────────────────────────────────────────────────────────────────
 const ST = {
-  player: null,       // current session player
-  players: [],        // all players (loaded for admin)
-  events: [],         // upcoming events
-  templates: [],      // session templates
-  currentEvent: null  // event detail being viewed
+  player: null,
+  players: [],
+  events: [],
+  templates: [],
+  currentEvent: null
 };
 
 // ── Init ──────────────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', () => {
   setupNav();
-  setupLoginForm();
   setupModalClose();
-  setupUserSwitcher();
 
   document.getElementById('event-list').addEventListener('click', e => {
     const clickable = e.target.closest('.ev-clickable');
     if (clickable) openEvent(clickable.dataset.id);
   });
 
-  try {
-    const me = await api('GET', '/api/me');
-    loginSuccess(me);
-  } catch {
+  document.getElementById('btn-google-signin').addEventListener('click', () => {
+    sb.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.href.split('?')[0].split('#')[0] }
+    });
+  });
+
+  document.getElementById('btn-logout').addEventListener('click', async () => {
+    await sb.auth.signOut();
+    ST.player = null;
     showView('login');
-  }
-});
+  });
 
-// ── API helper ────────────────────────────────────────────────────────────
-async function api(method, path, body) {
-  const opts = { method, headers: {} };
-  if (body !== undefined) {
-    opts.headers['Content-Type'] = 'application/json';
-    opts.body = JSON.stringify(body);
-  }
-  const res = await fetch(path, opts);
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || res.statusText);
-  return data;
-}
-
-// ── Auth ──────────────────────────────────────────────────────────────────
-function setupLoginForm() {
-  document.getElementById('login-form').addEventListener('submit', async e => {
-    e.preventDefault();
-    const email = document.getElementById('login-email').value.trim();
-    const errEl = document.getElementById('login-error');
-    errEl.textContent = '';
-    try {
-      const res = await api('POST', '/api/auth/login', { email });
-      loginSuccess(res.player);
-    } catch (err) {
-      errEl.textContent = err.message || 'Sign in failed';
+  sb.auth.onAuthStateChange(async (event, session) => {
+    if (session) {
+      await resolvePlayer(session.user.email);
+    } else {
+      showView('login');
     }
   });
+});
+
+// ── Auth ──────────────────────────────────────────────────────────────────
+async function resolvePlayer(email) {
+  const { data, error } = await sb.from('players')
+    .select('*')
+    .eq('email', email)
+    .eq('active', true)
+    .single();
+
+  if (error || !data) {
+    document.getElementById('login-error').textContent =
+      'Your account is not registered in the club. Contact an admin.';
+    await sb.auth.signOut();
+    showView('login');
+    return;
+  }
+  loginSuccess(data);
 }
 
 function loginSuccess(player) {
   ST.player = player;
-  document.getElementById('header-name').textContent = `${player.first_name} ${player.last_name}`;
+  document.getElementById('header-name').textContent =
+    `${player.first_name} ${player.last_name}`;
   document.querySelectorAll('.admin-only').forEach(el => {
     el.classList.toggle('hidden', !player.is_admin);
   });
@@ -69,46 +78,6 @@ function loginSuccess(player) {
   showSection('view-schedule');
   setNavActive('schedule');
   loadSchedule();
-  loadUserSwitcher();
-}
-
-document.getElementById('btn-logout').addEventListener('click', async () => {
-  await api('POST', '/api/auth/logout');
-  ST.player = null;
-  document.getElementById('user-switcher').classList.add('hidden');
-  showView('login');
-});
-
-// ── User switcher ─────────────────────────────────────────────────────────
-function setupUserSwitcher() {
-  document.getElementById('btn-switcher-toggle').addEventListener('click', e => {
-    e.stopPropagation();
-    document.getElementById('switcher-dropdown').classList.toggle('hidden');
-  });
-  document.addEventListener('click', () => {
-    document.getElementById('switcher-dropdown').classList.add('hidden');
-  });
-}
-
-async function loadUserSwitcher() {
-  try {
-    const players = await api('GET', '/api/players/list');
-    const dropdown = document.getElementById('switcher-dropdown');
-    dropdown.innerHTML = players.map(p =>
-      `<button class="switcher-item${p.id === ST.player.id ? ' active-user' : ''}"
-        onclick="switchUser('${esc(p.email)}')">${esc(p.first_name)} ${esc(p.last_name)}</button>`
-    ).join('');
-    document.getElementById('user-switcher').classList.remove('hidden');
-  } catch {}
-}
-
-async function switchUser(email) {
-  document.getElementById('switcher-dropdown').classList.add('hidden');
-  try {
-    const res = await api('POST', '/api/auth/login', { email });
-    ST.players = [];
-    loginSuccess(res.player);
-  } catch (err) { alert(err.message); }
 }
 
 // ── Navigation ────────────────────────────────────────────────────────────
@@ -156,10 +125,39 @@ function setNavActive(name) {
   });
 }
 
-// ── Schedule ─────────────────────────────────────────────────────────────
+// ── Normalise Supabase nested responses ───────────────────────────────────
+function normaliseSignup(s) {
+  return {
+    ...s,
+    player_first:      s.player?.first_name ?? null,
+    player_last:       s.player?.last_name  ?? null,
+    player_name:       s.player ? `${s.player.first_name} ${s.player.last_name}` : null,
+    player_handicap:   s.player?.current_handicap ?? null,
+    signed_up_by_name: s.booker ? `${s.booker.first_name} ${s.booker.last_name}` : null
+  };
+}
+
+function normaliseEvent(ev) {
+  return { ...ev, signups: (ev.signups || []).map(normaliseSignup) };
+}
+
+// ── Schedule ──────────────────────────────────────────────────────────────
 async function loadSchedule() {
-  const events = await api('GET', '/api/events');
-  ST.events = events;
+  const today = new Date().toISOString().slice(0, 10);
+  const { data, error } = await sb.from('events')
+    .select(`
+      *,
+      signups (
+        id, player_id, guest_name, is_reserve, signed_up_by, signed_up_at, notes,
+        player:players!player_id (first_name, last_name, current_handicap),
+        booker:players!signed_up_by (first_name, last_name)
+      )
+    `)
+    .gte('event_date', today)
+    .order('event_date')
+    .order('start_time');
+  if (error) { console.error(error); return; }
+  ST.events = (data || []).map(normaliseEvent);
   renderSchedule();
 }
 
@@ -219,21 +217,41 @@ function refreshCard(eventId, signups) {
   if (card) card.outerHTML = eventCard(ST.events[idx]);
 }
 
+async function fetchEventSignups(eventId) {
+  const { data } = await sb.from('signups')
+    .select(`
+      id, player_id, guest_name, is_reserve, signed_up_by, signed_up_at, notes,
+      player:players!player_id (first_name, last_name, current_handicap),
+      booker:players!signed_up_by (first_name, last_name)
+    `)
+    .eq('event_id', eventId)
+    .order('signed_up_at');
+  return (data || []).map(normaliseSignup);
+}
+
 async function joinEvent(e, eventId) {
   e.stopPropagation();
   try {
-    await api('POST', '/api/signups', { event_id: eventId });
-    const ev = await api('GET', `/api/events/${eventId}`);
-    refreshCard(eventId, ev.signups);
+    const { data: ev } = await sb.from('events').select('max_signups').eq('id', eventId).single();
+    const { count } = await sb.from('signups')
+      .select('id', { count: 'exact', head: true })
+      .eq('event_id', eventId).eq('is_reserve', false);
+    const isReserve = !!(ev.max_signups && count >= ev.max_signups);
+    const { error } = await sb.from('signups').insert({
+      event_id: eventId, signed_up_by: ST.player.id,
+      player_id: ST.player.id, is_reserve: isReserve
+    });
+    if (error) throw error;
+    refreshCard(eventId, await fetchEventSignups(eventId));
   } catch (err) { alert(err.message); }
 }
 
 async function leaveEvent(e, signupId, eventId) {
   e.stopPropagation();
   try {
-    await api('DELETE', `/api/signups/${signupId}`);
-    const ev = await api('GET', `/api/events/${eventId}`);
-    refreshCard(eventId, ev.signups);
+    const { error } = await sb.from('signups').delete().eq('id', signupId);
+    if (error) throw error;
+    refreshCard(eventId, await fetchEventSignups(eventId));
   } catch (err) { alert(err.message); }
 }
 
@@ -253,27 +271,44 @@ async function submitGuestInCard(eventId) {
   const name = input.value.trim();
   if (!name) { alert('Enter a guest name'); return; }
   try {
-    await api('POST', '/api/signups', { event_id: eventId, guest_name: name });
-    const ev = await api('GET', `/api/events/${eventId}`);
-    refreshCard(eventId, ev.signups);
+    const { data: ev } = await sb.from('events').select('max_signups').eq('id', eventId).single();
+    const { count } = await sb.from('signups')
+      .select('id', { count: 'exact', head: true })
+      .eq('event_id', eventId).eq('is_reserve', false);
+    const isReserve = !!(ev.max_signups && count >= ev.max_signups);
+    const { error } = await sb.from('signups').insert({
+      event_id: eventId, signed_up_by: ST.player.id,
+      guest_name: name, is_reserve: isReserve
+    });
+    if (error) throw error;
+    refreshCard(eventId, await fetchEventSignups(eventId));
   } catch (err) { alert(err.message); }
 }
 
 // ── Event detail ──────────────────────────────────────────────────────────
 async function openEvent(id) {
-  const ev = await api('GET', `/api/events/${id}`);
-  ST.currentEvent = ev;
+  const { data: ev, error } = await sb.from('events')
+    .select(`
+      *,
+      signups (
+        id, player_id, guest_name, is_reserve, signed_up_by, signed_up_at, notes,
+        player:players!player_id (first_name, last_name, current_handicap),
+        booker:players!signed_up_by (first_name, last_name)
+      )
+    `)
+    .eq('id', id)
+    .single();
+  if (error) { alert('Failed to load event'); return; }
+  ST.currentEvent = normaliseEvent(ev);
   showSection('view-event');
-  renderEventDetail(ev);
+  renderEventDetail(ST.currentEvent);
 }
 
 function renderEventDetail(ev) {
-  const signups = ev.signups || [];
+  const signups   = ev.signups || [];
   const confirmed = signups.filter(s => !s.is_reserve);
   const reserves  = signups.filter(s => s.is_reserve);
-
-  // Check if current player is already signed up
-  const mySignup = signups.find(s => s.player_id === ST.player.id);
+  const mySignup  = signups.find(s => s.player_id === ST.player.id);
 
   const el = document.getElementById('event-detail');
   el.innerHTML = `
@@ -350,7 +385,6 @@ function renderSignupForm(ev) {
   </div>`;
 }
 
-// Wire radio buttons — now unused but keep for safety
 document.getElementById('event-detail').addEventListener('change', e => {
   if (e.target.name !== 'su-type') return;
   document.getElementById('su-player-wrap')?.classList.toggle('hidden', e.target.value !== 'player');
@@ -358,32 +392,36 @@ document.getElementById('event-detail').addEventListener('change', e => {
 });
 
 async function submitSignup(eventId, type) {
-  const body = { event_id: eventId };
-  if (type === 'player') {
+  await ensurePlayers();
+  const { data: ev } = await sb.from('events').select('max_signups').eq('id', eventId).single();
+  const { count } = await sb.from('signups')
+    .select('id', { count: 'exact', head: true })
+    .eq('event_id', eventId).eq('is_reserve', false);
+  const isReserve = !!(ev.max_signups && count >= ev.max_signups);
+
+  const row = { event_id: eventId, signed_up_by: ST.player.id, is_reserve: isReserve };
+  if (type === 'self') {
+    row.player_id = ST.player.id;
+  } else if (type === 'player') {
     const pid = document.getElementById('su-player-id').value;
     if (!pid) { alert('Please select a player'); return; }
-    body.player_id = pid;
+    row.player_id = pid;
   } else if (type === 'guest') {
     const name = document.getElementById('su-guest-name').value.trim();
     if (!name) { alert('Please enter the guest name'); return; }
-    body.guest_name = name;
+    row.guest_name = name;
   }
-  try {
-    await api('POST', '/api/signups', body);
-    openEvent(eventId);  // refresh
-  } catch (err) {
-    alert(err.message);
-  }
+
+  const { error } = await sb.from('signups').insert(row);
+  if (error) { alert(error.message); return; }
+  openEvent(eventId);
 }
 
 async function removeSignup(signupId) {
   if (!confirm('Remove this signup?')) return;
-  try {
-    await api('DELETE', `/api/signups/${signupId}`);
-    if (ST.currentEvent) openEvent(ST.currentEvent.id);
-  } catch (err) {
-    alert(err.message);
-  }
+  const { error } = await sb.from('signups').delete().eq('id', signupId);
+  if (error) { alert(error.message); return; }
+  if (ST.currentEvent) openEvent(ST.currentEvent.id);
 }
 
 // ── Admin ─────────────────────────────────────────────────────────────────
@@ -391,14 +429,15 @@ async function loadAdminTab(tabId) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
   document.getElementById(tabId)?.classList.remove('hidden');
 
-  if (tabId === 'tab-players') await renderPlayersTab();
-  if (tabId === 'tab-events')  await renderAdminEvents();
+  if (tabId === 'tab-players')   await renderPlayersTab();
+  if (tabId === 'tab-events')    await renderAdminEvents();
   if (tabId === 'tab-templates') await renderTemplatesTab();
 }
 
 // ── Players tab ───────────────────────────────────────────────────────────
 async function renderPlayersTab() {
-  ST.players = await api('GET', '/api/players');
+  const { data } = await sb.from('players').select('*').eq('active', true).order('last_name');
+  ST.players = data || [];
   const wrap = document.getElementById('players-table-wrap');
   if (!ST.players.length) { wrap.innerHTML = '<p>No players yet.</p>'; return; }
   wrap.innerHTML = `<table class="data-table">
@@ -440,18 +479,17 @@ function openAddPlayerForm() {
 
 async function submitAddPlayer() {
   const body = {
-    first_name: document.getElementById('fp-first').value.trim(),
-    last_name:  document.getElementById('fp-last').value.trim(),
-    email:      document.getElementById('fp-email').value.trim(),
-    is_admin:   document.getElementById('fp-admin').checked,
+    first_name:       document.getElementById('fp-first').value.trim(),
+    last_name:        document.getElementById('fp-last').value.trim(),
+    email:            document.getElementById('fp-email').value.trim(),
+    is_admin:         document.getElementById('fp-admin').checked,
     current_handicap: parseFloat(document.getElementById('fp-hcap').value) || null
   };
   if (!body.first_name || !body.last_name || !body.email) { alert('Name and email required'); return; }
-  try {
-    await api('POST', '/api/players', body);
-    closeFormModal();
-    await renderPlayersTab();
-  } catch (err) { alert(err.message); }
+  const { error } = await sb.from('players').insert(body);
+  if (error) { alert(error.message); return; }
+  closeFormModal();
+  await renderPlayersTab();
 }
 
 function openEditPlayerForm(id) {
@@ -475,23 +513,26 @@ async function submitEditPlayer(id) {
     email:      document.getElementById('ep-email').value.trim(),
     is_admin:   document.getElementById('ep-admin').checked
   };
-  try {
-    await api('PUT', `/api/players/${id}`, body);
-    closeFormModal();
-    await renderPlayersTab();
-  } catch (err) { alert(err.message); }
+  const { error } = await sb.from('players').update(body).eq('id', id);
+  if (error) { alert(error.message); return; }
+  closeFormModal();
+  await renderPlayersTab();
 }
 
 async function deactivatePlayer(id) {
   if (!confirm('Remove this player? They will no longer be able to sign in.')) return;
-  await api('DELETE', `/api/players/${id}`);
+  const { error } = await sb.from('players').update({ active: false }).eq('id', id);
+  if (error) { alert(error.message); return; }
   await renderPlayersTab();
 }
 
 // ── Handicap modal ────────────────────────────────────────────────────────
 async function openHandicapModal(playerId, playerName) {
   document.getElementById('modal-title').textContent = `Handicap — ${playerName}`;
-  const history = await api('GET', `/api/players/${playerId}/handicaps`);
+  const { data: history } = await sb.from('handicap_history')
+    .select('*, changed_by_player:players!changed_by (first_name, last_name)')
+    .eq('player_id', playerId)
+    .order('changed_at', { ascending: false });
   const p = ST.players.find(x => x.id === playerId);
 
   document.getElementById('modal-body').innerHTML = `
@@ -511,13 +552,13 @@ async function openHandicapModal(playerId, playerName) {
       <button class="btn-primary" onclick="submitHandicap('${playerId}')">Save</button>
     </div>
     <h3 style="font-size:14px;margin-bottom:8px">History</h3>
-    ${history.length ? `<table class="data-table">
+    ${(history||[]).length ? `<table class="data-table">
       <thead><tr><th>Date</th><th>Value</th><th>Changed by</th><th>Notes</th></tr></thead>
       <tbody>
-      ${history.map(h => `<tr>
+      ${(history||[]).map(h => `<tr>
         <td>${fmtDatetime(h.changed_at)}</td>
         <td><span class="hcap-badge">${h.handicap_value}</span></td>
-        <td>${esc(h.changed_by_name)}</td>
+        <td>${esc(h.changed_by_player ? `${h.changed_by_player.first_name} ${h.changed_by_player.last_name}` : '–')}</td>
         <td>${h.notes ? esc(h.notes) : '–'}</td>
       </tr>`).join('')}
       </tbody>
@@ -530,13 +571,20 @@ async function submitHandicap(playerId) {
   const value = parseFloat(document.getElementById('hc-value').value);
   if (isNaN(value)) { alert('Enter a valid handicap value'); return; }
   const notes = document.getElementById('hc-notes').value.trim();
-  try {
-    await api('POST', `/api/players/${playerId}/handicaps`, { value, notes });
-    const p = ST.players.find(x => x.id === playerId);
-    const name = p ? `${p.first_name} ${p.last_name}` : '';
-    await openHandicapModal(playerId, name);  // refresh modal
-    await renderPlayersTab();
-  } catch (err) { alert(err.message); }
+  const { error: hErr } = await sb.from('handicap_history').insert({
+    player_id:      playerId,
+    handicap_value: value,
+    changed_by:     ST.player.id,
+    notes:          notes || null
+  });
+  if (hErr) { alert(hErr.message); return; }
+  const { error: pErr } = await sb.from('players')
+    .update({ current_handicap: value }).eq('id', playerId);
+  if (pErr) { alert(pErr.message); return; }
+  const p = ST.players.find(x => x.id === playerId);
+  const name = p ? `${p.first_name} ${p.last_name}` : '';
+  await renderPlayersTab();
+  await openHandicapModal(playerId, name);
 }
 
 // ── Admin events tab ──────────────────────────────────────────────────────
@@ -558,18 +606,20 @@ async function renderAdminEvents() {
   const today = new Date().toISOString().slice(0, 10);
   const { mode, from, to } = adminEventsFilter;
 
-  let params = `?from=${today}`;
-  if (mode === 'past') {
-    const d = new Date(); d.setDate(d.getDate() - 1);
-    params = `?to=${d.toISOString().slice(0, 10)}`;
+  let query = sb.from('events').select('*').order('event_date').order('start_time');
+  if (mode === 'upcoming') {
+    query = query.gte('event_date', today);
+  } else if (mode === 'past') {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    query = query.lte('event_date', yesterday.toISOString().slice(0, 10));
   } else if (mode === 'range') {
-    const parts = [];
-    if (from) parts.push(`from=${from}`);
-    if (to)   parts.push(`to=${to}`);
-    params = parts.length ? '?' + parts.join('&') : '?from=2000-01-01';
+    if (from) query = query.gte('event_date', from);
+    if (to)   query = query.lte('event_date', to);
+    if (!from && !to) query = query.gte('event_date', '2000-01-01');
   }
 
-  const events = await api('GET', `/api/events${params}`);
+  const { data: events } = await query;
   const el = document.getElementById('admin-event-list');
 
   const rangeInputs = mode === 'range' ? `
@@ -587,8 +637,8 @@ async function renderAdminEvents() {
     ${rangeInputs}
   </div>`;
 
-  el.innerHTML = filterBar + (events.length
-    ? events.map(ev => `
+  el.innerHTML = filterBar + ((events||[]).length
+    ? (events||[]).map(ev => `
       <div class="admin-event-row">
         <div>
           <div class="ev-info">${esc(ev.title)}</div>
@@ -608,11 +658,43 @@ async function renderAdminEvents() {
 }
 
 async function generateWeek() {
-  try {
-    const res = await api('POST', '/api/events/generate-week', {});
-    alert(`Created ${res.created.length} event(s) for next week.`);
-    await renderAdminEvents();
-  } catch (err) { alert(err.message); }
+  const { data: templates } = await sb.from('session_templates').select('*').eq('active', true);
+  if (!templates?.length) { alert('No active templates.'); return; }
+  const weekStart = getNextMonday();
+  let created = 0;
+  for (const tmpl of templates) {
+    const date = dateForDow(weekStart, tmpl.day_of_week);
+    const { data: existing } = await sb.from('events')
+      .select('id').eq('template_id', tmpl.id).eq('event_date', date).limit(1);
+    if (existing?.length) continue;
+    const { error } = await sb.from('events').insert({
+      title:       tmpl.name,
+      event_date:  date,
+      start_time:  tmpl.start_time,
+      end_time:    tmpl.end_time,
+      max_signups: tmpl.max_signups,
+      template_id: tmpl.id,
+      created_by:  ST.player.id
+    });
+    if (!error) created++;
+  }
+  alert(`Created ${created} event(s) for next week.`);
+  await renderAdminEvents();
+}
+
+function getNextMonday() {
+  const d = new Date();
+  d.setHours(12, 0, 0, 0);
+  const diff = (1 - d.getDay() + 7) % 7 || 7;
+  d.setDate(d.getDate() + diff);
+  return d.toISOString().slice(0, 10);
+}
+
+function dateForDow(mondayStr, dow) {
+  const d = new Date(mondayStr + 'T12:00:00Z');
+  const offset = dow === 0 ? 6 : dow - 1;
+  d.setUTCDate(d.getUTCDate() + offset);
+  return d.toISOString().slice(0, 10);
 }
 
 function openAddEventForm() {
@@ -636,21 +718,21 @@ async function submitAddEvent() {
     start_time:  document.getElementById('ae-start').value,
     end_time:    document.getElementById('ae-end').value,
     max_signups: parseInt(document.getElementById('ae-max').value) || null,
-    notes:       document.getElementById('ae-notes').value.trim() || null
+    notes:       document.getElementById('ae-notes').value.trim() || null,
+    created_by:  ST.player.id
   };
   if (!body.title || !body.event_date || !body.start_time || !body.end_time) {
     alert('Title, date, and times are required'); return;
   }
-  try {
-    await api('POST', '/api/events', body);
-    closeFormModal();
-    await renderAdminEvents();
-  } catch (err) { alert(err.message); }
+  const { error } = await sb.from('events').insert(body);
+  if (error) { alert(error.message); return; }
+  closeFormModal();
+  await renderAdminEvents();
 }
 
 function openEditEventForm(id) {
-  // Fetch the full event to pre-populate
-  api('GET', `/api/events/${id}`).then(ev => {
+  sb.from('events').select('*').eq('id', id).single().then(({ data: ev }) => {
+    if (!ev) return;
     showFormModal('Edit Event', `
       <div class="form-group"><label>Title</label><input type="text" id="ee-title" value="${esc(ev.title)}"></div>
       <div class="form-group"><label>Date</label><input type="date" id="ee-date" value="${ev.event_date}"></div>
@@ -674,16 +756,16 @@ async function submitEditEvent(id) {
     max_signups: parseInt(document.getElementById('ee-max').value) || null,
     notes:       document.getElementById('ee-notes').value.trim() || null
   };
-  try {
-    await api('PUT', `/api/events/${id}`, body);
-    closeFormModal();
-    await renderAdminEvents();
-  } catch (err) { alert(err.message); }
+  const { error } = await sb.from('events').update(body).eq('id', id);
+  if (error) { alert(error.message); return; }
+  closeFormModal();
+  await renderAdminEvents();
 }
 
 async function deleteEvent(id) {
   if (!confirm('Delete this event and all its signups?')) return;
-  await api('DELETE', `/api/events/${id}`);
+  const { error } = await sb.from('events').delete().eq('id', id);
+  if (error) { alert(error.message); return; }
   await renderAdminEvents();
 }
 
@@ -691,7 +773,9 @@ async function deleteEvent(id) {
 const DOW_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 
 async function renderTemplatesTab() {
-  ST.templates = await api('GET', '/api/templates');
+  const { data } = await sb.from('session_templates')
+    .select('*').eq('active', true).order('day_of_week');
+  ST.templates = data || [];
   const el = document.getElementById('templates-list');
   if (!ST.templates.length) { el.innerHTML = '<p style="color:#666">No templates yet.</p>'; return; }
   el.innerHTML = ST.templates.map(t => `
@@ -737,14 +821,14 @@ async function submitAddTemplate() {
     day_of_week: parseInt(document.getElementById('at-dow').value),
     start_time:  document.getElementById('at-start').value,
     end_time:    document.getElementById('at-end').value,
-    max_signups: parseInt(document.getElementById('at-max').value) || null
+    max_signups: parseInt(document.getElementById('at-max').value) || null,
+    created_by:  ST.player.id
   };
   if (!body.name) { alert('Name required'); return; }
-  try {
-    await api('POST', '/api/templates', body);
-    closeFormModal();
-    await renderTemplatesTab();
-  } catch (err) { alert(err.message); }
+  const { error } = await sb.from('session_templates').insert(body);
+  if (error) { alert(error.message); return; }
+  closeFormModal();
+  await renderTemplatesTab();
 }
 
 function openEditTemplateForm(id) {
@@ -770,16 +854,16 @@ async function submitEditTemplate(id) {
     end_time:    document.getElementById('et-end').value,
     max_signups: parseInt(document.getElementById('et-max').value) || null
   };
-  try {
-    await api('PUT', `/api/templates/${id}`, body);
-    closeFormModal();
-    await renderTemplatesTab();
-  } catch (err) { alert(err.message); }
+  const { error } = await sb.from('session_templates').update(body).eq('id', id);
+  if (error) { alert(error.message); return; }
+  closeFormModal();
+  await renderTemplatesTab();
 }
 
 async function deleteTemplate(id) {
   if (!confirm('Deactivate this template?')) return;
-  await api('DELETE', `/api/templates/${id}`);
+  const { error } = await sb.from('session_templates').update({ active: false }).eq('id', id);
+  if (error) { alert(error.message); return; }
   await renderTemplatesTab();
 }
 
@@ -822,11 +906,11 @@ function fmtDatetime(ts) {
   return new Date(ts).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
-// Load players list once for signup form player dropdown
 async function ensurePlayers() {
-  if (!ST.players.length && ST.player?.is_admin) {
-    ST.players = await api('GET', '/api/players').catch(() => []);
+  if (!ST.players.length) {
+    const { data } = await sb.from('players').select('*').eq('active', true).order('last_name');
+    ST.players = data || [];
   }
 }
-// Pre-load when app starts
+
 document.getElementById('view-app').addEventListener('click', () => ensurePlayers(), { once: true });

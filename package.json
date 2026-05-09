@@ -8,10 +8,10 @@
     "seed": "node db/seed.js"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.105.4",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "express-session": "^1.18.0",
-    "memorystore": "^1.6.8",
-    "@supabase/supabase-js": "^2.43.4"
+    "memorystore": "^1.6.8"
   }
 }
