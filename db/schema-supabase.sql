@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS players (
   is_admin         BOOLEAN NOT NULL DEFAULT FALSE,
   current_handicap NUMERIC,
   active           BOOLEAN NOT NULL DEFAULT TRUE,
+  phone            TEXT,
   created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

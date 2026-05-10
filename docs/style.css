@@ -620,6 +620,70 @@ nav { display: flex; gap: 4px; flex: 1; }
   height: 220px;
 }
 
+/* ── Players toolbar ────────────────────────────────────────────────────── */
+.players-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.players-search {
+  flex: 1;
+  min-width: 160px;
+  padding: 6px 10px;
+  border: 1.5px solid var(--bc-border);
+  border-radius: 6px;
+  font-size: 13px;
+  transition: border-color 0.15s;
+}
+.players-search:focus { outline: none; border-color: var(--bc-navy); }
+
+.players-status-btns { display: flex; gap: 4px; }
+
+/* Condensed players table */
+.players-table td { padding: 6px 10px; }
+.players-table th { padding: 7px 10px; font-size: 11px; }
+.player-name  { font-weight: 600; font-size: 13px; }
+.player-email { font-size: 11px; color: var(--bc-text-dim); margin-top: 1px; }
+
+.tag-inactive {
+  font-size: 10px;
+  background: #f0f0f0;
+  color: #999;
+  padding: 1px 5px;
+  border-radius: 8px;
+  font-weight: 400;
+}
+
+/* Small inline action buttons */
+.btn-icon-sm {
+  background: #f0f2f8;
+  border: 1px solid var(--bc-border);
+  border-radius: 5px;
+  padding: 3px 7px;
+  font-size: 11px;
+  cursor: pointer;
+  color: var(--bc-navy);
+  margin-right: 2px;
+}
+.btn-icon-sm:hover { background: var(--bc-navy-lt); }
+.btn-icon-sm.btn-icon-danger { color: var(--bc-red); border-color: var(--bc-red); background: none; }
+.btn-icon-sm.btn-icon-danger:hover { background: var(--bc-red); color: #fff; }
+
+/* Phone input in forms */
+.phone-input-row { display: flex; gap: 6px; }
+.phone-dial-select {
+  width: 155px;
+  flex-shrink: 0;
+  padding: 8px 8px;
+  border: 1.5px solid var(--bc-border);
+  border-radius: 6px;
+  font-size: 13px;
+}
+.phone-local { flex: 1; min-width: 0; }
+
 /* ── Responsive ────────────────────────────────────────────────────────── */
 @media (max-width: 640px) {
   header {
@@ -641,6 +705,8 @@ nav { display: flex; gap: 4px; flex: 1; }
   .section { padding: 12px; }
   .card-grid { grid-template-columns: 1fr; gap: 10px; }
   .data-table th:nth-child(3), .data-table td:nth-child(3) { display: none; }
+  .col-phone, .col-role { display: none; }
+  .phone-dial-select { width: 120px; }
   .btn-join, .btn-leave { padding: 10px 12px; font-size: 13px; }
   .reports-grid { grid-template-columns: 1fr; }
   .stat-num { font-size: 22px; }

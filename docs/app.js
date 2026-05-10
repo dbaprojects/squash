@@ -454,29 +454,136 @@ async function loadAdminTab(tabId) {
 }
 
 // ── Players tab ───────────────────────────────────────────────────────────
+const DIAL_CODES = [
+  { code: '65',  name: 'Singapore'   },
+  { code: '61',  name: 'Australia'   },
+  { code: '880', name: 'Bangladesh'  },
+  { code: '32',  name: 'Belgium'     },
+  { code: '55',  name: 'Brazil'      },
+  { code: '1',   name: 'Canada / USA'},
+  { code: '86',  name: 'China'       },
+  { code: '45',  name: 'Denmark'     },
+  { code: '358', name: 'Finland'     },
+  { code: '33',  name: 'France'      },
+  { code: '49',  name: 'Germany'     },
+  { code: '852', name: 'Hong Kong'   },
+  { code: '91',  name: 'India'       },
+  { code: '62',  name: 'Indonesia'   },
+  { code: '353', name: 'Ireland'     },
+  { code: '39',  name: 'Italy'       },
+  { code: '81',  name: 'Japan'       },
+  { code: '82',  name: 'Korea'       },
+  { code: '60',  name: 'Malaysia'    },
+  { code: '95',  name: 'Myanmar'     },
+  { code: '31',  name: 'Netherlands' },
+  { code: '64',  name: 'New Zealand' },
+  { code: '47',  name: 'Norway'      },
+  { code: '92',  name: 'Pakistan'    },
+  { code: '63',  name: 'Philippines' },
+  { code: '351', name: 'Portugal'    },
+  { code: '7',   name: 'Russia'      },
+  { code: '966', name: 'Saudi Arabia'},
+  { code: '27',  name: 'South Africa'},
+  { code: '34',  name: 'Spain'       },
+  { code: '94',  name: 'Sri Lanka'   },
+  { code: '46',  name: 'Sweden'      },
+  { code: '41',  name: 'Switzerland' },
+  { code: '886', name: 'Taiwan'      },
+  { code: '66',  name: 'Thailand'    },
+  { code: '971', name: 'UAE'         },
+  { code: '44',  name: 'UK'          },
+  { code: '84',  name: 'Vietnam'     },
+];
+
+let allPlayers    = [];
+let playersFilter = { status: 'active', search: '' };
+
+function dialCodeOptions(selected = '65') {
+  return DIAL_CODES.map(d =>
+    `<option value="${d.code}"${d.code === selected ? ' selected' : ''}>+${d.code} ${esc(d.name)}</option>`
+  ).join('');
+}
+
+function parsePhone(stored) {
+  if (!stored) return { dialCode: '65', localNumber: '' };
+  const m = stored.match(/^\+(\d+)\s*(.*)$/);
+  return m ? { dialCode: m[1], localNumber: m[2].trim() } : { dialCode: '65', localNumber: stored };
+}
+
+function buildPhone(dialCode, localNumber) {
+  localNumber = localNumber.trim();
+  return localNumber ? `+${dialCode} ${localNumber}` : '';
+}
+
 async function renderPlayersTab() {
-  const { data } = await sb.from('players').select('*').eq('active', true).order('last_name');
-  ST.players = data || [];
-  const wrap = document.getElementById('players-table-wrap');
-  if (!ST.players.length) { wrap.innerHTML = '<p>No players yet.</p>'; return; }
-  wrap.innerHTML = `<table class="data-table">
-    <thead><tr><th>Name</th><th>Email</th><th>Handicap</th><th>Role</th><th></th></tr></thead>
-    <tbody>
-    ${ST.players.map(p => `<tr>
-      <td>${esc(p.first_name)} ${esc(p.last_name)}</td>
-      <td>${esc(p.email)}</td>
-      <td><span class="hcap-badge">${p.current_handicap ?? '–'}</span></td>
-      <td>${p.is_admin ? '<span class="tag-admin">Admin</span>' : ''}</td>
-      <td style="white-space:nowrap">
-        <button class="btn-secondary" style="font-size:12px;padding:4px 8px;margin-right:4px"
-          onclick="openHandicapModal('${p.id}','${esc(p.first_name)} ${esc(p.last_name)}')">Handicap</button>
-        <button class="btn-secondary" style="font-size:12px;padding:4px 8px;margin-right:4px"
-          onclick="openEditPlayerForm('${p.id}')">Edit</button>
-        <button class="btn-danger" onclick="deactivatePlayer('${p.id}')">Remove</button>
-      </td>
-    </tr>`).join('')}
-    </tbody></table>`;
+  const { data } = await sb.from('players').select('*').order('last_name').order('first_name');
+  allPlayers = data || [];
+  ST.players = allPlayers.filter(p => p.active);
+  renderPlayersTable();
   document.getElementById('btn-add-player').onclick = openAddPlayerForm;
+}
+
+function renderPlayersTable() {
+  const { status, search } = playersFilter;
+  const q = search.toLowerCase();
+  const players = allPlayers.filter(p => {
+    if (status === 'active'   && !p.active) return false;
+    if (status === 'inactive' &&  p.active) return false;
+    if (q) {
+      const name = `${p.first_name} ${p.last_name}`.toLowerCase();
+      if (!name.includes(q)) return false;
+    }
+    return true;
+  });
+  const wrap = document.getElementById('players-table-wrap');
+  wrap.innerHTML = `
+    <div class="players-toolbar">
+      <input type="text" id="players-search" class="players-search"
+        placeholder="Search by name…" value="${esc(playersFilter.search)}"
+        oninput="setPlayersSearch(this.value)">
+      <div class="players-status-btns">
+        <button class="admin-filter-btn${playersFilter.status === 'active'   ? ' active' : ''}" onclick="setPlayersStatus('active')">Active</button>
+        <button class="admin-filter-btn${playersFilter.status === 'inactive' ? ' active' : ''}" onclick="setPlayersStatus('inactive')">Inactive</button>
+        <button class="admin-filter-btn${playersFilter.status === 'all'      ? ' active' : ''}" onclick="setPlayersStatus('all')">All</button>
+      </div>
+    </div>
+    ${players.length ? `<table class="data-table players-table">
+      <thead><tr>
+        <th>Name</th>
+        <th class="col-phone">Phone</th>
+        <th>HC</th>
+        <th class="col-role">Role</th>
+        <th></th>
+      </tr></thead>
+      <tbody>
+      ${players.map(p => `<tr>
+        <td>
+          <div class="player-name">${esc(p.first_name)} ${esc(p.last_name)}${!p.active ? ' <span class="tag-inactive">Inactive</span>' : ''}</div>
+          <div class="player-email">${esc(p.email)}</div>
+        </td>
+        <td class="col-phone">${esc(p.phone || '')}</td>
+        <td><span class="hcap-badge">${p.current_handicap ?? '–'}</span></td>
+        <td class="col-role">${p.is_admin ? '<span class="tag-admin">Admin</span>' : ''}</td>
+        <td style="white-space:nowrap">
+          <button class="btn-icon-sm" onclick="openHandicapModal('${p.id}','${esc(p.first_name)} ${esc(p.last_name)}')">HC</button>
+          <button class="btn-icon-sm" onclick="openEditPlayerForm('${p.id}')">Edit</button>
+          ${p.active
+            ? `<button class="btn-icon-sm btn-icon-danger" onclick="deactivatePlayer('${p.id}')">Deactivate</button>`
+            : `<button class="btn-icon-sm" onclick="reactivatePlayer('${p.id}')">Restore</button>`}
+        </td>
+      </tr>`).join('')}
+      </tbody></table>`
+    : '<p style="color:#888;padding:12px 0">No players match.</p>'}`;
+}
+
+function setPlayersSearch(val) {
+  playersFilter.search = val;
+  renderPlayersTable();
+}
+
+function setPlayersStatus(status) {
+  playersFilter.status = status;
+  renderPlayersTable();
 }
 
 function openAddPlayerForm() {
@@ -484,6 +591,13 @@ function openAddPlayerForm() {
     <div class="form-group"><label>First name</label><input type="text" id="fp-first" autocomplete="off"></div>
     <div class="form-group"><label>Last name</label><input type="text" id="fp-last" autocomplete="off"></div>
     <div class="form-group"><label>Email</label><input type="email" id="fp-email" autocomplete="off"></div>
+    <div class="form-group">
+      <label>Phone</label>
+      <div class="phone-input-row">
+        <select id="fp-dialcode" class="phone-dial-select">${dialCodeOptions()}</select>
+        <input type="tel" id="fp-phone" class="phone-local" placeholder="9123 4567" autocomplete="off">
+      </div>
+    </div>
     <div class="form-group"><label>Handicap</label><input type="number" id="fp-hcap" min="-35" max="10" step="0.5"></div>
     <div class="form-group"><label><input type="checkbox" id="fp-admin"> Admin</label></div>
     <div style="text-align:right;margin-top:8px">
@@ -493,27 +607,40 @@ function openAddPlayerForm() {
 
 async function submitAddPlayer() {
   const body = {
-    first_name: document.getElementById('fp-first').value.trim(),
-    last_name:  document.getElementById('fp-last').value.trim(),
-    email:      document.getElementById('fp-email').value.trim().toLowerCase(),
-    is_admin:   document.getElementById('fp-admin').checked,
-    current_handicap: parseFloat(document.getElementById('fp-hcap').value) || null
+    first_name:       document.getElementById('fp-first').value.trim(),
+    last_name:        document.getElementById('fp-last').value.trim(),
+    email:            document.getElementById('fp-email').value.trim().toLowerCase(),
+    is_admin:         document.getElementById('fp-admin').checked,
+    current_handicap: parseFloat(document.getElementById('fp-hcap').value) || null,
+    phone:            buildPhone(document.getElementById('fp-dialcode').value, document.getElementById('fp-phone').value),
+    active:           true
   };
   if (!body.first_name || !body.last_name || !body.email) { alert('Name and email required'); return; }
-  const { error } = await sb.from('players').insert(body);
+  const { data: newPlayer, error } = await sb.from('players').insert(body).select().single();
   if (error) { alert(error.message); return; }
+  allPlayers.push(newPlayer);
+  allPlayers.sort((a, b) => a.last_name.localeCompare(b.last_name) || a.first_name.localeCompare(b.first_name));
+  ST.players = allPlayers.filter(p => p.active);
   closeFormModal();
-  await renderPlayersTab();
+  renderPlayersTable();
 }
 
 function openEditPlayerForm(id) {
-  const p = ST.players.find(x => x.id === id);
+  const p = allPlayers.find(x => x.id === id);
   if (!p) return;
+  const ph = parsePhone(p.phone);
   showFormModal('Edit Player', `
     <div class="form-group"><label>First name</label><input type="text" id="ep-first" value="${esc(p.first_name)}"></div>
     <div class="form-group"><label>Last name</label><input type="text" id="ep-last" value="${esc(p.last_name)}"></div>
     <div class="form-group"><label>Email</label><input type="email" id="ep-email" value="${esc(p.email)}"></div>
-    <div class="form-group"><label><input type="checkbox" id="ep-admin" ${p.is_admin?'checked':''}> Admin</label></div>
+    <div class="form-group">
+      <label>Phone</label>
+      <div class="phone-input-row">
+        <select id="ep-dialcode" class="phone-dial-select">${dialCodeOptions(ph.dialCode)}</select>
+        <input type="tel" id="ep-phone" class="phone-local" value="${esc(ph.localNumber)}" placeholder="9123 4567">
+      </div>
+    </div>
+    <div class="form-group"><label><input type="checkbox" id="ep-admin" ${p.is_admin ? 'checked' : ''}> Admin</label></div>
     <div style="text-align:right;margin-top:8px">
       <button class="btn-primary" onclick="submitEditPlayer('${id}')">Save</button>
     </div>`);
@@ -524,19 +651,36 @@ async function submitEditPlayer(id) {
     first_name: document.getElementById('ep-first').value.trim(),
     last_name:  document.getElementById('ep-last').value.trim(),
     email:      document.getElementById('ep-email').value.trim().toLowerCase(),
-    is_admin:   document.getElementById('ep-admin').checked
+    is_admin:   document.getElementById('ep-admin').checked,
+    phone:      buildPhone(document.getElementById('ep-dialcode').value, document.getElementById('ep-phone').value)
   };
   const { error } = await sb.from('players').update(body).eq('id', id);
   if (error) { alert(error.message); return; }
+  const p = allPlayers.find(x => x.id === id);
+  if (p) Object.assign(p, body);
+  ST.players = allPlayers.filter(p => p.active);
   closeFormModal();
-  await renderPlayersTab();
+  renderPlayersTable();
 }
 
 async function deactivatePlayer(id) {
-  if (!confirm('Remove this player? They will no longer be able to sign in.')) return;
+  if (!confirm('Deactivate this player? They will no longer be able to sign in.')) return;
   const { error } = await sb.from('players').update({ active: false }).eq('id', id);
   if (error) { alert(error.message); return; }
-  await renderPlayersTab();
+  const p = allPlayers.find(x => x.id === id);
+  if (p) p.active = false;
+  ST.players = allPlayers.filter(p => p.active);
+  renderPlayersTable();
+}
+
+async function reactivatePlayer(id) {
+  if (!confirm('Restore this player? They will be able to sign in again.')) return;
+  const { error } = await sb.from('players').update({ active: true }).eq('id', id);
+  if (error) { alert(error.message); return; }
+  const p = allPlayers.find(x => x.id === id);
+  if (p) p.active = true;
+  ST.players = allPlayers.filter(p => p.active);
+  renderPlayersTable();
 }
 
 // ── Handicap modal ────────────────────────────────────────────────────────
@@ -546,7 +690,7 @@ async function openHandicapModal(playerId, playerName) {
     .select('*, changed_by_player:players!changed_by (first_name, last_name)')
     .eq('player_id', playerId)
     .order('changed_at', { ascending: false });
-  const p = ST.players.find(x => x.id === playerId);
+  const p = allPlayers.find(x => x.id === playerId);
 
   document.getElementById('modal-body').innerHTML = `
     <div style="margin-bottom:16px">
@@ -591,7 +735,7 @@ async function submitHandicap(playerId) {
   if (hErr) { alert(hErr.message); return; }
   const { error: pErr } = await sb.from('players').update({ current_handicap: value }).eq('id', playerId);
   if (pErr) { alert(pErr.message); return; }
-  const p = ST.players.find(x => x.id === playerId);
+  const p = allPlayers.find(x => x.id === playerId);
   await renderPlayersTab();
   await openHandicapModal(playerId, p ? `${p.first_name} ${p.last_name}` : playerName);
 }
