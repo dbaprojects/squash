@@ -773,6 +773,44 @@ nav { display: flex; gap: 4px; flex: 1; }
 }
 .phone-local { flex: 1; min-width: 0; }
 
+/* ── PWA install banner ─────────────────────────────────────────────────── */
+.pwa-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bc-navy-dk);
+  border-bottom: 2px solid var(--bc-gold);
+  color: #fff;
+  padding: 10px 14px;
+  font-size: 13px;
+}
+.pwa-text { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.pwa-text strong { font-size: 13px; }
+.pwa-text span   { font-size: 12px; color: rgba(255,255,255,0.7); }
+.pwa-install-btn {
+  background: var(--bc-gold);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.pwa-install-btn:hover { background: var(--bc-gold-dk); }
+.pwa-dismiss {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.5);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0 4px;
+  flex-shrink: 0;
+}
+.pwa-dismiss:hover { color: #fff; }
+
 /* ── Responsive ────────────────────────────────────────────────────────── */
 
 /* Table scroll containers — prevent horizontal overflow */

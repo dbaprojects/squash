@@ -1,6 +1,68 @@
 /* app.js — Squash Club SPA (Supabase, phone login) */
 'use strict';
 
+// ── PWA install prompt ────────────────────────────────────────────────────
+let deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+});
+
+function isMobile() {
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth < 768;
+}
+
+function isStandalone() {
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+}
+
+function showInstallBanner() {
+  if (isStandalone()) return;
+  if (!isMobile()) return;
+  if (localStorage.getItem('pwa_dismissed')) return;
+
+  const isIOS     = /iPad|iPhone|iPod/i.test(navigator.userAgent) && !window.MSStream;
+  const canNative = !!deferredInstallPrompt;
+  if (!isIOS && !canNative) return;
+
+  const banner = document.getElementById('pwa-banner');
+  if (!banner) return;
+
+  if (isIOS) {
+    banner.innerHTML = `
+      <div class="pwa-text">
+        <strong>Add to Home Screen</strong>
+        <span>Tap the Share button&nbsp;
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+          &nbsp;then "Add to Home Screen"
+        </span>
+      </div>
+      <button class="pwa-dismiss" onclick="dismissInstallBanner()">✕</button>`;
+  } else {
+    banner.innerHTML = `
+      <div class="pwa-text">
+        <strong>Install App</strong>
+        <span>Add to your home screen for quick access</span>
+      </div>
+      <button class="pwa-install-btn" onclick="triggerInstall()">Install</button>
+      <button class="pwa-dismiss" onclick="dismissInstallBanner()">✕</button>`;
+  }
+  banner.classList.remove('hidden');
+}
+
+function dismissInstallBanner() {
+  localStorage.setItem('pwa_dismissed', '1');
+  document.getElementById('pwa-banner').classList.add('hidden');
+}
+
+async function triggerInstall() {
+  if (!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  const { outcome } = await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+  dismissInstallBanner();
+}
+
 // ── Supabase client ───────────────────────────────────────────────────────
 const { createClient } = window.supabase;
 const sb = createClient(
@@ -186,6 +248,7 @@ function loginSuccess(player) {
   loadSchedule();
   loadUserSwitcher();
   if (player.is_admin) checkPendingBadge();
+  showInstallBanner();
 }
 
 // ── User switcher ─────────────────────────────────────────────────────────
