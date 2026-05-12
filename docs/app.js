@@ -459,13 +459,15 @@ function normaliseEvent(ev) {
 // ── Ladder ────────────────────────────────────────────────────────────────
 let ladderPlayers     = [];
 let ladderSearch      = '';
-let playerHistoryArr  = {};   // { playerId: [{month:'YYYY.MM', value},...] ascending }
-let ladderMonths      = [];   // current 12-month display window
-let ladderWindowStart = null; // 'YYYY.MM' first month of window
-let ladderAllYears    = [];   // years that have data
+let ladderStatusFilter = 'active';   // 'active' | 'inactive' | 'all'
+let playerHistoryArr  = {};
+let ladderMonths      = [];
+let ladderWindowStart = null;
+let ladderAllYears    = [];
 let ladderSectionView = 'list';
 let _sparkChart       = null;
 let _playerHcChart    = null;
+let _distChart        = null;
 
 function monthKey(date) {
   return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}`;
@@ -481,7 +483,6 @@ function getLadderWindowMonths(startKey) {
   return months;
 }
 
-// Most-recent known HC for player at or before targetMonth
 function effectiveHcAt(playerId, targetMonth) {
   const hist = playerHistoryArr[playerId] || [];
   let result = null;
@@ -492,16 +493,27 @@ function effectiveHcAt(playerId, targetMonth) {
   return result;
 }
 
-// Whether there is a real history entry in that exact month
 function hasActualEntry(playerId, month) {
   return (playerHistoryArr[playerId] || []).some(e => e.month === month);
 }
 
+function getFilteredPlayers() {
+  const q = ladderSearch.toLowerCase();
+  return ladderPlayers.filter(p => {
+    if (ladderStatusFilter === 'active'   && !p.active) return false;
+    if (ladderStatusFilter === 'inactive' &&  p.active) return false;
+    if (q && !`${p.first_name} ${p.last_name}`.toLowerCase().includes(q)) return false;
+    return true;
+  });
+}
+
 async function loadLadder() {
+  ladderSectionView = 'list';   // always reset to Player List on tab entry
+
   const [{ data: players }, { data: history }] = await Promise.all([
     sb.from('players')
-      .select('id, first_name, last_name, current_handicap')
-      .eq('active', true).eq('pending', false)
+      .select('id, first_name, last_name, current_handicap, active')
+      .eq('pending', false)
       .order('current_handicap', { ascending: true, nullsFirst: false })
       .order('last_name').order('first_name'),
     sb.from('handicap_history')
@@ -511,9 +523,8 @@ async function loadLadder() {
 
   ladderPlayers = players || [];
 
-  // Build per-player monthly array: one entry per month (last wins), sorted asc
-  const tempMap  = {};
-  const yearSet  = new Set();
+  const tempMap = {};
+  const yearSet = new Set();
   for (const h of (history || [])) {
     const key = monthKey(new Date(h.changed_at));
     yearSet.add(key.slice(0, 4));
@@ -525,8 +536,10 @@ async function loadLadder() {
     playerHistoryArr[pid] = Object.keys(mm).sort().map(m => ({ month: m, value: mm[m] }));
   }
   ladderAllYears = [...yearSet].sort();
+  // Always include current year in the dropdown
+  const curYrStr = String(new Date().getFullYear());
+  if (!ladderAllYears.includes(curYrStr)) ladderAllYears.push(curYrStr);
 
-  // Default: show last 12 months (window starts 11 months ago)
   if (!ladderWindowStart) {
     const d = new Date(); d.setMonth(d.getMonth() - 11);
     ladderWindowStart = monthKey(d);
@@ -538,77 +551,120 @@ async function loadLadder() {
 
 function renderLadder() {
   const wrap = document.getElementById('ladder-wrap');
-
-  if (!document.getElementById('ladder-section-history')) {
-    wrap.innerHTML = `
-      <div class="hc-top-row">
-        <div id="ladder-my-card" class="hc-top-card"></div>
-        <div id="ladder-section-card" class="hc-top-card"></div>
-      </div>
-      <div id="ladder-section-history"></div>`;
-  }
+  wrap.innerHTML = `
+    <div class="hc-top-row">
+      <div id="ladder-my-card" class="hc-top-card"></div>
+      <div id="ladder-section-card" class="hc-top-card"></div>
+    </div>
+    <div id="ladder-filter-bar"></div>
+    <div id="ladder-section-history"></div>`;
 
   renderMyHcCard();
   renderSectionCard();
+  renderFilterBar();
   renderSectionHistory();
 }
 
+// ── Shared filter bar ─────────────────────────────────────────────────────
+function renderFilterBar() {
+  const el = document.getElementById('ladder-filter-bar');
+  if (!el) return;
+  el.innerHTML = `
+    <div class="ladder-filter-row">
+      <input type="text" id="ladder-search" class="players-search"
+        placeholder="Search players…" autocomplete="off" value="${esc(ladderSearch)}">
+      <div class="players-role-btns">
+        <button class="role-btn${ladderStatusFilter === 'active'   ? ' active' : ''}" onclick="setLadderStatus('active')">Active</button>
+        <button class="role-btn${ladderStatusFilter === 'inactive' ? ' active' : ''}" onclick="setLadderStatus('inactive')">Inactive</button>
+        <button class="role-btn${ladderStatusFilter === 'all'      ? ' active' : ''}" onclick="setLadderStatus('all')">All</button>
+      </div>
+    </div>`;
+  document.getElementById('ladder-search').addEventListener('input', e => {
+    ladderSearch = e.target.value;
+    renderSectionHistory();
+  });
+}
+
+function setLadderStatus(status) {
+  ladderStatusFilter = status;
+  document.querySelectorAll('#ladder-filter-bar .role-btn').forEach(b => {
+    b.classList.toggle('active', b.textContent.trim().toLowerCase() === status);
+  });
+  renderSectionHistory();
+}
+
+// ── My HC card ────────────────────────────────────────────────────────────
 function renderMyHcCard() {
-  const myIdx = ladderPlayers.findIndex(p => p.id === ST.player.id);
-  const me    = myIdx >= 0 ? ladderPlayers[myIdx] : null;
+  // Use active-only rank for "My HC" card regardless of status filter
+  const activePlayers = ladderPlayers.filter(p => p.active);
+  const myIdx = activePlayers.findIndex(p => p.id === ST.player.id);
+  const me    = myIdx >= 0 ? activePlayers[myIdx] : null;
   const el    = document.getElementById('ladder-my-card');
   if (!me) { el.innerHTML = '<p style="color:#888;font-size:13px">Not on the ladder yet.</p>'; return; }
 
-  // 3-month trend: compare current HC vs value 3 months ago
-  const now     = new Date();
-  const ago3    = new Date(now); ago3.setMonth(ago3.getMonth() - 3);
-  const ago3Key = monthKey(ago3);
-  const threeMonthVal = effectiveHcAt(me.id, ago3Key);
-  const currentHc     = me.current_handicap;
-
-  let trendHtml = '';
-  if (threeMonthVal !== null && currentHc !== null) {
-    const delta = currentHc - threeMonthVal;
-    if      (delta < 0) trendHtml = `<span class="myhc-trend improved">▼ ${delta} vs 3 months ago</span>`;
-    else if (delta > 0) trendHtml = `<span class="myhc-trend worsened">▲ +${delta} vs 3 months ago</span>`;
-    else                trendHtml = `<span class="myhc-trend flat">— unchanged vs 3 months ago</span>`;
+  // Always use last 12 calendar months for the sparkline
+  const sparkMonths = [];
+  const sd = new Date(); sd.setDate(1); sd.setMonth(sd.getMonth() - 11);
+  for (let i = 0; i < 12; i++) {
+    sparkMonths.push(monthKey(new Date(sd)));
+    sd.setMonth(sd.getMonth() + 1);
   }
 
-  // Sparkline: show the current 12-month window's months (filled values)
-  const sparkMonths = ladderMonths;
+  const currentHc = me.current_handicap;
+
+  // 12-month commentary
+  const ago12 = new Date(); ago12.setDate(1); ago12.setMonth(ago12.getMonth() - 12);
+  const hcAgo12 = effectiveHcAt(me.id, monthKey(ago12));
+  let commentHtml = '';
+  if (hcAgo12 !== null && currentHc !== null) {
+    const delta = currentHc - hcAgo12;
+    if      (delta < 0) commentHtml = `<span class="myhc-trend improved">▼ ${delta} over 12 months</span>`;
+    else if (delta > 0) commentHtml = `<span class="myhc-trend worsened">▲ +${delta} over 12 months</span>`;
+    else                commentHtml = `<span class="myhc-trend flat">— Unchanged over 12 months</span>`;
+  } else {
+    // Fallback: 3-month commentary if not enough 12-month data
+    const ago3 = new Date(); ago3.setDate(1); ago3.setMonth(ago3.getMonth() - 3);
+    const hcAgo3 = effectiveHcAt(me.id, monthKey(ago3));
+    if (hcAgo3 !== null && currentHc !== null) {
+      const delta = currentHc - hcAgo3;
+      if      (delta < 0) commentHtml = `<span class="myhc-trend improved">▼ ${delta} over 3 months</span>`;
+      else if (delta > 0) commentHtml = `<span class="myhc-trend worsened">▲ +${delta} over 3 months</span>`;
+      else                commentHtml = `<span class="myhc-trend flat">— Unchanged over 3 months</span>`;
+    }
+  }
+
+  const hasSparkData = sparkMonths.some(m => effectiveHcAt(me.id, m) !== null);
 
   if (_sparkChart) { _sparkChart.destroy(); _sparkChart = null; }
   el.innerHTML = `
     <div class="myhc-header">
       <div>
         <div class="myhc-name">${esc(me.first_name)} ${esc(me.last_name)}</div>
-        <div class="myhc-rank">#${myIdx + 1} of ${ladderPlayers.length}</div>
+        <div class="myhc-rank">#${myIdx + 1} of ${activePlayers.length}</div>
       </div>
       <div style="text-align:right">
         <div class="myhc-big">${currentHc ?? '–'}</div>
         <div style="font-size:11px;color:rgba(255,255,255,.55)">handicap</div>
       </div>
     </div>
-    ${trendHtml ? `<div style="margin-top:8px">${trendHtml}</div>` : ''}
-    ${sparkMonths.length > 1 ? `<div class="myhc-sparkline"><canvas id="my-hc-sparkline"></canvas></div>` : ''}
+    ${commentHtml ? `<div style="margin-top:8px">${commentHtml}</div>` : ''}
+    ${hasSparkData ? `<div class="myhc-sparkline"><canvas id="my-hc-sparkline"></canvas></div>` : ''}
     <button class="myhc-history-btn"
       onclick="openPlayerHcModal('${me.id}','${esc(me.first_name + ' ' + me.last_name)}')">
       View full history →
     </button>`;
 
-  if (sparkMonths.length > 1) {
+  if (hasSparkData) {
     setTimeout(() => {
       const ctx = document.getElementById('my-hc-sparkline')?.getContext('2d');
       if (!ctx) return;
       const vals = sparkMonths.map(m => effectiveHcAt(me.id, m));
-      // Only render if there's any data at all
-      if (vals.every(v => v === null)) return;
       _sparkChart = new Chart(ctx, {
         type: 'line',
         data: {
           labels: sparkMonths,
           datasets: [{ data: vals, borderColor: 'rgba(196,147,42,.9)', backgroundColor: 'rgba(196,147,42,.15)',
-            borderWidth: 2, pointRadius: 3, tension: 0.3, fill: true, spanGaps: true }]
+            borderWidth: 2, pointRadius: 0, tension: 0.1, fill: true, spanGaps: true }]
         },
         options: {
           responsive: true, maintainAspectRatio: false,
@@ -623,59 +679,52 @@ function renderMyHcCard() {
   }
 }
 
+// ── Section summary card ──────────────────────────────────────────────────
 function renderSectionCard() {
   const el = document.getElementById('ladder-section-card');
-  if (!ladderPlayers.length) { el.innerHTML = ''; return; }
+  const fp = getFilteredPlayers();
+  if (!fp.length) { el.innerHTML = ''; return; }
 
-  // Improved / worsened over the full 12-month window
   const startM = ladderMonths[0];
   const endM   = ladderMonths[ladderMonths.length - 1];
   let improved = 0, worsened = 0;
-  for (const p of ladderPlayers) {
-    const start = effectiveHcAt(p.id, startM);
-    const end   = effectiveHcAt(p.id, endM);
-    if (start == null || end == null) continue;
-    if (end < start) improved++;
-    else if (end > start) worsened++;
+  for (const p of fp) {
+    const s = effectiveHcAt(p.id, startM), e = effectiveHcAt(p.id, endM);
+    if (s == null || e == null) continue;
+    if (e < s) improved++; else if (e > s) worsened++;
   }
-
-  const validHcs = ladderPlayers.map(p => p.current_handicap).filter(v => v != null);
+  const validHcs = fp.map(p => p.current_handicap).filter(v => v != null);
   const avgHc    = validHcs.length
-    ? (validHcs.reduce((a, b) => a + b, 0) / validHcs.length).toFixed(1)
-    : '–';
+    ? (validHcs.reduce((a, b) => a + b, 0) / validHcs.length).toFixed(1) : '–';
+
+  const views = [
+    { v: 'list',         label: 'Player List'  },
+    { v: 'grid',         label: 'Grid'         },
+    { v: 'sparklines',   label: 'Sparklines'   },
+    { v: 'distribution', label: 'Distribution' },
+    { v: 'movers',       label: 'Movers'       },
+  ];
 
   el.innerHTML = `
     <div class="sec-card-title">Section Summary</div>
     <div class="sec-stat-row">
-      <div class="sec-stat">
-        <div class="sec-stat-val">${ladderPlayers.length}</div>
-        <div class="sec-stat-lbl">Players</div>
-      </div>
-      <div class="sec-stat">
-        <div class="sec-stat-val">${avgHc}</div>
-        <div class="sec-stat-lbl">Avg HC</div>
-      </div>
-      <div class="sec-stat">
-        <div class="sec-stat-val sec-improved">↓${improved}</div>
-        <div class="sec-stat-lbl">Improved<br><span style="font-size:9px;font-weight:400">12 months</span></div>
-      </div>
-      <div class="sec-stat">
-        <div class="sec-stat-val sec-worsened">↑${worsened}</div>
-        <div class="sec-stat-lbl">Worsened<br><span style="font-size:9px;font-weight:400">12 months</span></div>
-      </div>
+      <div class="sec-stat"><div class="sec-stat-val">${fp.length}</div><div class="sec-stat-lbl">Players</div></div>
+      <div class="sec-stat"><div class="sec-stat-val">${avgHc}</div><div class="sec-stat-lbl">Avg HC</div></div>
+      <div class="sec-stat"><div class="sec-stat-val sec-improved">↓${improved}</div><div class="sec-stat-lbl">Improved<br><span style="font-size:9px;font-weight:400">12 months</span></div></div>
+      <div class="sec-stat"><div class="sec-stat-val sec-worsened">↑${worsened}</div><div class="sec-stat-lbl">Worsened<br><span style="font-size:9px;font-weight:400">12 months</span></div></div>
     </div>
     <div class="hc-view-toggle">
-      <button class="hc-toggle-btn${ladderSectionView === 'list' ? ' active' : ''}"
-        onclick="setLadderView('list')">Player List</button>
-      <button class="hc-toggle-btn${ladderSectionView === 'grid' ? ' active' : ''}"
-        onclick="setLadderView('grid')">Grid</button>
+      ${views.map(({ v, label }) =>
+        `<button class="hc-toggle-btn${ladderSectionView === v ? ' active' : ''}"
+          data-view="${v}" onclick="setLadderView('${v}')">${label}</button>`
+      ).join('')}
     </div>`;
 }
 
 function setLadderView(v) {
   ladderSectionView = v;
   document.querySelectorAll('.hc-toggle-btn').forEach(b => {
-    b.classList.toggle('active', b.textContent.trim().toLowerCase().replace(' ', '') === v.replace(' ', ''));
+    b.classList.toggle('active', b.dataset.view === v);
   });
   renderSectionHistory();
 }
@@ -683,22 +732,21 @@ function setLadderView(v) {
 function renderSectionHistory() {
   const el = document.getElementById('ladder-section-history');
   if (!el) return;
-  if (ladderSectionView === 'grid') renderSectionGrid(el);
-  else renderPlayerListView(el);
+  if      (ladderSectionView === 'grid')         renderSectionGrid(el);
+  else if (ladderSectionView === 'sparklines')   renderSparklinesView(el);
+  else if (ladderSectionView === 'distribution') renderDistributionView(el);
+  else if (ladderSectionView === 'movers')       renderMoversView(el);
+  else                                           renderPlayerListView(el);
 }
 
 // ── Navigation helpers ────────────────────────────────────────────────────
 function ladderNavBar() {
-  const nowKey    = monthKey(new Date());
-  const maxD      = new Date(); maxD.setMonth(maxD.getMonth() - 11);
-  const maxStart  = monthKey(maxD);
-  const isLatest  = ladderWindowStart >= maxStart;
-
-  const curYear = ladderWindowStart.slice(0, 4);
+  const maxD     = new Date(); maxD.setMonth(maxD.getMonth() - 11);
+  const isLatest = ladderWindowStart >= monthKey(maxD);
+  const curYear  = ladderWindowStart.slice(0, 4);
   const yearOpts = ladderAllYears.map(y =>
     `<option value="${y}"${y === curYear ? ' selected' : ''}>${y}</option>`
   ).join('');
-
   return `<div class="hc-nav-bar">
     <button class="hc-nav-btn" onclick="ladderNavPrev()">◀ Prev</button>
     <select class="hc-nav-year" onchange="ladderNavYear(this.value)">${yearOpts}</select>
@@ -708,12 +756,9 @@ function ladderNavBar() {
 
 function ladderNavPrev() {
   const [y, m] = ladderWindowStart.split('.').map(Number);
-  const d = new Date(y, m - 1 - 12, 1);
-  ladderWindowStart = monthKey(d);
+  ladderWindowStart = monthKey(new Date(y, m - 1 - 12, 1));
   ladderMonths = getLadderWindowMonths(ladderWindowStart);
-  renderMyHcCard();
-  renderSectionCard();
-  renderSectionHistory();
+  renderMyHcCard(); renderSectionCard(); renderSectionHistory();
 }
 
 function ladderNavNext() {
@@ -723,45 +768,27 @@ function ladderNavNext() {
   if (d > maxD) return;
   ladderWindowStart = monthKey(d);
   ladderMonths = getLadderWindowMonths(ladderWindowStart);
-  renderMyHcCard();
-  renderSectionCard();
-  renderSectionHistory();
+  renderMyHcCard(); renderSectionCard(); renderSectionHistory();
 }
 
 function ladderNavYear(year) {
-  // Show Jan–Dec of selected year, but cap window end at current month
-  const now     = new Date();
-  const curYr   = now.getFullYear();
-  const curMo   = now.getMonth(); // 0-based
-  if (parseInt(year) === curYr) {
-    // Start 11 months back so current month is last column
-    const d = new Date(curYr, curMo - 11, 1);
-    ladderWindowStart = monthKey(d);
-  } else {
-    ladderWindowStart = `${year}.01`;
-  }
+  ladderWindowStart = `${year}.01`;
   ladderMonths = getLadderWindowMonths(ladderWindowStart);
-  renderMyHcCard();
-  renderSectionCard();
-  renderSectionHistory();
+  renderMyHcCard(); renderSectionCard(); renderSectionHistory();
 }
 
 // ── Grid view ─────────────────────────────────────────────────────────────
 function renderSectionGrid(el) {
-  const activePlayers = ladderPlayers.filter(p => playerHistoryArr[p.id]);
-  const headerCells   = ladderMonths.map(m => `<th>${m}</th>`).join('');
-
-  const rows = activePlayers.map(p => {
+  const fp          = getFilteredPlayers().filter(p => playerHistoryArr[p.id]);
+  const headerCells = ladderMonths.map(m => `<th>${m}</th>`).join('');
+  const rows = fp.map(p => {
     const isMe  = p.id === ST.player.id;
     const cells = ladderMonths.map((m, i) => {
       const val = effectiveHcAt(p.id, m);
       if (val == null) return '<td></td>';
-
-      // Only colour if there's an actual change recorded this month
       let cls = '';
       if (hasActualEntry(p.id, m)) {
-        const prevM = i > 0 ? ladderMonths[i - 1] : null;
-        const prev  = prevM ? effectiveHcAt(p.id, prevM) : null;
+        const prev = i > 0 ? effectiveHcAt(p.id, ladderMonths[i - 1]) : null;
         if (prev != null) {
           if      (val < prev) cls = ' class="hc-cell-down"';
           else if (val > prev) cls = ' class="hc-cell-up"';
@@ -769,17 +796,12 @@ function renderSectionGrid(el) {
       }
       return `<td${cls}>${val}</td>`;
     }).join('');
-
     const nm = `${esc(p.first_name)} ${esc(p.last_name)}`;
     return `<tr${isMe ? ' class="ladder-me"' : ''}>
       <td class="hcg-name${isMe ? ' hcg-name-me' : ''}"
-        onclick="openPlayerHcModal('${p.id}','${nm}')">${nm}</td>
-      ${cells}
-    </tr>`;
+        onclick="openPlayerHcModal('${p.id}','${nm}')">${nm}</td>${cells}</tr>`;
   }).join('');
-
-  el.innerHTML = `
-    ${ladderNavBar()}
+  el.innerHTML = `${ladderNavBar()}
     <div class="hc-grid-wrap">
       <table class="hc-grid">
         <thead><tr><th class="hcg-name">Name</th>${headerCells}</tr></thead>
@@ -790,38 +812,137 @@ function renderSectionGrid(el) {
 
 // ── Player List view ──────────────────────────────────────────────────────
 function renderPlayerListView(el) {
-  const q        = ladderSearch.toLowerCase();
-  const filtered = ladderPlayers.filter(p =>
-    !q || `${p.first_name} ${p.last_name}`.toLowerCase().includes(q)
-  );
+  const fp = getFilteredPlayers();
+  // Rank within active players for display
+  const activeSorted = ladderPlayers.filter(p => p.active);
+  el.innerHTML = fp.length
+    ? `<table class="data-table">
+        <thead><tr><th>#</th><th>Name</th><th>Handicap</th></tr></thead>
+        <tbody>${fp.map(p => {
+          const rank = activeSorted.indexOf(p) + 1;
+          const isMe = p.id === ST.player.id;
+          return `<tr${isMe ? ' class="ladder-me"' : ''} style="cursor:pointer"
+            onclick="openPlayerHcModal('${p.id}','${esc(p.first_name)} ${esc(p.last_name)}')">
+            <td style="color:#888;width:36px">${rank || '–'}</td>
+            <td>${esc(p.first_name)} ${esc(p.last_name)}${!p.active ? ' <span style="font-size:10px;color:#aaa">(inactive)</span>' : ''}</td>
+            <td><span class="hcap-badge">${p.current_handicap ?? '–'}</span></td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>`
+    : '<p style="color:#888;padding:12px 0">No players found.</p>';
+}
 
-  el.innerHTML = `
-    <div class="players-toolbar" style="margin-top:0;margin-bottom:12px">
-      <input type="text" id="ladder-search" class="players-search"
-        placeholder="Search players…" autocomplete="off" value="${esc(ladderSearch)}">
+// ── Sparklines view ───────────────────────────────────────────────────────
+function miniSparklineSvg(playerId, w = 80, h = 22) {
+  const vals = ladderMonths.map(m => effectiveHcAt(playerId, m));
+  const nonNull = vals.filter(v => v !== null);
+  if (nonNull.length < 2) return '<span style="color:#ccc;font-size:10px">–</span>';
+  const min = Math.min(...nonNull), max = Math.max(...nonNull);
+  const range = max - min || 1;
+  const pts = vals.map((v, i) => {
+    if (v === null) return null;
+    const x = (i / (vals.length - 1)) * w;
+    const y = h - 2 - ((v - min) / range) * (h - 4);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).filter(Boolean).join(' ');
+  return `<svg width="${w}" height="${h}" style="display:block">
+    <polyline points="${pts}" fill="none" stroke="var(--bc-navy)" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
+}
+
+function renderSparklinesView(el) {
+  const fp = getFilteredPlayers();
+  const startM = ladderMonths[0], endM = ladderMonths[ladderMonths.length - 1];
+  const rows = fp.map(p => {
+    const isMe  = p.id === ST.player.id;
+    const s     = effectiveHcAt(p.id, startM), e = effectiveHcAt(p.id, endM);
+    const delta = (s != null && e != null) ? e - s : null;
+    const dHtml = delta == null ? '' :
+      delta < 0 ? `<span class="lb-improved">▼${delta}</span>` :
+      delta > 0 ? `<span class="lb-worsened">▲+${delta}</span>` :
+      `<span style="color:#aaa">—</span>`;
+    return `<tr${isMe ? ' class="ladder-me"' : ''} style="cursor:pointer"
+        onclick="openPlayerHcModal('${p.id}','${esc(p.first_name)} ${esc(p.last_name)}')">
+      <td>${esc(p.first_name)} ${esc(p.last_name)}</td>
+      <td style="text-align:center"><span class="hcap-badge">${p.current_handicap ?? '–'}</span></td>
+      <td style="padding:4px 8px">${miniSparklineSvg(p.id)}</td>
+      <td style="text-align:right;font-size:12px;font-weight:600">${dHtml}</td>
+    </tr>`;
+  }).join('');
+  el.innerHTML = `${ladderNavBar()}
+    <table class="data-table" style="font-size:13px">
+      <thead><tr><th>Name</th><th>HC</th><th style="min-width:90px">12 months</th><th>Change</th></tr></thead>
+      <tbody>${rows || '<tr><td colspan="4" style="color:#888;padding:12px">No data.</td></tr>'}</tbody>
+    </table>`;
+}
+
+// ── Distribution view ─────────────────────────────────────────────────────
+function renderDistributionView(el) {
+  const fp = getFilteredPlayers().filter(p => p.current_handicap != null);
+  const buckets = {};
+  for (const p of fp) {
+    const b = Math.floor(p.current_handicap / 5) * 5;
+    buckets[b] = (buckets[b] || 0) + 1;
+  }
+  const sorted = Object.keys(buckets).map(Number).sort((a, b) => a - b);
+  const labels = sorted.map(b => `${b} to ${b + 4}`);
+  const data   = sorted.map(b => buckets[b]);
+  el.innerHTML = '<div style="height:260px;padding:8px 0"><canvas id="dist-chart"></canvas></div>';
+  setTimeout(() => {
+    const ctx = document.getElementById('dist-chart')?.getContext('2d');
+    if (!ctx) return;
+    if (_distChart) { _distChart.destroy(); _distChart = null; }
+    _distChart = new Chart(ctx, {
+      type: 'bar',
+      data: { labels, datasets: [{ data, backgroundColor: 'rgba(27,42,107,.65)', borderColor: 'var(--bc-navy)', borderWidth: 1, borderRadius: 4 }] },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => `${c.raw} player${c.raw !== 1 ? 's' : ''}` } } },
+        scales: {
+          x: { title: { display: true, text: 'Handicap range' } },
+          y: { beginAtZero: true, ticks: { stepSize: 1 }, title: { display: true, text: 'Players' } }
+        }
+      }
+    });
+  }, 0);
+}
+
+// ── Movers view ───────────────────────────────────────────────────────────
+function renderMoversView(el) {
+  const fp     = getFilteredPlayers();
+  const startM = ladderMonths[0], endM = ladderMonths[ladderMonths.length - 1];
+  const withDelta = fp.map(p => {
+    const s = effectiveHcAt(p.id, startM), e = effectiveHcAt(p.id, endM);
+    return { p, delta: (s != null && e != null) ? e - s : null };
+  }).filter(x => x.delta !== null);
+
+  const improved  = withDelta.filter(x => x.delta < 0).sort((a, b) => a.delta - b.delta).slice(0, 10);
+  const worsened  = withDelta.filter(x => x.delta > 0).sort((a, b) => b.delta - a.delta).slice(0, 10);
+  const unchanged = withDelta.filter(x => x.delta === 0).length;
+
+  function moverRow({ p, delta }) {
+    const isMe = p.id === ST.player.id;
+    const sign = delta < 0 ? `▼ ${delta}` : `▲ +${delta}`;
+    const cls  = delta < 0 ? 'lb-improved' : 'lb-worsened';
+    return `<div class="hc-lb-row${isMe ? ' ladder-me-lb' : ''}">
+      <span class="hc-lb-delta ${cls}">${sign}</span>
+      <span class="hc-lb-name" onclick="openPlayerHcModal('${p.id}','${esc(p.first_name)} ${esc(p.last_name)}')">${esc(p.first_name)} ${esc(p.last_name)}</span>
+      <span class="hc-lb-hc">${p.current_handicap ?? '–'}</span>
+    </div>`;
+  }
+
+  el.innerHTML = `${ladderNavBar()}
+    <div class="movers-grid">
+      ${improved.length ? `<div class="hc-lb-section">
+        <div class="hc-lb-title">Most improved (${ladderMonths[0]} → ${ladderMonths[11]})</div>
+        ${improved.map(moverRow).join('')}
+      </div>` : ''}
+      ${worsened.length ? `<div class="hc-lb-section">
+        <div class="hc-lb-title">Most worsened</div>
+        ${worsened.map(moverRow).join('')}
+      </div>` : ''}
     </div>
-    ${filtered.length
-      ? `<table class="data-table">
-          <thead><tr><th>#</th><th>Name</th><th>Handicap</th></tr></thead>
-          <tbody>${filtered.map(p => {
-            const rank = ladderPlayers.indexOf(p) + 1;
-            const isMe = p.id === ST.player.id;
-            return `<tr${isMe ? ' class="ladder-me"' : ''} style="cursor:pointer"
-              onclick="openPlayerHcModal('${p.id}','${esc(p.first_name)} ${esc(p.last_name)}')">
-              <td style="color:#888;width:36px">${rank}</td>
-              <td>${esc(p.first_name)} ${esc(p.last_name)}</td>
-              <td><span class="hcap-badge">${p.current_handicap ?? '–'}</span></td>
-            </tr>`;
-          }).join('')}
-          </tbody>
-        </table>`
-      : '<p style="color:#888;padding:12px 0">No players found.</p>'
-    }`;
-
-  document.getElementById('ladder-search').addEventListener('input', e => {
-    ladderSearch = e.target.value;
-    renderPlayerListView(el);
-  });
+    ${!withDelta.length ? '<p style="color:#888;font-size:13px;padding:12px 0">Not enough data for this period.</p>' : ''}
+    ${unchanged ? `<p style="color:#aaa;font-size:12px;margin-top:8px">${unchanged} player${unchanged !== 1 ? 's' : ''} unchanged</p>` : ''}`;
 }
 
 let _playerHcSeries = [];  // filled monthly series: [{month, value, isActual, notes}]
@@ -935,7 +1056,7 @@ function renderPlayerHcChart() {
       },
       scales: {
         x: { ticks: { font: { size: 10 }, maxRotation: 45 } },
-        y: { ticks: { font: { size: 10 } } }
+        y: { reverse: true, min: -35, max: 6, ticks: { font: { size: 10 } } }
       }
     }
   });
@@ -945,18 +1066,32 @@ function renderPlayerHcTable() {
   const wrap = document.getElementById('ph-table-wrap');
   if (!wrap) return;
   const slice = filterSeriesByPeriod(_playerHcSeries, _playerHcPeriod);
-  // Table shows every month in the period (carry-forwards greyed)
+
+  // Tag each actual entry with improvement direction vs. previous actual entry
+  let prevActualVal = null;
+  const tagged = slice.map(s => {
+    const out = { ...s, changeClass: null };
+    if (s.isActual) {
+      if (prevActualVal !== null) {
+        if      (s.value < prevActualVal) out.changeClass = 'ph-row-improved';
+        else if (s.value > prevActualVal) out.changeClass = 'ph-row-worsened';
+      }
+      prevActualVal = s.value;
+    }
+    return out;
+  });
+
   let html = `<table class="ph-table">
     <thead><tr><th>Month</th><th>HC</th><th>Notes</th></tr></thead><tbody>`;
   let lastYear = null;
-  for (const s of [...slice].reverse()) {
+  for (const s of [...tagged].reverse()) {
     const yr = s.month.slice(0, 4);
     if (yr !== lastYear) {
       html += `<tr class="ph-year-row"><td colspan="3">${yr}</td></tr>`;
       lastYear = yr;
     }
     if (s.isActual) {
-      html += `<tr>
+      html += `<tr${s.changeClass ? ` class="${s.changeClass}"` : ''}>
         <td>${s.month}</td>
         <td><strong>${s.value}</strong></td>
         <td style="color:#888;font-size:12px">${esc(s.notes)}</td>
