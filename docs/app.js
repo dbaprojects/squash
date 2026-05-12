@@ -465,7 +465,6 @@ let ladderMonths      = [];
 let ladderYearMode    = 'last12';    // 'last12' | 'YYYY'
 let ladderAllYears    = [];
 let ladderSectionView = 'list';
-let _sparkChart       = null;
 let _playerHcChart    = null;
 let _distChart        = null;
 
@@ -616,14 +615,6 @@ function renderMyHcCard() {
   const el    = document.getElementById('ladder-my-card');
   if (!me) { el.innerHTML = '<p style="color:#888;font-size:13px">Not on the ladder yet.</p>'; return; }
 
-  // Always use last 12 calendar months for the sparkline
-  const sparkMonths = [];
-  const sd = new Date(); sd.setDate(1); sd.setMonth(sd.getMonth() - 11);
-  for (let i = 0; i < 12; i++) {
-    sparkMonths.push(monthKey(new Date(sd)));
-    sd.setMonth(sd.getMonth() + 1);
-  }
-
   const currentHc = me.current_handicap;
 
   // 12-month commentary
@@ -647,9 +638,6 @@ function renderMyHcCard() {
     }
   }
 
-  const hasSparkData = sparkMonths.some(m => effectiveHcAt(me.id, m) !== null);
-
-  if (_sparkChart) { _sparkChart.destroy(); _sparkChart = null; }
   el.innerHTML = `
     <div class="myhc-header">
       <div>
@@ -662,35 +650,10 @@ function renderMyHcCard() {
       </div>
     </div>
     ${commentHtml ? `<div style="margin-top:8px">${commentHtml}</div>` : ''}
-    ${hasSparkData ? `<div class="myhc-sparkline"><canvas id="my-hc-sparkline"></canvas></div>` : ''}
     <button class="myhc-history-btn"
       onclick="openPlayerHcModal('${me.id}','${esc(me.first_name + ' ' + me.last_name)}')">
       View full history →
     </button>`;
-
-  if (hasSparkData) {
-    setTimeout(() => {
-      const ctx = document.getElementById('my-hc-sparkline')?.getContext('2d');
-      if (!ctx) return;
-      const vals = sparkMonths.map(m => effectiveHcAt(me.id, m));
-      _sparkChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: sparkMonths,
-          datasets: [{ data: vals, borderColor: 'rgba(196,147,42,.9)', backgroundColor: 'rgba(196,147,42,.15)',
-            borderWidth: 2, pointRadius: 0, tension: 0.1, fill: true, spanGaps: true }]
-        },
-        options: {
-          responsive: true, maintainAspectRatio: false,
-          plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => `HC: ${c.raw}` } } },
-          scales: {
-            x: { ticks: { color: 'rgba(255,255,255,.65)', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,.1)' } },
-            y: { ticks: { color: 'rgba(255,255,255,.65)', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,.1)' } }
-          }
-        }
-      });
-    }, 0);
-  }
 }
 
 // ── Section summary card ──────────────────────────────────────────────────
@@ -714,9 +677,8 @@ function renderSectionCard() {
   const views = [
     { v: 'list',         label: 'Player List'  },
     { v: 'grid',         label: 'Grid'         },
-    { v: 'sparklines',   label: 'Sparklines'   },
-    { v: 'distribution', label: 'Distribution' },
     { v: 'movers',       label: 'Movers'       },
+    { v: 'distribution', label: 'Distribution' },
   ];
 
   el.innerHTML = `
@@ -747,7 +709,6 @@ function renderSectionHistory() {
   const el = document.getElementById('ladder-section-history');
   if (!el) return;
   if      (ladderSectionView === 'grid')         renderSectionGrid(el);
-  else if (ladderSectionView === 'sparklines')   renderSparklinesView(el);
   else if (ladderSectionView === 'distribution') renderDistributionView(el);
   else if (ladderSectionView === 'movers')       renderMoversView(el);
   else                                           renderPlayerListView(el);
@@ -850,49 +811,6 @@ function renderPlayerListView(el) {
         }).join('')}</tbody>
       </table>`
     : '<p style="color:#888;padding:12px 0">No players found.</p>';
-}
-
-// ── Sparklines view ───────────────────────────────────────────────────────
-function miniSparklineSvg(playerId, w = 80, h = 22) {
-  const vals = ladderMonths.map(m => effectiveHcAt(playerId, m));
-  const nonNull = vals.filter(v => v !== null);
-  if (nonNull.length < 2) return '<span style="color:#ccc;font-size:10px">–</span>';
-  const min = Math.min(...nonNull), max = Math.max(...nonNull);
-  const range = max - min || 1;
-  const pts = vals.map((v, i) => {
-    if (v === null) return null;
-    const x = (i / (vals.length - 1)) * w;
-    const y = h - 2 - ((v - min) / range) * (h - 4);
-    return `${x.toFixed(1)},${y.toFixed(1)}`;
-  }).filter(Boolean).join(' ');
-  return `<svg width="${w}" height="${h}" style="display:block">
-    <polyline points="${pts}" fill="none" stroke="var(--bc-navy)" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
-}
-
-function renderSparklinesView(el) {
-  const fp = getFilteredPlayers();
-  const startM = ladderMonths[0], endM = ladderMonths[ladderMonths.length - 1];
-  const rows = fp.map(p => {
-    const isMe  = p.id === ST.player.id;
-    const s     = effectiveHcAt(p.id, startM), e = effectiveHcAt(p.id, endM);
-    const delta = (s != null && e != null) ? e - s : null;
-    const dHtml = delta == null ? '' :
-      delta < 0 ? `<span class="lb-improved">▼${delta}</span>` :
-      delta > 0 ? `<span class="lb-worsened">▲+${delta}</span>` :
-      `<span style="color:#aaa">—</span>`;
-    return `<tr${isMe ? ' class="ladder-me"' : ''} style="cursor:pointer"
-        onclick="openPlayerHcModal('${p.id}','${esc(p.first_name)} ${esc(p.last_name)}')">
-      <td>${esc(p.first_name)} ${esc(p.last_name)}</td>
-      <td style="text-align:center"><span class="hcap-badge">${p.current_handicap ?? '–'}</span></td>
-      <td style="padding:4px 8px">${miniSparklineSvg(p.id)}</td>
-      <td style="text-align:right;font-size:12px;font-weight:600">${dHtml}</td>
-    </tr>`;
-  }).join('');
-  el.innerHTML = `${ladderNavBar()}
-    <table class="data-table" style="font-size:13px">
-      <thead><tr><th>Name</th><th>HC</th><th style="min-width:90px">12 months</th><th>Change</th></tr></thead>
-      <tbody>${rows || '<tr><td colspan="4" style="color:#888;padding:12px">No data.</td></tr>'}</tbody>
-    </table>`;
 }
 
 // ── Distribution view ─────────────────────────────────────────────────────
