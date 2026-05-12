@@ -53,6 +53,7 @@ body {
   height: 120px;
   object-fit: contain;
   margin-bottom: 16px;
+  mix-blend-mode: multiply;
 }
 
 .login-box h1 { font-size: 22px; font-weight: 700; color: var(--bc-navy); margin-bottom: 2px; }
@@ -208,6 +209,7 @@ header {
   height: 36px;
   object-fit: contain;
   flex-shrink: 0;
+  mix-blend-mode: multiply;
 }
 
 .header-left  { display: flex; align-items: center; gap: 9px; }
