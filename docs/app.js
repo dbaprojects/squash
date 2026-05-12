@@ -600,8 +600,8 @@ function renderMyHcCard() {
   let commentHtml = '';
   if (hcAgo12 !== null && currentHc !== null) {
     const delta = currentHc - hcAgo12;
-    if      (delta < 0) commentHtml = `<span class="myhc-trend improved">▼ ${delta} over 12 months</span>`;
-    else if (delta > 0) commentHtml = `<span class="myhc-trend worsened">▲ +${delta} over 12 months</span>`;
+    if      (delta < 0) commentHtml = `<span class="myhc-trend improved">↑ ${Math.abs(delta)} over 12 months</span>`;
+    else if (delta > 0) commentHtml = `<span class="myhc-trend worsened">↓ +${delta} over 12 months</span>`;
     else                commentHtml = `<span class="myhc-trend flat">— Unchanged over 12 months</span>`;
   } else {
     // Fallback: 3-month commentary if not enough 12-month data
@@ -609,8 +609,8 @@ function renderMyHcCard() {
     const hcAgo3 = effectiveHcAt(me.id, monthKey(ago3));
     if (hcAgo3 !== null && currentHc !== null) {
       const delta = currentHc - hcAgo3;
-      if      (delta < 0) commentHtml = `<span class="myhc-trend improved">▼ ${delta} over 3 months</span>`;
-      else if (delta > 0) commentHtml = `<span class="myhc-trend worsened">▲ +${delta} over 3 months</span>`;
+      if      (delta < 0) commentHtml = `<span class="myhc-trend improved">↑ ${Math.abs(delta)} over 3 months</span>`;
+      else if (delta > 0) commentHtml = `<span class="myhc-trend worsened">↓ +${delta} over 3 months</span>`;
       else                commentHtml = `<span class="myhc-trend flat">— Unchanged over 3 months</span>`;
     }
   }
@@ -663,8 +663,8 @@ function renderSectionCard() {
     <div class="sec-stat-row">
       <div class="sec-stat"><div class="sec-stat-val">${fp.length}</div><div class="sec-stat-lbl">Players</div></div>
       <div class="sec-stat"><div class="sec-stat-val">${avgHc}</div><div class="sec-stat-lbl">Avg HC</div></div>
-      <div class="sec-stat"><div class="sec-stat-val sec-improved">↓${improved}</div><div class="sec-stat-lbl">Improved<br><span style="font-size:9px;font-weight:400">12 months</span></div></div>
-      <div class="sec-stat"><div class="sec-stat-val sec-worsened">↑${worsened}</div><div class="sec-stat-lbl">Worsened<br><span style="font-size:9px;font-weight:400">12 months</span></div></div>
+      <div class="sec-stat"><div class="sec-stat-val sec-improved">↑${improved}</div><div class="sec-stat-lbl">Improved<br><span style="font-size:9px;font-weight:400">12 months</span></div></div>
+      <div class="sec-stat"><div class="sec-stat-val sec-worsened">↓${worsened}</div><div class="sec-stat-lbl">Worsened<br><span style="font-size:9px;font-weight:400">12 months</span></div></div>
     </div>
     <div class="hc-view-toggle">
       ${views.map(({ v, label }) =>
@@ -836,7 +836,7 @@ function renderMoversView(el) {
 
   function moverRow({ p, delta }) {
     const isMe = p.id === ST.player.id;
-    const sign = delta < 0 ? `▼ ${delta}` : `▲ +${delta}`;
+    const sign = delta < 0 ? `↑ ${Math.abs(delta)}` : `↓ +${delta}`;
     const cls  = delta < 0 ? 'lb-improved' : 'lb-worsened';
     return `<div class="hc-lb-row${isMe ? ' ladder-me-lb' : ''}">
       <span class="hc-lb-delta ${cls}">${sign}</span>
@@ -1530,6 +1530,12 @@ async function loadHome() {
       .eq('not_played', false)
       .order('event_month', { ascending: false })
       .limit(1).maybeSingle(),
+    // My signups last 12 months (attendance count)
+    sb.from('signups')
+      .select('id', { count: 'exact', head: true })
+      .eq('player_id', me.id)
+      .eq('is_reserve', false)
+      .gte('signed_up_at', twelveMonthsAgo.toISOString()),
   ];
 
   if (me.is_admin) {
@@ -1539,8 +1545,9 @@ async function loadHome() {
   }
 
   const results = await Promise.all(fetches);
-  const [eventsRes, myHcRes, playersRes, histRes, hofRes] = results;
-  const pendingCount = me.is_admin ? (results[5]?.count || 0) : 0;
+  const [eventsRes, myHcRes, playersRes, histRes, hofRes, signupCountRes] = results;
+  const myAttendance12m = signupCountRes?.count || 0;
+  const pendingCount = me.is_admin ? (results[6]?.count || 0) : 0;
 
   // HC trend
   const currentHc = me.current_handicap;
@@ -1573,41 +1580,40 @@ async function loadHome() {
     if (e < s) improved++; else if (e > s) worsened++;
   }
 
-  renderHome(eventsRes.data || [], hcTrend, { players: allPlayers.length, improved, worsened }, hofRes.data, pendingCount);
+  renderHome(eventsRes.data || [], hcTrend, { players: allPlayers.length, improved, worsened }, hofRes.data, pendingCount, myAttendance12m);
 }
 
-function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCount) {
+function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCount, myAttendance12m) {
   const me = ST.player;
   const hc = me.current_handicap;
 
   // ── Card 1: Me ───────────────────────────────────────────────────────────
   let commentHtml = '';
   if (hcTrend) {
-    if      (hcTrend.dir === 'improved') commentHtml = `<span class="myhc-trend improved">▼ ${hcTrend.delta} over 12 months</span>`;
-    else if (hcTrend.dir === 'worsened') commentHtml = `<span class="myhc-trend worsened">▲ +${hcTrend.delta} over 12 months</span>`;
-    else                                 commentHtml = `<span class="myhc-trend flat">— Unchanged over 12 months</span>`;
+    if      (hcTrend.dir === 'improved') commentHtml = `<span class="myhc-trend improved">↑ ${hcTrend.delta} over 12m</span>`;
+    else if (hcTrend.dir === 'worsened') commentHtml = `<span class="myhc-trend worsened">↓ +${hcTrend.delta} over 12m</span>`;
+    else                                 commentHtml = `<span class="myhc-trend flat">— Unchanged 12m</span>`;
   }
   const meCard = `
     <div class="home-card home-card-me"
         onclick="openPlayerHcModal('${me.id}','${esc(me.first_name + ' ' + me.last_name)}')">
+      <div class="home-card-label">Me</div>
       <div class="myhc-header">
         <div>
           <div class="myhc-name">${esc(me.first_name)} ${esc(me.last_name)}</div>
-          <div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:2px">My Handicap</div>
         </div>
         <div style="text-align:right">
           <div class="myhc-big">${hc ?? '–'}</div>
-          <div style="font-size:11px;color:rgba(255,255,255,.55)">handicap</div>
+          <div style="font-size:10px;color:rgba(255,255,255,.45)">handicap</div>
         </div>
       </div>
-      ${commentHtml ? `<div style="margin-top:8px">${commentHtml}</div>` : ''}
-      <button class="myhc-history-btn"
-        onclick="event.stopPropagation();openPlayerHcModal('${me.id}','${esc(me.first_name + ' ' + me.last_name)}')">
-        View full history →
-      </button>
+      ${commentHtml ? `<div style="margin-top:4px">${commentHtml}</div>` : ''}
+      <div style="font-size:12px;color:rgba(255,255,255,.55);margin-top:4px">${myAttendance12m} sessions (12m)</div>
+      <div class="home-card-link">View full history →</div>
     </div>`;
 
   // ── Card 2: Sign-Up ──────────────────────────────────────────────────────
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   let sessRows = '';
   if (upcomingEvents.length) {
     sessRows = upcomingEvents.slice(0, 4).map(ev => {
@@ -1615,8 +1621,9 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
       const mySignup  = (ev.signups || []).find(s => s.player_id === me.id);
       const countStr  = ev.max_signups ? `${confirmed.length}/${ev.max_signups}` : `${confirmed.length}`;
       const statusEl  = mySignup ? ' <span class="home-sess-in">✓</span>' : '';
+      const dayName   = days[new Date(ev.event_date + 'T12:00:00').getDay()];
       return `<div class="home-sess-row">
-        <span class="home-sess-date">${fmtDate(ev.event_date)}</span>
+        <span class="home-sess-date">${dayName}</span>
         <span class="home-sess-title">${esc(ev.title)}</span>
         <span class="home-sess-right">${countStr}${statusEl}</span>
       </div>`;
@@ -1641,30 +1648,36 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
           <div class="sec-stat-lbl">Players</div>
         </div>
         <div class="sec-stat">
-          <div class="sec-stat-val sec-improved">↓${sectionStats.improved}</div>
+          <div class="sec-stat-val sec-improved">↑${sectionStats.improved}</div>
           <div class="sec-stat-lbl">Improved<br><span style="font-size:9px;font-weight:400">12m</span></div>
         </div>
         <div class="sec-stat">
-          <div class="sec-stat-val sec-worsened">↑${sectionStats.worsened}</div>
+          <div class="sec-stat-val sec-worsened">↓${sectionStats.worsened}</div>
           <div class="sec-stat-lbl">Worsened<br><span style="font-size:9px;font-weight:400">12m</span></div>
         </div>
       </div>
-      <div class="home-card-link" style="margin-top:8px">View ladder →</div>
+      <div class="home-card-link" style="margin-top:8px">View all handicaps →</div>
     </div>`;
 
   // ── Card 4: HoF ──────────────────────────────────────────────────────────
   const hofFullClass = me.is_admin ? '' : ' home-card-hof-full';
   const hofInner = latestHof
-    ? `<div class="home-hof-trophy">🏆</div>
-       <div class="home-card-sub">${fmtHofMonth(latestHof.event_month)}</div>
-       <div class="home-card-main" style="font-size:15px">${esc(latestHof.winner_name || '–')}</div>`
-    : `<div class="home-hof-trophy">🏆</div>
-       <div class="home-card-sub" style="color:#aaa">No records yet</div>`;
+    ? `<div class="home-hof-row">
+         <div class="home-hof-trophy">🏆</div>
+         <div class="home-hof-info">
+           <div class="home-card-main" style="font-size:14px">${esc(latestHof.winner_name || '–')}</div>
+           <div class="home-card-sub">${fmtHofMonth(latestHof.event_month)}</div>
+         </div>
+       </div>`
+    : `<div class="home-hof-row">
+         <div class="home-hof-trophy">🏆</div>
+         <div class="home-hof-info" style="color:#aaa;font-size:13px">No records yet</div>
+       </div>`;
   const hofCard = `
     <div class="home-card home-card-hof${hofFullClass}" onclick="navTo('hof')">
-      <div class="home-card-label">Hall of Fame</div>
+      <div class="home-card-label">Current HCCR Champ</div>
       ${hofInner}
-      <div class="home-card-link">View HoF →</div>
+      <div class="home-card-link">Hall of Fame →</div>
     </div>`;
 
   // ── Card 5: Admin (admin only) ────────────────────────────────────────────
