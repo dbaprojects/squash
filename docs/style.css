@@ -745,6 +745,15 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
   font-weight: 600;
 }
 
+/* Navigation bar (grid / leaderboard year picker) */
+.hc-nav-bar    { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.hc-nav-btn    { padding: 5px 12px; border: 1px solid var(--bc-border); border-radius: 6px;
+                 background: #fff; color: var(--bc-navy); font-size: 12px; cursor: pointer; }
+.hc-nav-btn:hover:not(:disabled) { background: var(--bc-navy-lt); }
+.hc-nav-btn:disabled { opacity: .4; cursor: default; }
+.hc-nav-year   { flex: 1; padding: 5px 8px; border: 1px solid var(--bc-border); border-radius: 6px;
+                 background: #fff; font-size: 12px; color: var(--bc-navy); }
+
 /* ── Admin events filter bar ───────────────────────────────────────────── */
 .admin-filter-bar {
   display: flex;
