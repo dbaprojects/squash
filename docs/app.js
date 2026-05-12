@@ -89,11 +89,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (e.key === 'Enter') submitLoginPhone();
   });
 
-  document.getElementById('event-list').addEventListener('click', e => {
-    const clickable = e.target.closest('.ev-clickable');
-    if (clickable) openEvent(clickable.dataset.id);
-  });
-
   document.getElementById('btn-logout').addEventListener('click', signOutAndReset);
   document.getElementById('btn-hamburger').addEventListener('click', e => {
     e.stopPropagation();
@@ -886,6 +881,7 @@ function renderMoversView(el) {
 
 let _playerHcSeries = [];  // filled monthly series: [{month, value, isActual, notes}]
 let _playerHcPeriod = 'all';
+let _playerSignupCount12m = 0;
 
 // Build complete monthly series from first entry to now, carrying forward unchanged values
 function buildFilledSeries(history) {
@@ -928,14 +924,25 @@ async function openPlayerHcModal(playerId, playerName) {
   document.getElementById('modal-body').innerHTML = '<p style="color:#888;padding:12px 0">Loading…</p>';
   openModal();
 
-  const { data: history } = await sb.from('handicap_history')
-    .select('handicap_value, changed_at, notes')
-    .eq('player_id', playerId)
-    .order('changed_at', { ascending: true });
+  const cutoff12m = new Date();
+  cutoff12m.setFullYear(cutoff12m.getFullYear() - 1);
+  const [{ data: history }, { count: signupCount12m }] = await Promise.all([
+    sb.from('handicap_history')
+      .select('handicap_value, changed_at, notes')
+      .eq('player_id', playerId)
+      .order('changed_at', { ascending: true }),
+    sb.from('signups')
+      .select('id', { count: 'exact', head: true })
+      .eq('player_id', playerId)
+      .gte('signed_up_at', cutoff12m.toISOString())
+  ]);
+
+  _playerSignupCount12m = signupCount12m || 0;
 
   if (!history?.length) {
     document.getElementById('modal-body').innerHTML =
-      '<p style="color:#888;padding:12px 0">No history recorded.</p>';
+      `<div class="ph-signup-stat">Signups (12m): <strong>${_playerSignupCount12m}</strong></div>
+       <p style="color:#888;padding:12px 0">No handicap history recorded.</p>`;
     return;
   }
 
@@ -950,6 +957,7 @@ function renderPlayerHcModal() {
   ).join('');
 
   document.getElementById('modal-body').innerHTML = `
+    <div class="ph-signup-stat">Signups (last 12m): <strong>${_playerSignupCount12m}</strong></div>
     <div class="ph-period-row">${periodBtns}</div>
     <div class="ph-chart-wrap"><canvas id="ph-chart"></canvas></div>
     <div id="ph-table-wrap"></div>`;
@@ -1051,14 +1059,29 @@ function renderPlayerHcTable() {
 
 
 // ── Hall of Fame ───────────────────────────────────────────────────────────
-let hofResults = [];
+let hofResults    = [];
+let hofNameFilter = '';
+let hofStatusFilter = 'all';  // 'all' | 'active' | 'inactive'
+let hofPlayerMap  = {};       // normalized name → { active: bool }
 
 async function loadHof() {
-  const { data, error } = await sb.from('hof_results')
-    .select('*')
-    .order('event_month', { ascending: false });
+  // Reset filter bar DOM on fresh load so it rebuilds in the right place
+  const old = document.getElementById('hof-filter-bar');
+  if (old) old.remove();
+
+  const [{ data, error }, { data: playerList }] = await Promise.all([
+    sb.from('hof_results').select('*').order('event_month', { ascending: false }),
+    sb.from('players').select('first_name, last_name, active')
+  ]);
   if (error) { console.error(error); return; }
   hofResults = data || [];
+
+  hofPlayerMap = {};
+  for (const p of (playerList || [])) {
+    const full = `${p.first_name} ${p.last_name}`.toLowerCase().replace(/\s+/g,' ').trim();
+    hofPlayerMap[full] = { active: p.active };
+  }
+
   renderHof();
 }
 
@@ -1076,42 +1099,113 @@ function renderHof() {
   const wrap = document.getElementById('hof-wrap');
   if (!hofResults.length) { wrap.innerHTML = '<p style="color:#888">No records yet.</p>'; return; }
 
+  // Filter bar (persistent — only rebuild if not present)
+  let filterBar = document.getElementById('hof-filter-bar');
+  if (!filterBar) {
+    filterBar = document.createElement('div');
+    filterBar.id = 'hof-filter-bar';
+    filterBar.className = 'hof-filter-bar';
+    wrap.parentNode.insertBefore(filterBar, wrap);
+  }
+  const wasFocused = document.activeElement?.id === 'hof-name-input';
+  filterBar.innerHTML = `
+    <input type="text" id="hof-name-input" class="hof-name-filter" placeholder="Filter by name…"
+      value="${esc(hofNameFilter)}" oninput="hofNameFilter=this.value;renderHof()">
+    <div class="hof-status-btns">
+      ${['all','active','inactive'].map(s =>
+        `<button class="hof-status-btn${hofStatusFilter===s?' active':''}"
+          onclick="hofStatusFilter='${s}';renderHof()">${s.charAt(0).toUpperCase()+s.slice(1)}</button>`
+      ).join('')}
+    </div>`;
+  if (wasFocused) {
+    const inp = document.getElementById('hof-name-input');
+    if (inp) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
+  }
+
+  // Apply filters
+  const nameLow = hofNameFilter.toLowerCase().trim();
+  function matchesStatus(name) {
+    if (hofStatusFilter === 'all') return true;
+    const key = (name || '').toLowerCase().replace(/\s+/g,' ').trim();
+    const info = hofPlayerMap[key];
+    if (hofStatusFilter === 'active')   return info?.active === true;
+    if (hofStatusFilter === 'inactive') return info?.active === false;
+    return true;
+  }
+  function matchesName(r) {
+    if (!nameLow) return true;
+    return (r.winner_name || '').toLowerCase().includes(nameLow) ||
+           (r.runner_up_name || '').toLowerCase().includes(nameLow);
+  }
+
+  const filtered = hofResults.filter(r => {
+    if (r.not_played) return !nameLow; // only show not-played rows when no name filter
+    if (!matchesName(r)) return false;
+    // status filter: at least one participant must match
+    if (hofStatusFilter !== 'all') {
+      return matchesStatus(r.winner_name) || matchesStatus(r.runner_up_name);
+    }
+    return true;
+  });
+
   // Group by year descending
   const byYear = {};
-  for (const r of hofResults) {
+  for (const r of filtered) {
     const yr = r.event_month.slice(0, 4);
     if (!byYear[yr]) byYear[yr] = [];
     byYear[yr].push(r);
   }
 
-  // Tally wins per champion
+  // Tally wins and runner-ups (from filtered set when name filter active, else all)
+  const source = nameLow ? filtered : hofResults.filter(r => !r.not_played);
   const wins = {};
-  for (const r of hofResults) {
-    if (!r.not_played && r.winner_name) {
-      wins[r.winner_name] = (wins[r.winner_name] || 0) + 1;
-    }
+  const ru   = {};
+  for (const r of source) {
+    if (r.not_played) continue;
+    if (r.winner_name)     wins[r.winner_name] = (wins[r.winner_name] || 0) + 1;
+    if (r.runner_up_name)  ru[r.runner_up_name] = (ru[r.runner_up_name] || 0) + 1;
   }
-  const topWinners = Object.entries(wins)
-    .sort((a,b) => b[1] - a[1])
-    .slice(0, 5);
 
-  const hasScores = hofResults.some(r => r.winner_score != null);
+  // Apply status filter to leaderboards
+  function filterLeader(entries) {
+    if (hofStatusFilter === 'all') return entries;
+    return entries.filter(([name]) => matchesStatus(name));
+  }
+  const topWinners  = filterLeader(Object.entries(wins).sort((a,b) => b[1]-a[1])).slice(0, 5);
+  const topRunnerUp = filterLeader(Object.entries(ru).sort((a,b) => b[1]-a[1])).slice(0, 5);
 
   let html = '';
 
-  // Champions leaderboard
-  if (topWinners.length) {
-    html += `<div class="hof-leaders">
-      <div class="hof-leaders-title">🏆 Most titles</div>
-      <div class="hof-leaders-row">
-        ${topWinners.map(([name, count], i) =>
-          `<div class="hof-leader-chip ${i === 0 ? 'hof-leader-first' : ''}">
-            <span class="hof-leader-name">${esc(name)}</span>
-            <span class="hof-leader-count">${count}</span>
-          </div>`
-        ).join('')}
-      </div>
-    </div>`;
+  // Leaderboards side by side
+  if (topWinners.length || topRunnerUp.length) {
+    html += `<div class="hof-lb-row">`;
+    if (topWinners.length) {
+      html += `<div class="hof-leaders">
+        <div class="hof-leaders-title">🏆 Most Titles</div>
+        <div class="hof-leaders-chips">
+          ${topWinners.map(([name, count], i) =>
+            `<div class="hof-leader-chip ${i === 0 ? 'hof-leader-first' : ''}">
+              <span class="hof-leader-name">${esc(name)}</span>
+              <span class="hof-leader-count">${count}</span>
+            </div>`
+          ).join('')}
+        </div>
+      </div>`;
+    }
+    if (topRunnerUp.length) {
+      html += `<div class="hof-leaders hof-leaders-ru">
+        <div class="hof-leaders-title">🥈 Most #2's</div>
+        <div class="hof-leaders-chips">
+          ${topRunnerUp.map(([name, count], i) =>
+            `<div class="hof-leader-chip ${i === 0 ? 'hof-leader-ru-first' : ''}">
+              <span class="hof-leader-name">${esc(name)}</span>
+              <span class="hof-leader-count">${count}</span>
+            </div>`
+          ).join('')}
+        </div>
+      </div>`;
+    }
+    html += `</div>`;
   }
 
   // Results by year
@@ -1123,9 +1217,7 @@ function renderHof() {
         <thead><tr>
           <th>Month</th>
           <th>Champion</th>
-          <th class="hof-hc-col">HC</th>
           <th>Runner-Up</th>
-          <th class="hof-hc-col">HC</th>
           <th class="hof-score-col">Score</th>
         </tr></thead>
         <tbody>
@@ -1133,16 +1225,16 @@ function renderHof() {
             if (r.not_played) {
               return `<tr class="hof-not-played">
                 <td>${fmtHofMonth(r.event_month)}</td>
-                <td colspan="5" style="color:#bbb;font-style:italic">Not played</td>
+                <td colspan="3" style="color:#bbb;font-style:italic">Not played</td>
               </tr>`;
             }
             const score = fmtScore(r.winner_score, r.runner_up_score);
+            const winnerHc = r.winner_hc != null ? ` <span class="hof-hc-inline">(${r.winner_hc})</span>` : '';
+            const ruHc     = r.runner_up_hc != null ? ` <span class="hof-hc-inline">(${r.runner_up_hc})</span>` : '';
             return `<tr class="hof-result-row">
               <td class="hof-month">${fmtHofMonth(r.event_month)}</td>
-              <td class="hof-winner">${esc(r.winner_name || '–')}</td>
-              <td class="hof-hc-col hof-hc">${r.winner_hc ?? '–'}</td>
-              <td class="hof-runnerup">${esc(r.runner_up_name || '–')}</td>
-              <td class="hof-hc-col hof-hc">${r.runner_up_hc ?? '–'}</td>
+              <td class="hof-winner">${esc(r.winner_name || '–')}${winnerHc}</td>
+              <td class="hof-runnerup">${esc(r.runner_up_name || '–')}${ruHc}</td>
               <td class="hof-score-col hof-score">${score}</td>
             </tr>`;
           }).join('')}
@@ -1151,7 +1243,12 @@ function renderHof() {
     </div>`;
   }
 
+  if (!Object.keys(byYear).length) {
+    html += '<p style="color:#888;margin-top:12px">No results match the filter.</p>';
+  }
+
   wrap.innerHTML = html;
+}
 }
 
 // ── Admin: HoF tab ────────────────────────────────────────────────────────
@@ -1163,18 +1260,26 @@ async function loadAdminHof() {
 }
 
 function renderAdminHof() {
-  const wrap = document.getElementById('hof-admin-list');
+  const wrap    = document.getElementById('hof-admin-list');
+  const isSU    = ST.player?.is_super_admin;
   if (!hofResults.length) { wrap.innerHTML = '<p style="color:#888">No records yet.</p>'; return; }
 
+  // Show/hide the Add button based on super-admin status
+  const addBtn = document.getElementById('btn-add-hof');
+  if (addBtn) addBtn.style.display = isSU ? '' : 'none';
+
   const rows = hofResults.map(r => {
+    const actionsTd = isSU
+      ? `<td class="btn-actions">
+          <button class="btn-icon-sm" onclick="editHofResult('${r.id}')">Edit</button>
+          <button class="btn-icon-sm btn-danger" onclick="deleteHofResult('${r.id}')">Del</button>
+        </td>`
+      : `<td></td>`;
     if (r.not_played) {
       return `<tr class="hof-not-played">
         <td>${fmtHofMonth(r.event_month)}</td>
         <td colspan="4" style="color:#bbb;font-style:italic">Not played</td>
-        <td class="btn-actions">
-          <button class="btn-icon-sm" onclick="editHofResult('${r.id}')">Edit</button>
-          <button class="btn-icon-sm btn-danger" onclick="deleteHofResult('${r.id}')">Del</button>
-        </td>
+        ${actionsTd}
       </tr>`;
     }
     const score = fmtScore(r.winner_score, r.runner_up_score);
@@ -1183,10 +1288,7 @@ function renderAdminHof() {
       <td>${esc(r.winner_name || '–')} ${r.winner_hc != null ? `<span class="hcap-badge">${r.winner_hc}</span>` : ''}</td>
       <td>${esc(r.runner_up_name || '–')} ${r.runner_up_hc != null ? `<span class="hcap-badge">${r.runner_up_hc}</span>` : ''}</td>
       <td>${score}</td>
-      <td class="btn-actions">
-        <button class="btn-icon-sm" onclick="editHofResult('${r.id}')">Edit</button>
-        <button class="btn-icon-sm btn-danger" onclick="deleteHofResult('${r.id}')">Del</button>
-      </td>
+      ${actionsTd}
     </tr>`;
   }).join('');
 
@@ -1200,7 +1302,7 @@ function openHofForm(record = null) {
   const isEdit = !!record;
   const r = record || {};
   const monthVal = r.event_month ? r.event_month.slice(0,7) : '';
-  openFormModal(isEdit ? 'Edit HoF Result' : 'Add HoF Result', `
+  showFormModal(isEdit ? 'Edit HoF Result' : 'Add HoF Result', `
     <div class="form-group">
       <label>Month</label>
       <input type="month" id="hof-month" value="${monthVal}" required>
@@ -1211,12 +1313,22 @@ function openHofForm(record = null) {
     </div>
     <div id="hof-detail-fields">
       <div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:end;margin-bottom:8px">
-        <div class="form-group" style="margin:0"><label>Champion</label><input type="text" id="hof-winner" value="${esc(r.winner_name||'')}"></div>
+        <div class="form-group" style="margin:0">
+          <label>Champion</label>
+          <input type="text" id="hof-winner" value="${esc(r.winner_name||'')}"
+            oninput="hofCheckName('hof-winner','hof-winner-warn')">
+          <div id="hof-winner-warn" class="hof-name-warn hidden">Name not in player list</div>
+        </div>
         <div class="form-group" style="margin:0;width:70px"><label>HC</label><input type="number" id="hof-winner-hc" value="${r.winner_hc ?? ''}" step="1"></div>
         <div class="form-group" style="margin:0;width:70px"><label>Score</label><input type="number" id="hof-winner-score" value="${r.winner_score ?? ''}" step="1" min="0"></div>
       </div>
       <div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:end;margin-bottom:8px">
-        <div class="form-group" style="margin:0"><label>Runner-Up</label><input type="text" id="hof-runner" value="${esc(r.runner_up_name||'')}"></div>
+        <div class="form-group" style="margin:0">
+          <label>Runner-Up</label>
+          <input type="text" id="hof-runner" value="${esc(r.runner_up_name||'')}"
+            oninput="hofCheckName('hof-runner','hof-runner-warn')">
+          <div id="hof-runner-warn" class="hof-name-warn hidden">Name not in player list</div>
+        </div>
         <div class="form-group" style="margin:0;width:70px"><label>HC</label><input type="number" id="hof-runner-hc" value="${r.runner_up_hc ?? ''}" step="1"></div>
         <div class="form-group" style="margin:0;width:70px"><label>Score</label><input type="number" id="hof-runner-score" value="${r.runner_up_score ?? ''}" step="1" min="0"></div>
       </div>
@@ -1228,6 +1340,19 @@ function openHofForm(record = null) {
     </button>
   `);
   toggleHofNotPlayed();
+  // Validate pre-filled names
+  if (r.winner_name)     hofCheckName('hof-winner', 'hof-winner-warn');
+  if (r.runner_up_name)  hofCheckName('hof-runner', 'hof-runner-warn');
+}
+
+function hofCheckName(inputId, warnId) {
+  const val  = (document.getElementById(inputId)?.value || '').trim();
+  const warn = document.getElementById(warnId);
+  if (!warn) return;
+  if (!val) { warn.classList.add('hidden'); return; }
+  const key = val.toLowerCase().replace(/\s+/g,' ');
+  const known = hofPlayerMap.hasOwnProperty(key);
+  warn.classList.toggle('hidden', known);
 }
 
 function toggleHofNotPlayed() {
@@ -1266,11 +1391,13 @@ async function submitHofForm(id) {
 }
 
 function editHofResult(id) {
+  if (!ST.player?.is_super_admin) return;
   const r = hofResults.find(x => x.id === id);
   if (r) openHofForm(r);
 }
 
 async function deleteHofResult(id) {
+  if (!ST.player?.is_super_admin) return;
   if (!confirm('Delete this HoF result?')) return;
   await sb.from('hof_results').delete().eq('id', id);
   loadAdminHof();
@@ -1308,6 +1435,7 @@ function eventCard(ev) {
   const count     = confirmed.length;
   const full      = ev.max_signups && count >= ev.max_signups;
   const mySignup  = signups.find(s => s.player_id === ST.player.id);
+  const isAdmin   = ST.player?.is_admin || ST.player?.is_super_admin;
 
   const actionBtns = mySignup
     ? `<button class="btn-leave" onclick="leaveEvent(event,'${mySignup.id}','${ev.id}')">Cancel</button>`
@@ -1318,12 +1446,15 @@ function eventCard(ev) {
       ? esc(shortName(s.player_first, s.player_last))
       : esc(s.guest_name || 'Guest');
     const cls = !s.player_id ? 'chip-guest' : s.is_reserve ? 'chip-reserve' : 'chip-confirmed';
-    return `<span class="attendee-chip ${cls}">${name}</span>`;
+    const del = isAdmin
+      ? `<button class="chip-del" onclick="event.stopPropagation();removeSignupChip('${s.id}','${ev.id}')" title="Remove">×</button>`
+      : '';
+    return `<span class="attendee-chip ${cls}">${name}${del}</span>`;
   }).join('');
 
   return `<div class="event-card" id="ev-card-${ev.id}">
     <div class="ev-card-top">
-      <div class="ev-clickable" data-id="${ev.id}">
+      <div class="ev-info">
         <div class="ev-title">${esc(ev.title)}</div>
         <div class="ev-date">${fmtDate(ev.event_date)}</div>
         <div class="ev-time">${ev.start_time} – ${ev.end_time}</div>
@@ -1376,6 +1507,15 @@ async function joinEvent(e, eventId) {
 
 async function leaveEvent(e, signupId, eventId) {
   e.stopPropagation();
+  try {
+    const { error } = await sb.from('signups').delete().eq('id', signupId);
+    if (error) throw error;
+    await promoteFirstReserve(eventId);
+    refreshCard(eventId, await fetchEventSignups(eventId));
+  } catch (err) { alert(err.message); }
+}
+
+async function removeSignupChip(signupId, eventId) {
   try {
     const { error } = await sb.from('signups').delete().eq('id', signupId);
     if (error) throw error;
@@ -2304,26 +2444,78 @@ async function ensurePlayers() {
 document.getElementById('view-app').addEventListener('click', () => ensurePlayers(), { once: true });
 
 // ── Reports tab ───────────────────────────────────────────────────────────
-async function renderReportsTab() {
-  const el = document.getElementById('tab-reports');
-  el.innerHTML = '<p style="color:#888;padding:8px 0">Loading...</p>';
+let reportsFilter = 'last12';  // 'last12' | 'last2y' | 'last3y' | 'all' | 'YYYY'
 
-  const cutoff  = new Date();
-  cutoff.setDate(cutoff.getDate() - 91);
-  const fromDate = cutoff.toISOString().slice(0, 10);
-  const today    = new Date().toISOString().slice(0, 10);
+function getReportsDateRange(filter) {
+  const today = new Date();
+  const todayStr = today.toISOString().slice(0, 10);
+  if (filter === 'last12') {
+    const d = new Date(today); d.setFullYear(d.getFullYear() - 1);
+    return { from: d.toISOString().slice(0, 10), to: todayStr, label: 'Last 12 months' };
+  }
+  if (filter === 'last2y') {
+    const d = new Date(today); d.setFullYear(d.getFullYear() - 2);
+    return { from: d.toISOString().slice(0, 10), to: todayStr, label: 'Last 2 years' };
+  }
+  if (filter === 'last3y') {
+    const d = new Date(today); d.setFullYear(d.getFullYear() - 3);
+    return { from: d.toISOString().slice(0, 10), to: todayStr, label: 'Last 3 years' };
+  }
+  if (filter === 'all') {
+    return { from: '2000-01-01', to: todayStr, label: 'All time' };
+  }
+  // Specific year
+  const yr = parseInt(filter);
+  const maxTo = today.getFullYear() === yr ? todayStr : `${yr}-12-31`;
+  return { from: `${yr}-01-01`, to: maxTo, label: String(yr) };
+}
+
+async function renderReportsTab(filter) {
+  if (filter !== undefined) reportsFilter = filter;
+  const el = document.getElementById('tab-reports');
+
+  // Build available years from events (fetch lightweight)
+  let availYears = [];
+  try {
+    const { data: yrData } = await sb.from('events')
+      .select('event_date').order('event_date').limit(1);
+    if (yrData?.[0]) {
+      const firstYr = parseInt(yrData[0].event_date.slice(0, 4));
+      const curYr   = new Date().getFullYear();
+      for (let y = curYr; y >= firstYr; y--) availYears.push(y);
+    }
+  } catch (_) {}
+
+  const periodOptions = [
+    { value: 'last12', label: 'Last 12m' },
+    { value: 'last2y', label: 'Last 2y' },
+    { value: 'last3y', label: 'Last 3y' },
+    { value: 'all',    label: 'All time' },
+    ...availYears.map(y => ({ value: String(y), label: String(y) }))
+  ];
+
+  const filterBar = `<div class="reports-filter-bar">
+    ${periodOptions.map(o =>
+      `<button class="reports-period-btn${reportsFilter === o.value ? ' active' : ''}"
+        onclick="renderReportsTab('${o.value}')">${o.label}</button>`
+    ).join('')}
+  </div>`;
+
+  el.innerHTML = filterBar + '<p style="color:#888;padding:8px 0">Loading…</p>';
+
+  const { from: fromDate, to: toDate, label: periodLabel } = getReportsDateRange(reportsFilter);
 
   const [{ data: events }, { data: templates }] = await Promise.all([
     sb.from('events')
-      .select('id, title, event_date, max_signups, template_id, signups(id, is_reserve)')
-      .gte('event_date', fromDate)
-      .lte('event_date', today)
+      .select('id, title, event_date, max_signups, template_id, signups(id, is_reserve, player_id, player:players!player_id(first_name, last_name, active))')
+      .gte('event_date', fromDate).lte('event_date', toDate)
       .order('event_date'),
     sb.from('session_templates').select('id, name')
   ]);
 
-  if (!events?.length) {
-    el.innerHTML = '<p style="color:#888;padding:8px 0">No historical data yet.</p>';
+  const evList = events || [];
+  if (!evList.length) {
+    el.innerHTML = filterBar + '<p style="color:#888;padding:8px 0">No data for this period.</p>';
     return;
   }
 
@@ -2331,7 +2523,7 @@ async function renderReportsTab() {
   const tmplMap   = {};
   const tmplNames = Object.fromEntries((templates || []).map(t => [t.id, t.name]));
 
-  for (const ev of events) {
+  for (const ev of evList) {
     const confirmed = (ev.signups || []).filter(s => !s.is_reserve).length;
     const reserve   = (ev.signups || []).filter(s =>  s.is_reserve).length;
     const d   = new Date(ev.event_date + 'T12:00:00');
@@ -2354,10 +2546,30 @@ async function renderReportsTab() {
     }
   }
 
-  const totalSessions  = events.length;
-  const totalConfirmed = events.reduce((s, ev) => s + (ev.signups||[]).filter(x=>!x.is_reserve).length, 0);
-  const totalCapacity  = events.reduce((s, ev) => s + (ev.max_signups || 0), 0);
+  const totalSessions  = evList.length;
+  const totalConfirmed = evList.reduce((s, ev) => s + (ev.signups||[]).filter(x=>!x.is_reserve).length, 0);
+  const totalCapacity  = evList.reduce((s, ev) => s + (ev.max_signups || 0), 0);
   const avgFill = totalCapacity ? Math.round((totalConfirmed / totalCapacity) * 100) : 0;
+  const avgPerSession = totalSessions ? Math.round(totalConfirmed / totalSessions * 10) / 10 : 0;
+
+  // Attendance frequency — derived from events in period
+  const playerCounts = {};
+  for (const ev of evList) {
+    for (const s of (ev.signups || []).filter(s => !s.is_reserve && s.player_id && s.player)) {
+      const pid = s.player_id;
+      if (!playerCounts[pid]) {
+        playerCounts[pid] = {
+          name: `${s.player.first_name} ${s.player.last_name}`,
+          active: s.player.active,
+          count: 0
+        };
+      }
+      playerCounts[pid].count++;
+    }
+  }
+  const topAttendees = Object.values(playerCounts)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 20);
 
   const weeks      = Object.keys(weekMap).sort();
   const weekLabels = weeks.map(k => weekMap[k].label);
@@ -2367,11 +2579,20 @@ async function renderReportsTab() {
   const tmplLabels = tmplIds.map(id => tmplMap[id].name);
   const tmplAvg    = tmplIds.map(id => Math.round(tmplMap[id].total / tmplMap[id].count));
 
-  el.innerHTML = `
+  const attendeeRows = topAttendees.map((p, i) => `
+    <tr>
+      <td style="color:#888;width:28px">${i+1}</td>
+      <td>${esc(p.name)}${!p.active ? ' <span style="font-size:10px;color:#aaa">(inactive)</span>' : ''}</td>
+      <td style="text-align:right;font-weight:600">${p.count}</td>
+      <td style="text-align:right;color:#888;font-size:12px">${totalSessions ? Math.round(p.count/totalSessions*100) + '%' : ''}</td>
+    </tr>`).join('');
+
+  el.innerHTML = filterBar + `
     <div class="stats-row">
-      <div class="stat-box"><div class="stat-num">${totalSessions}</div><div class="stat-label">Sessions (13 wks)</div></div>
-      <div class="stat-box"><div class="stat-num">${totalConfirmed}</div><div class="stat-label">Total Attendees</div></div>
+      <div class="stat-box"><div class="stat-num">${totalSessions}</div><div class="stat-label">Sessions (${periodLabel})</div></div>
+      <div class="stat-box"><div class="stat-num">${totalConfirmed}</div><div class="stat-label">Total Attendances</div></div>
       <div class="stat-box"><div class="stat-num">${avgFill}%</div><div class="stat-label">Avg Fill Rate</div></div>
+      <div class="stat-box"><div class="stat-num">${avgPerSession}</div><div class="stat-label">Avg per Session</div></div>
     </div>
     <div class="reports-grid">
       <div class="report-card">
@@ -2382,6 +2603,13 @@ async function renderReportsTab() {
         <div class="report-title">Avg Fill Rate by Session <span style="font-size:11px;font-weight:400;color:#888">(red = over capacity)</span></div>
         <div class="chart-wrap"><canvas id="chart-fillrate"></canvas></div>
       </div>
+    </div>
+    <div class="report-card" style="margin-top:16px">
+      <div class="report-title">Most Frequent Players</div>
+      <table class="data-table attendance-table">
+        <thead><tr><th>#</th><th>Player</th><th style="text-align:right">Sessions</th><th style="text-align:right">Attendance %</th></tr></thead>
+        <tbody>${attendeeRows || '<tr><td colspan="4" style="color:#888">No data</td></tr>'}</tbody>
+      </table>
     </div>`;
 
   new Chart(document.getElementById('chart-weekly'), {
