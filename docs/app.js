@@ -89,7 +89,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (e.key === 'Enter') submitLoginPhone();
   });
 
-  document.getElementById('btn-home-switch').addEventListener('click', e => {
+  document.getElementById('btn-home-switch')?.addEventListener('click', e => {
     e.stopPropagation();
     document.getElementById('home-switcher-dropdown').classList.toggle('hidden');
   });
@@ -366,7 +366,7 @@ async function loadUserSwitcher() {
 }
 
 async function switchUser(playerId) {
-  document.getElementById('switcher-dropdown').classList.add('hidden');
+  document.getElementById('home-switcher-dropdown')?.classList.add('hidden');
   const { data } = await sb.from('players').select('*').eq('id', playerId).single();
   if (!data) { alert('Player not found'); return; }
   ST.players = [];
