@@ -9,7 +9,7 @@
   "theme_color": "#1B2A6B",
   "icons": [
     {
-      "src": "bcss.png",
+      "src": "bccs-transparent.png",
       "sizes": "any",
       "type": "image/png",
       "purpose": "any maskable"
