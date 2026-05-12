@@ -1,4 +1,4 @@
-/* app.js — Squash Club SPA (Supabase, email login) */
+/* app.js — Squash Club SPA (Supabase, phone login) */
 'use strict';
 
 // ── Supabase client ───────────────────────────────────────────────────────
@@ -18,80 +18,48 @@ const ST = {
 };
 
 // ── Init ──────────────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   setupNav();
   setupModalClose();
   setupUserSwitcher();
+
+  document.getElementById('login-dialcode').innerHTML = dialCodeOptions();
+  document.getElementById('login-phone').addEventListener('keydown', e => {
+    if (e.key === 'Enter') submitLoginPhone();
+  });
 
   document.getElementById('event-list').addEventListener('click', e => {
     const clickable = e.target.closest('.ev-clickable');
     if (clickable) openEvent(clickable.dataset.id);
   });
 
-  document.getElementById('btn-google-login').addEventListener('click', async () => {
-    document.getElementById('login-error').textContent = '';
-    await sb.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: window.location.href }
-    });
-  });
+  document.getElementById('btn-logout').addEventListener('click', signOutAndReset);
 
-  document.getElementById('btn-logout').addEventListener('click', async () => {
-    await sb.auth.signOut();
-  });
-
-  // Auth state drives everything
-  sb.auth.onAuthStateChange(async (event, session) => {
-    if ((event === 'INITIAL_SESSION' || event === 'SIGNED_IN') && session?.user) {
-      await handleAuthUser(session.user);
-    } else if (event === 'INITIAL_SESSION' && !session) {
-      showView('login');
-    } else if (event === 'SIGNED_OUT') {
-      ST.player = null;
-      ST.players = [];
-      onboardUser = null;
-      showView('login');
-    }
-  });
+  // Restore session from localStorage
+  const saved = localStorage.getItem('squash_player');
+  if (saved) {
+    try {
+      const cached = JSON.parse(saved);
+      const { data } = await sb.from('players').select('*').eq('id', cached.id).maybeSingle();
+      if (data && data.active && !data.pending) {
+        loginSuccess(data);
+        return;
+      }
+    } catch (_) { /* ignore */ }
+    localStorage.removeItem('squash_player');
+  }
+  showView('login');
 });
 
 // ── Auth ──────────────────────────────────────────────────────────────────
-let onboardUser = null;
-
-async function handleAuthUser(user) {
-  // Fast path: Google email already linked to a player
-  const { data: player } = await sb.from('players')
-    .select('*').eq('email', user.email).maybeSingle();
-
-  if (player) {
-    if (player.pending) {
-      showOnboardStep('pending');
-    } else {
-      if (!player.active) {
-        await sb.from('players').update({ active: true }).eq('id', player.id);
-        player.active = true;
-      }
-      loginSuccess(player);
-    }
-    return;
-  }
-
-  // Not linked yet — start onboarding
-  onboardUser = user;
-  document.getElementById('ob-dialcode').innerHTML = dialCodeOptions();
-  document.getElementById('ob-phone').value = '';
-  document.getElementById('ob-phone-error').textContent = '';
-  showOnboardStep('phone');
-}
-
 function normalizePhone(p) {
   return (p || '').replace(/\D/g, '');
 }
 
-async function submitOnboardPhone() {
-  const dialCode = document.getElementById('ob-dialcode').value;
-  const local    = document.getElementById('ob-phone').value.trim();
-  const errEl    = document.getElementById('ob-phone-error');
+async function submitLoginPhone() {
+  const dialCode  = document.getElementById('login-dialcode').value;
+  const local     = document.getElementById('login-phone').value.trim();
+  const errEl     = document.getElementById('login-phone-error');
   errEl.textContent = '';
   if (!local) { errEl.textContent = 'Please enter your phone number.'; return; }
 
@@ -99,23 +67,16 @@ async function submitOnboardPhone() {
   const normInput = normalizePhone(phone);
 
   const { data: players } = await sb.from('players')
-    .select('id, first_name, last_name, email, phone, current_handicap, is_admin, active')
-    .eq('active', true).not('phone', 'is', null);
+    .select('*').not('phone', 'is', null);
 
   const match = (players || []).find(p => normalizePhone(p.phone) === normInput);
 
   if (match) {
-    if (match.email && match.email !== onboardUser.email) {
-      errEl.textContent = 'This phone is already linked to another account. Contact the admin.';
-      return;
-    }
+    if (match.pending) { showOnboardStep('pending'); return; }
     document.getElementById('ob-confirm-name').textContent  = `${match.first_name} ${match.last_name}`;
     document.getElementById('ob-confirm-phone').textContent = phone;
-    document.getElementById('ob-confirm-yes').onclick = () => linkAndLogin(match, phone);
-    document.getElementById('ob-confirm-no').onclick  = () => {
-      prefillRegForm(phone);
-      showOnboardStep('register');
-    };
+    document.getElementById('ob-confirm-yes').onclick = () => completeLogin(match);
+    document.getElementById('ob-confirm-no').onclick  = () => { prefillRegForm(phone); showOnboardStep('register'); };
     showOnboardStep('confirm');
   } else {
     prefillRegForm(phone);
@@ -123,25 +84,20 @@ async function submitOnboardPhone() {
   }
 }
 
-function prefillRegForm(phone) {
-  const meta   = onboardUser?.user_metadata || {};
-  const parts  = (meta.full_name || meta.name || '').split(' ');
-  document.getElementById('ob-reg-first').value         = parts[0] || '';
-  document.getElementById('ob-reg-last').value          = parts.slice(1).join(' ') || '';
-  document.getElementById('ob-reg-phone-display').textContent = phone;
-  document.getElementById('ob-reg-phone-stored').value  = phone;
-  document.getElementById('ob-reg-error').textContent   = '';
+async function completeLogin(player) {
+  if (!player.active) {
+    await sb.from('players').update({ active: true }).eq('id', player.id);
+    player.active = true;
+  }
+  loginSuccess(player);
 }
 
-async function linkAndLogin(player, phone) {
-  const { error } = await sb.rpc('link_player_account', { p_player_id: player.id, p_phone: phone });
-  if (error) {
-    document.getElementById('ob-phone-error').textContent = error.message;
-    showOnboardStep('phone');
-    return;
-  }
-  const { data: updated } = await sb.from('players').select('*').eq('id', player.id).single();
-  loginSuccess(updated || player);
+function prefillRegForm(phone) {
+  document.getElementById('ob-reg-first').value                = '';
+  document.getElementById('ob-reg-last').value                 = '';
+  document.getElementById('ob-reg-phone-display').textContent  = phone;
+  document.getElementById('ob-reg-phone-stored').value         = phone;
+  document.getElementById('ob-reg-error').textContent          = '';
 }
 
 async function submitRegistration() {
@@ -150,28 +106,53 @@ async function submitRegistration() {
   const phone = document.getElementById('ob-reg-phone-stored').value;
   const errEl = document.getElementById('ob-reg-error');
   errEl.textContent = '';
-  if (!first || !last) { errEl.textContent = 'Name is required.'; return; }
+  if (!first || !last) { errEl.textContent = 'Please enter your full name.'; return; }
 
+  // Check if name matches an existing active player
+  const { data: existing } = await sb.from('players')
+    .select('*').eq('active', true).eq('pending', false);
+  const norm = s => s.toLowerCase().replace(/[^a-z]/g, '');
+  const candidates = (existing || []).filter(p =>
+    norm(`${p.first_name}${p.last_name}`) === norm(`${first}${last}`)
+  );
+
+  if (candidates.length === 1) {
+    const found = candidates[0];
+    document.getElementById('ob-confirm-name').textContent  = `${found.first_name} ${found.last_name}`;
+    document.getElementById('ob-confirm-phone').textContent = phone;
+    document.getElementById('ob-confirm-yes').onclick = async () => {
+      await sb.from('players').update({ phone }).eq('id', found.id);
+      const { data: updated } = await sb.from('players').select('*').eq('id', found.id).single();
+      completeLogin(updated || found);
+    };
+    document.getElementById('ob-confirm-no').onclick = () => createPendingPlayer(first, last, phone);
+    showOnboardStep('confirm');
+    return;
+  }
+
+  await createPendingPlayer(first, last, phone);
+}
+
+async function createPendingPlayer(first, last, phone) {
+  const errEl = document.getElementById('ob-reg-error');
   const { error } = await sb.from('players').insert({
-    first_name:       first,
-    last_name:        last,
-    email:            onboardUser.email,
-    phone:            phone || null,
-    is_admin:         false,
-    active:           false,
-    pending:          true,
-    current_handicap: null
+    first_name: first, last_name: last,
+    email: null, phone: phone || null,
+    is_admin: false, active: false, pending: true, current_handicap: null
   });
-  if (error) { errEl.textContent = error.message; return; }
+  if (error) { errEl.textContent = error.message; showOnboardStep('register'); return; }
   showOnboardStep('pending');
 }
 
-async function signOutAndReset() {
-  await sb.auth.signOut();
+function signOutAndReset() {
+  localStorage.removeItem('squash_player');
+  ST.player  = null;
+  ST.players = [];
+  showView('login');
 }
 
 function showOnboardStep(step) {
-  ['onboard-phone', 'onboard-confirm', 'onboard-register', 'onboard-pending'].forEach(id => {
+  ['onboard-confirm', 'onboard-register', 'onboard-pending'].forEach(id => {
     document.getElementById(id).classList.toggle('hidden', id !== `onboard-${step}`);
   });
   showView('onboard');
@@ -193,6 +174,7 @@ async function checkPendingBadge() {
 function loginSuccess(player) {
   if (!player.active) { showOnboardStep('pending'); return; }
   ST.player = player;
+  localStorage.setItem('squash_player', JSON.stringify(player));
   document.getElementById('header-name').textContent =
     `${player.first_name} ${player.last_name}`;
   document.querySelectorAll('.admin-only').forEach(el => {
@@ -235,6 +217,7 @@ async function switchUser(playerId) {
   const { data } = await sb.from('players').select('*').eq('id', playerId).single();
   if (!data) { alert('Player not found'); return; }
   ST.players = [];
+  localStorage.setItem('squash_player', JSON.stringify(data));
   loginSuccess(data);
 }
 
