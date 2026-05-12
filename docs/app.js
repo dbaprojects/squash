@@ -138,6 +138,14 @@ async function submitLoginPhone() {
     document.getElementById('ob-confirm-phone').textContent = phone;
     document.getElementById('ob-confirm-yes').onclick = () => completeLogin(match);
     document.getElementById('ob-confirm-no').onclick  = () => { prefillRegForm(phone); showOnboardStep('register'); };
+    document.getElementById('ob-confirm-name-fix').onclick = () => {
+      pendingLoginPlayer = match;
+      document.getElementById('ob-fix-first').value = match.first_name;
+      document.getElementById('ob-fix-last').value  = match.last_name;
+      document.getElementById('ob-fix-error').textContent = '';
+      document.getElementById('ob-name-fix-form').classList.remove('hidden');
+      document.getElementById('ob-confirm-name-fix').classList.add('hidden');
+    };
     showOnboardStep('confirm');
   } else {
     prefillRegForm(phone);
@@ -145,12 +153,30 @@ async function submitLoginPhone() {
   }
 }
 
+let pendingLoginPlayer = null;
+
 async function completeLogin(player) {
   if (!player.active) {
     await sb.from('players').update({ active: true }).eq('id', player.id);
     player.active = true;
   }
   loginSuccess(player);
+}
+
+async function submitNameFix() {
+  const player = pendingLoginPlayer;
+  if (!player) return;
+  const first  = document.getElementById('ob-fix-first').value.trim();
+  const last   = document.getElementById('ob-fix-last').value.trim();
+  const errEl  = document.getElementById('ob-fix-error');
+  errEl.textContent = '';
+  if (!first || !last) { errEl.textContent = 'Please enter your full name.'; return; }
+  const { error } = await sb.from('players').update({ first_name: first, last_name: last }).eq('id', player.id);
+  if (error) { errEl.textContent = error.message; return; }
+  player.first_name = first;
+  player.last_name  = last;
+  pendingLoginPlayer = null;
+  completeLogin(player);
 }
 
 function prefillRegForm(phone) {
@@ -216,6 +242,10 @@ function showOnboardStep(step) {
   ['onboard-confirm', 'onboard-register', 'onboard-pending'].forEach(id => {
     document.getElementById(id).classList.toggle('hidden', id !== `onboard-${step}`);
   });
+  if (step === 'confirm') {
+    document.getElementById('ob-name-fix-form').classList.add('hidden');
+    document.getElementById('ob-confirm-name-fix').classList.remove('hidden');
+  }
   showView('onboard');
 }
 

@@ -29,7 +29,7 @@
     </div>
     <div id="login-phone-error" class="error-msg" style="margin-bottom:8px"></div>
     <button class="btn-google-full" onclick="submitLoginPhone()">Sign In</button>
-    <p class="login-version">v2.7</p>
+    <p class="login-version">v2.8</p>
   </div>
 </div>
 
@@ -50,6 +50,13 @@
       <div class="btn-row" style="margin-top:14px">
         <button class="btn-primary" id="ob-confirm-yes" style="flex:1;padding:10px">Yes, that's me</button>
         <button class="btn-secondary" id="ob-confirm-no" style="flex:1;padding:10px">Not me</button>
+      </div>
+      <button class="btn-name-fix" id="ob-confirm-name-fix">Yes, but my name needs updating</button>
+      <div id="ob-name-fix-form" class="hidden" style="margin-top:14px;text-align:left">
+        <div class="form-group"><label>First name</label><input type="text" id="ob-fix-first" autocomplete="given-name"></div>
+        <div class="form-group"><label>Last name</label><input type="text" id="ob-fix-last" autocomplete="family-name"></div>
+        <div id="ob-fix-error" class="error-msg" style="margin-bottom:8px"></div>
+        <button class="btn-google-full" onclick="submitNameFix()">Save &amp; Sign In</button>
       </div>
     </div>
 
@@ -87,7 +94,7 @@
       <img src="bcss.png" class="header-logo" alt="BC">
       <div class="header-title">
         <span class="logo">British Club</span>
-        <span class="logo-sub">Squash Section <span class="version">v2.7</span></span>
+        <span class="logo-sub">Squash Section <span class="version">v2.8</span></span>
       </div>
     </div>
     <nav>

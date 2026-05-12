@@ -127,6 +127,21 @@ body {
 .btn-google-full:hover { background: var(--bc-navy-dk); }
 
 /* ── Onboarding ──────────────────────────────────────────────────────────── */
+.btn-name-fix {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 8px;
+  background: none;
+  border: none;
+  color: var(--bc-text-dim);
+  font-size: 12px;
+  text-decoration: underline;
+  cursor: pointer;
+  text-align: center;
+}
+.btn-name-fix:hover { color: var(--bc-navy); }
+
 .ob-match-card {
   background: var(--bc-navy-lt);
   border: 1px solid var(--bc-border);
