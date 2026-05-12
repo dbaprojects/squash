@@ -607,19 +607,32 @@ function renderPlayersTable() {
   });
   const pendingCount = allPlayers.filter(isPending).length;
   const wrap = document.getElementById('players-table-wrap');
-  wrap.innerHTML = `
-    <div class="players-toolbar">
-      <input type="text" id="players-search" class="players-search"
-        placeholder="Search by name…" value="${esc(playersFilter.search)}"
-        oninput="setPlayersSearch(this.value)">
-      <div class="players-status-btns">
-        <button class="admin-filter-btn${playersFilter.status === 'active'   ? ' active' : ''}" onclick="setPlayersStatus('active')">Active</button>
-        <button class="admin-filter-btn${playersFilter.status === 'inactive' ? ' active' : ''}" onclick="setPlayersStatus('inactive')">Inactive</button>
-        <button class="admin-filter-btn${playersFilter.status === 'pending'  ? ' active' : ''}" onclick="setPlayersStatus('pending')">Pending${pendingCount > 0 ? ` (${pendingCount})` : ''}</button>
-        <button class="admin-filter-btn${playersFilter.status === 'all'      ? ' active' : ''}" onclick="setPlayersStatus('all')">All</button>
+
+  // Build toolbar once — re-rendering it destroys focus on every keystroke
+  if (!document.getElementById('players-search')) {
+    wrap.innerHTML = `
+      <div class="players-toolbar">
+        <input type="text" id="players-search" class="players-search"
+          placeholder="Search by name…" autocomplete="off">
+        <div id="players-status-btns" class="players-status-btns"></div>
       </div>
-    </div>
-    ${players.length ? `<table class="data-table players-table">
+      <div id="players-list"></div>`;
+    document.getElementById('players-search').addEventListener('input', e => {
+      playersFilter.search = e.target.value;
+      renderPlayersTable();
+    });
+  }
+
+  // Update filter buttons (no input element involved, safe to replace)
+  document.getElementById('players-status-btns').innerHTML = `
+    <button class="admin-filter-btn${status === 'active'   ? ' active' : ''}" onclick="setPlayersStatus('active')">Active</button>
+    <button class="admin-filter-btn${status === 'inactive' ? ' active' : ''}" onclick="setPlayersStatus('inactive')">Inactive</button>
+    <button class="admin-filter-btn${status === 'pending'  ? ' active' : ''}" onclick="setPlayersStatus('pending')">Pending${pendingCount > 0 ? ` (${pendingCount})` : ''}</button>
+    <button class="admin-filter-btn${status === 'all'      ? ' active' : ''}" onclick="setPlayersStatus('all')">All</button>`;
+
+  // Update table body only
+  document.getElementById('players-list').innerHTML = players.length
+    ? `<table class="data-table players-table">
       <thead><tr>
         <th>Name</th>
         <th class="col-phone">Phone</th>
@@ -651,12 +664,7 @@ function renderPlayersTable() {
       </tr>`;
       }).join('')}
       </tbody></table>`
-    : '<p style="color:#888;padding:12px 0">No players match.</p>'}`;
-}
-
-function setPlayersSearch(val) {
-  playersFilter.search = val;
-  renderPlayersTable();
+    : '<p style="color:#888;padding:12px 0">No players match.</p>';
 }
 
 function setPlayersStatus(status) {
