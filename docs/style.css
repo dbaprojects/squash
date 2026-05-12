@@ -594,6 +594,17 @@ nav { display: flex; gap: 4px; flex: 1; }
 .tag-admin  { font-size: 11px; background: var(--bc-navy-lt); color: var(--bc-navy); padding: 2px 7px; border-radius: 10px; font-weight: 600; }
 .tag-active { font-size: 11px; background: #e6f4ea; color: #1e6b3c; padding: 2px 7px; border-radius: 10px; }
 
+/* ── Handicap ladder ────────────────────────────────────────────────────── */
+.my-hc-card {
+  display: flex; align-items: center; gap: 14px;
+  background: var(--bc-navy); color: #fff;
+  border-radius: 10px; padding: 16px 20px;
+}
+.my-hc-rank  { font-size: 22px; font-weight: 700; color: var(--bc-gold); min-width: 44px; }
+.my-hc-name  { flex: 1; font-size: 16px; font-weight: 600; }
+.my-hc-value { font-size: 28px; font-weight: 800; color: var(--bc-gold); }
+.ladder-me td { background: var(--bc-gold-lt) !important; font-weight: 600; }
+
 .hcap-badge {
   display: inline-block;
   background: var(--bc-navy-lt);

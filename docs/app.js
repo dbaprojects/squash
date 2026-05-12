@@ -303,7 +303,8 @@ function renderLadder() {
 
   if (!document.getElementById('ladder-search')) {
     wrap.innerHTML = `
-      <div class="players-toolbar">
+      <div id="ladder-my-card"></div>
+      <div class="players-toolbar" style="margin-top:16px">
         <input type="text" id="ladder-search" class="players-search"
           placeholder="Search by name…" autocomplete="off">
       </div>
@@ -314,6 +315,18 @@ function renderLadder() {
     });
   }
 
+  // My card
+  const myIdx = ladderPlayers.findIndex(p => p.id === ST.player.id);
+  const me    = myIdx >= 0 ? ladderPlayers[myIdx] : null;
+  document.getElementById('ladder-my-card').innerHTML = me
+    ? `<div class="my-hc-card">
+        <div class="my-hc-rank">#${myIdx + 1}</div>
+        <div class="my-hc-name">${esc(me.first_name)} ${esc(me.last_name)}</div>
+        <div class="my-hc-value">${me.current_handicap ?? '–'}</div>
+      </div>`
+    : '';
+
+  // Full list
   const q = ladderSearch.toLowerCase();
   const filtered = ladderPlayers.filter(p =>
     !q || `${p.first_name} ${p.last_name}`.toLowerCase().includes(q)
@@ -322,12 +335,15 @@ function renderLadder() {
   document.getElementById('ladder-list').innerHTML = filtered.length
     ? `<table class="data-table">
         <thead><tr><th>#</th><th>Name</th><th>Handicap</th></tr></thead>
-        <tbody>${filtered.map((p, i) => `
-          <tr>
-            <td style="color:#888;width:36px">${i + 1}</td>
+        <tbody>${filtered.map((p, i) => {
+          const rank = ladderPlayers.indexOf(p) + 1;
+          const isMe = p.id === ST.player.id;
+          return `<tr${isMe ? ' class="ladder-me"' : ''}>
+            <td style="color:#888;width:36px">${rank}</td>
             <td>${esc(p.first_name)} ${esc(p.last_name)}</td>
             <td><span class="hcap-badge">${p.current_handicap ?? '–'}</span></td>
-          </tr>`).join('')}
+          </tr>`;
+        }).join('')}
         </tbody>
       </table>`
     : '<p style="color:#888;padding:12px 0">No players found.</p>';
