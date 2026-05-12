@@ -95,6 +95,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   document.getElementById('btn-logout').addEventListener('click', signOutAndReset);
+  document.getElementById('btn-hamburger').addEventListener('click', e => {
+    e.stopPropagation();
+    document.getElementById('hamburger-menu').classList.toggle('hidden');
+  });
+  document.addEventListener('click', () => {
+    document.getElementById('hamburger-menu')?.classList.add('hidden');
+  });
 
   // Restore session from localStorage
   const saved = localStorage.getItem('squash_player');

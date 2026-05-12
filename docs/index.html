@@ -29,7 +29,7 @@
     </div>
     <div id="login-phone-error" class="error-msg" style="margin-bottom:8px"></div>
     <button class="btn-google-full" onclick="submitLoginPhone()">Sign In</button>
-    <p class="login-version">v3.3</p>
+    <p class="login-version">v3.4</p>
   </div>
 </div>
 
@@ -94,11 +94,22 @@
       <img src="bcss-transparent.png" class="header-logo" alt="BC">
       <div class="header-title">
         <span class="logo">British Club</span>
-        <span class="logo-sub">Squash Section <span class="version">v3.3</span></span>
+        <span class="logo-sub">Squash Section <span class="version">v3.4</span></span>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn-hamburger" id="btn-hamburger">&#9776;</button>
+      <div id="hamburger-menu" class="hamburger-menu hidden">
+        <div class="hm-user" id="header-name"></div>
+        <div id="user-switcher" class="hidden">
+          <button class="hm-item" id="btn-switcher-toggle">Switch user ▾</button>
+          <div id="switcher-dropdown" class="switcher-dropdown hidden"></div>
+        </div>
+        <button class="hm-item hm-signout" id="btn-logout">Sign out</button>
       </div>
     </div>
     <nav>
-      <button class="nav-btn active" data-view="schedule">Schedule</button>
+      <button class="nav-btn active" data-view="schedule">Sign-Up</button>
       <button class="nav-btn" data-view="ladder">Handicaps</button>
       <button class="nav-btn admin-only hidden" data-view="admin">Admin <span id="admin-badge" class="admin-badge hidden"></span>▾</button>
     </nav>
@@ -172,15 +183,6 @@
     <div id="tab-reports" class="tab-panel hidden"></div>
 
   </main>
-
-  <footer id="app-footer">
-    <span id="header-name"></span>
-    <div id="user-switcher" class="hidden">
-      <button class="btn-text" id="btn-switcher-toggle">Switch ▾</button>
-      <div id="switcher-dropdown" class="switcher-dropdown hidden"></div>
-    </div>
-    <button id="btn-logout" class="btn-text">Sign out</button>
-  </footer>
 
 </div><!-- /#view-app -->
 

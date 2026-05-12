@@ -205,20 +205,74 @@ header {
 }
 
 .header-logo {
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   object-fit: contain;
   flex-shrink: 0;
-  background: #fff;
-  border-radius: 50%;
-  padding: 3px;
+  border-radius: 8px;
 }
 
-.header-left  { display: flex; align-items: center; gap: 9px; }
+.header-left  { display: flex; align-items: center; gap: 9px; flex: 1; min-width: 0; }
 .header-title { display: flex; flex-direction: column; }
 .logo         { font-weight: 700; font-size: 15px; line-height: 1.2; }
-.logo-sub     { font-size: 10px; color: rgba(255,255,255,0.5); line-height: 1; letter-spacing: 0.05em; }
-.version      { font-size: 9px; color: rgba(255,255,255,0.3); margin-left: 5px; }
+.logo-sub     { font-size: 9px; color: rgba(255,255,255,0.5); line-height: 1; letter-spacing: 0.12em; text-transform: uppercase; }
+.version      { font-size: 9px; color: rgba(255,255,255,0.35); margin-left: 4px; }
+
+/* ── Hamburger menu ─────────────────────────────────────────────────────── */
+.header-actions { position: relative; flex-shrink: 0; }
+
+.btn-hamburger {
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #fff;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn-hamburger:hover { background: rgba(255,255,255,0.22); }
+
+.hamburger-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: var(--bc-surface);
+  border: 1px solid var(--bc-border);
+  border-radius: 10px;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.18);
+  min-width: 180px;
+  z-index: 300;
+  overflow: hidden;
+}
+
+.hm-user {
+  padding: 12px 16px 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--bc-navy);
+  border-bottom: 1px solid var(--bc-border);
+}
+
+.hm-item {
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  text-align: left;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--bc-border);
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--bc-text);
+}
+.hm-item:last-child { border-bottom: none; }
+.hm-item:hover { background: var(--bc-navy-lt); }
+.hm-signout { color: var(--bc-red); }
 
 nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 4px; }
 
@@ -235,38 +289,19 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 .nav-btn:hover  { background: rgba(255,255,255,0.12); color: #fff; }
 .nav-btn.active { background: rgba(255,255,255,0.18); color: #fff; font-weight: 600; }
 
-/* ── App footer (user / switch / sign-out) ─────────────────────────────── */
-#app-footer {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 10px;
-  padding: 6px 16px 10px;
-  border-top: 1px solid var(--bc-border);
-  background: var(--bc-surface);
-  font-size: 11px;
-  color: #aaa;
-}
-
-#app-footer #header-name {
-  margin-right: auto;
-  font-size: 11px;
-  color: #bbb;
-}
-
 /* ── User switcher ─────────────────────────────────────────────────────── */
 #user-switcher { position: relative; }
 
 .switcher-dropdown {
   position: absolute;
-  bottom: calc(100% + 6px);
+  top: calc(100% + 4px);
   right: 0;
   background: var(--bc-surface);
   border: 1px solid var(--bc-border);
   border-radius: 8px;
   box-shadow: 0 4px 20px rgba(0,0,0,0.18);
   min-width: 190px;
-  z-index: 200;
+  z-index: 400;
   max-height: 300px;
   overflow-y: auto;
 }
@@ -286,16 +321,6 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 .switcher-item:last-child { border-bottom: none; }
 .switcher-item:hover { background: var(--bc-navy-lt); }
 .switcher-item.active-user { font-weight: 600; color: var(--bc-navy); }
-
-.btn-text {
-  background: none;
-  border: none;
-  color: #aaa;
-  cursor: pointer;
-  font-size: 11px;
-  text-decoration: underline;
-}
-.btn-text:hover { color: var(--bc-navy); }
 
 /* ── Sections ──────────────────────────────────────────────────────────── */
 .section { padding: 20px; max-width: 960px; margin: 0 auto; }
