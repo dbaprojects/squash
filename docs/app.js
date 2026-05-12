@@ -1357,6 +1357,24 @@ function openHofForm(record = null) {
   toggleHofNotPlayed();
   if (r.winner_name)     hofCheckName('hof-winner', 'hof-winner-warn');
   if (r.runner_up_name)  hofCheckName('hof-runner', 'hof-runner-warn');
+
+  // Auto-fill HC from history for any pre-filled name that has no stored HC
+  if (monthVal) {
+    for (const [name, hcNull, hcInputId] of [
+      [r.winner_name,    r.winner_hc    == null, 'hof-winner-hc'],
+      [r.runner_up_name, r.runner_up_hc == null, 'hof-runner-hc']
+    ]) {
+      if (!name || !hcNull) continue;
+      const key    = name.toLowerCase().replace(/\s+/g, ' ');
+      const player = hofPlayerMap[key];
+      if (player?.id) {
+        hofGetHcAtMonth(player.id, monthVal + '-01').then(hc => {
+          const el = document.getElementById(hcInputId);
+          if (hc !== null && el) el.value = hc;
+        });
+      }
+    }
+  }
 }
 
 function hofShowAutocomplete(inputId, hcInputId, warnId, acId) {
