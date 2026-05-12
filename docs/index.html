@@ -15,7 +15,7 @@
 <body>
 
 <!-- ── Login ─────────────────────────────────────────────────────────────── -->
-<div id="view-login" class="view">
+<div id="view-login" class="view hidden">
   <div class="login-box">
     <img src="bcss.png" class="login-logo" alt="The British Club Singapore">
     <h1>British Club</h1>
@@ -29,7 +29,7 @@
     </div>
     <div id="login-phone-error" class="error-msg" style="margin-bottom:8px"></div>
     <button class="btn-google-full" onclick="submitLoginPhone()">Sign In</button>
-    <p class="login-version">v2.3</p>
+    <p class="login-version">v2.4</p>
   </div>
 </div>
 
@@ -87,7 +87,7 @@
       <img src="bcss.png" class="header-logo" alt="BC">
       <div class="header-title">
         <span class="logo">British Club</span>
-        <span class="logo-sub">Squash Section <span class="version">v2.3</span></span>
+        <span class="logo-sub">Squash Section <span class="version">v2.4</span></span>
       </div>
     </div>
     <nav>
@@ -95,14 +95,6 @@
       <button class="nav-btn" data-view="ladder">Handicaps</button>
       <button class="nav-btn admin-only hidden" data-view="admin">Admin <span id="admin-badge" class="admin-badge hidden"></span>▾</button>
     </nav>
-    <div class="header-right">
-      <span id="header-name"></span>
-      <div id="user-switcher" class="hidden">
-        <button class="btn-text" id="btn-switcher-toggle">Switch ▾</button>
-        <div id="switcher-dropdown" class="switcher-dropdown hidden"></div>
-      </div>
-      <button id="btn-logout" class="btn-text">Sign out</button>
-    </div>
   </header>
 
   <!-- ── PWA install banner ──────────────────────────────────────────────── -->
@@ -173,6 +165,15 @@
     <div id="tab-reports" class="tab-panel hidden"></div>
 
   </main>
+
+  <footer id="app-footer">
+    <span id="header-name"></span>
+    <div id="user-switcher" class="hidden">
+      <button class="btn-text" id="btn-switcher-toggle">Switch ▾</button>
+      <div id="switcher-dropdown" class="switcher-dropdown hidden"></div>
+    </div>
+    <button id="btn-logout" class="btn-text">Sign out</button>
+  </footer>
 
 </div><!-- /#view-app -->
 
