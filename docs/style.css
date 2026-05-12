@@ -650,14 +650,89 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 .tag-active      { font-size: 11px; background: #e6f4ea; color: #1e6b3c; padding: 2px 7px; border-radius: 10px; }
 
 /* ── Handicap ladder ────────────────────────────────────────────────────── */
-.my-hc-card {
-  display: flex; align-items: center; gap: 14px;
-  background: var(--bc-navy); color: #fff;
-  border-radius: 10px; padding: 16px 20px;
+
+/* Top two-card row */
+.hc-top-row  { display: flex; gap: 12px; margin-bottom: 16px; }
+.hc-top-card { flex: 1; min-width: 0; background: #fff; border-radius: 10px;
+               padding: 14px 16px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+@media (max-width: 520px) { .hc-top-row { flex-direction: column; } }
+
+/* My HC card – navy bg */
+#ladder-my-card { background: var(--bc-navy); color: #fff; }
+.myhc-header    { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.myhc-name      { font-weight: 600; font-size: 15px; }
+.myhc-rank      { font-size: 12px; color: rgba(255,255,255,.55); margin-top: 2px; }
+.myhc-big       { font-size: 38px; font-weight: 800; color: var(--bc-gold); line-height: 1; }
+.myhc-trend     { font-size: 12px; font-weight: 600; }
+.myhc-trend.improved { color: #6ee594; }
+.myhc-trend.worsened { color: #ff8080; }
+.myhc-trend.flat     { color: rgba(255,255,255,.45); }
+.myhc-sparkline { height: 54px; margin-top: 10px; }
+.myhc-history-btn {
+  margin-top: 10px; width: 100%; padding: 6px; font-size: 12px;
+  background: rgba(255,255,255,.12); color: #fff;
+  border: 1px solid rgba(255,255,255,.25); border-radius: 6px; cursor: pointer;
 }
-.my-hc-rank  { font-size: 22px; font-weight: 700; color: var(--bc-gold); min-width: 44px; }
-.my-hc-name  { flex: 1; font-size: 16px; font-weight: 600; }
-.my-hc-value { font-size: 28px; font-weight: 800; color: var(--bc-gold); }
+.myhc-history-btn:hover { background: rgba(255,255,255,.22); }
+
+/* Section summary card */
+.sec-card-title { font-weight: 600; font-size: 14px; color: var(--bc-navy); margin-bottom: 10px; }
+.sec-stat-row   { display: flex; gap: 6px; flex-wrap: wrap; }
+.sec-stat       { flex: 1; min-width: 44px; text-align: center; }
+.sec-stat-val   { font-size: 20px; font-weight: 700; color: var(--bc-navy); }
+.sec-stat-lbl   { font-size: 10px; color: #888; margin-top: 1px; text-transform: uppercase; letter-spacing: .03em; }
+.sec-improved   { color: #27ae60 !important; }
+.sec-worsened   { color: var(--bc-red) !important; }
+
+/* Grid / Leaderboard toggle */
+.hc-view-toggle  { display: flex; gap: 6px; margin-top: 12px; }
+.hc-toggle-btn   { flex: 1; padding: 6px; border: 1px solid var(--bc-border); border-radius: 6px;
+                   background: #fff; color: #555; font-size: 12px; cursor: pointer; }
+.hc-toggle-btn.active { background: var(--bc-navy); color: #fff; border-color: var(--bc-navy); }
+
+/* Heatmap grid */
+.hc-grid-wrap { overflow-x: auto; margin-bottom: 16px; border-radius: 8px;
+                border: 1px solid var(--bc-border); }
+.hc-grid      { border-collapse: collapse; font-size: 12px; white-space: nowrap; width: 100%; }
+.hc-grid thead th {
+  background: var(--bc-navy); color: #fff; padding: 7px 10px; text-align: center;
+  position: sticky; top: 0; font-size: 11px; font-weight: 600;
+}
+.hc-grid thead th.hcg-name { text-align: left; position: sticky; left: 0; z-index: 2; min-width: 120px; }
+.hc-grid td   { padding: 5px 10px; text-align: center; border-bottom: 1px solid #f0f0f0; }
+.hcg-name     { text-align: left !important; cursor: pointer; font-weight: 500;
+                position: sticky; left: 0; background: #fff; }
+.hcg-name:hover    { color: var(--bc-gold); }
+.hcg-name-me       { font-weight: 700; color: var(--bc-navy); }
+.ladder-me td      { background: var(--bc-gold-lt) !important; font-weight: 600; }
+.ladder-me .hcg-name { background: var(--bc-gold-lt); }
+.hc-cell-down { background: #edfaf2; color: #1e8449; font-weight: 600; }
+.hc-cell-up   { background: #fdf0ee; color: var(--bc-red); font-weight: 600; }
+
+/* Leaderboard */
+.hc-lb-section { margin-bottom: 14px; }
+.hc-lb-title   { font-size: 11px; font-weight: 700; color: #888; text-transform: uppercase;
+                 letter-spacing: .05em; margin-bottom: 4px; padding-bottom: 4px;
+                 border-bottom: 1px solid var(--bc-border); }
+.hc-lb-row     { display: flex; align-items: center; gap: 10px; padding: 6px 0;
+                 border-bottom: 1px solid #f5f5f5; }
+.ladder-me-lb  { background: var(--bc-gold-lt); border-radius: 6px; padding: 6px 8px; margin: 2px -8px; }
+.hc-lb-delta   { width: 52px; text-align: right; font-weight: 700; font-size: 13px; flex-shrink: 0; }
+.lb-improved   { color: #27ae60; }
+.lb-worsened   { color: var(--bc-red); }
+.lb-flat       { color: #aaa; }
+.hc-lb-name    { flex: 1; cursor: pointer; font-size: 14px; }
+.hc-lb-name:hover { color: var(--bc-gold); text-decoration: underline; }
+.hc-lb-hc      { font-size: 11px; color: #888; flex-shrink: 0; }
+
+/* Player history modal */
+.ph-chart-wrap { height: 200px; margin-bottom: 16px; }
+.ph-table      { width: 100%; border-collapse: collapse; font-size: 14px; }
+.ph-table th   { background: var(--bc-navy); color: #fff; padding: 7px 10px;
+                 text-align: left; font-size: 12px; }
+.ph-table td   { padding: 6px 10px; border-bottom: 1px solid #f0f0f0; }
+.ph-year-row td { background: var(--bc-navy-lt); font-weight: 600; color: var(--bc-navy); }
+
 .ladder-me td { background: var(--bc-gold-lt) !important; font-weight: 600; }
 
 .hcap-badge {
