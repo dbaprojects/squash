@@ -659,7 +659,8 @@ function renderPlayersTable() {
                <button class="btn-icon-sm" onclick="openEditPlayerForm('${p.id}')">Edit</button>
                ${p.active
                  ? `<button class="btn-icon-sm btn-icon-danger" onclick="deactivatePlayer('${p.id}')">Deactivate</button>`
-                 : `<button class="btn-icon-sm" onclick="reactivatePlayer('${p.id}')">Restore</button>`}`}
+                 : `<button class="btn-icon-sm" onclick="reactivatePlayer('${p.id}')">Restore</button>
+                    <button class="btn-icon-sm btn-icon-danger" onclick="deletePlayer('${p.id}','${esc(p.first_name)} ${esc(p.last_name)}')">Delete</button>`}`}
         </td>
       </tr>`;
       }).join('')}
@@ -766,6 +767,18 @@ async function reactivatePlayer(id) {
   if (error) { alert(error.message); return; }
   const p = allPlayers.find(x => x.id === id);
   if (p) p.active = true;
+  ST.players = allPlayers.filter(p => p.active);
+  renderPlayersTable();
+}
+
+async function deletePlayer(id, name) {
+  if (!confirm(`Permanently delete ${name}? This cannot be undone.`)) return;
+  // Remove related records first
+  await sb.from('handicap_history').delete().eq('player_id', id);
+  await sb.from('signups').delete().eq('player_id', id);
+  const { error } = await sb.from('players').delete().eq('id', id);
+  if (error) { alert(error.message); return; }
+  allPlayers = allPlayers.filter(x => x.id !== id);
   ST.players = allPlayers.filter(p => p.active);
   renderPlayersTable();
 }
