@@ -229,6 +229,7 @@ function setupNav() {
       btn.classList.add('active');
       const v = btn.dataset.view;
       if (v === 'schedule') { showSection('view-schedule'); loadSchedule(); }
+      if (v === 'ladder')   { showSection('view-ladder');   loadLadder(); }
       if (v === 'admin')    { showSection('view-admin');   loadAdminTab('tab-players'); }
     });
   });
@@ -255,7 +256,7 @@ function showView(name) {
 }
 
 function showSection(id) {
-  ['view-schedule','view-event','view-admin'].forEach(s => {
+  ['view-schedule','view-event','view-ladder','view-admin'].forEach(s => {
     document.getElementById(s).classList.add('hidden');
   });
   document.getElementById(id).classList.remove('hidden');
@@ -281,6 +282,55 @@ function normaliseSignup(s) {
 
 function normaliseEvent(ev) {
   return { ...ev, signups: (ev.signups || []).map(normaliseSignup) };
+}
+
+// ── Ladder ────────────────────────────────────────────────────────────────
+let ladderPlayers = [];
+let ladderSearch  = '';
+
+async function loadLadder() {
+  const { data } = await sb.from('players')
+    .select('id, first_name, last_name, current_handicap')
+    .eq('active', true).eq('pending', false)
+    .order('current_handicap', { ascending: true, nullsFirst: false })
+    .order('last_name').order('first_name');
+  ladderPlayers = data || [];
+  renderLadder();
+}
+
+function renderLadder() {
+  const wrap = document.getElementById('ladder-wrap');
+
+  if (!document.getElementById('ladder-search')) {
+    wrap.innerHTML = `
+      <div class="players-toolbar">
+        <input type="text" id="ladder-search" class="players-search"
+          placeholder="Search by name…" autocomplete="off">
+      </div>
+      <div id="ladder-list"></div>`;
+    document.getElementById('ladder-search').addEventListener('input', e => {
+      ladderSearch = e.target.value;
+      renderLadder();
+    });
+  }
+
+  const q = ladderSearch.toLowerCase();
+  const filtered = ladderPlayers.filter(p =>
+    !q || `${p.first_name} ${p.last_name}`.toLowerCase().includes(q)
+  );
+
+  document.getElementById('ladder-list').innerHTML = filtered.length
+    ? `<table class="data-table">
+        <thead><tr><th>#</th><th>Name</th><th>Handicap</th></tr></thead>
+        <tbody>${filtered.map((p, i) => `
+          <tr>
+            <td style="color:#888;width:36px">${i + 1}</td>
+            <td>${esc(p.first_name)} ${esc(p.last_name)}</td>
+            <td><span class="hcap-badge">${p.current_handicap ?? '–'}</span></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`
+    : '<p style="color:#888;padding:12px 0">No players found.</p>';
 }
 
 // ── Schedule ──────────────────────────────────────────────────────────────
