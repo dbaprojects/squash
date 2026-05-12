@@ -842,7 +842,7 @@ function renderPlayersTable() {
                ${p.active
                  ? `<button class="btn-icon-sm btn-icon-danger" onclick="deactivatePlayer('${p.id}')">Deactivate</button>`
                  : `<button class="btn-icon-sm" onclick="reactivatePlayer('${p.id}')">Restore</button>
-                    <button class="btn-icon-sm btn-icon-danger" onclick="deletePlayer('${p.id}','${esc(p.first_name)} ${esc(p.last_name)}')">Delete</button>`}`}
+                    ${ST.player.is_super_admin ? `<button class="btn-icon-sm btn-icon-danger" onclick="deletePlayer('${p.id}','${esc(p.first_name)} ${esc(p.last_name)}')">Delete</button>` : ''}`}`}
         </td>
       </tr>`;
       }).join('')}
@@ -869,6 +869,7 @@ function openAddPlayerForm() {
     </div>
     <div class="form-group"><label>Handicap</label><input type="number" id="fp-hcap" min="-35" max="10" step="0.5"></div>
     <div class="form-group"><label><input type="checkbox" id="fp-admin"> Admin</label></div>
+    ${ST.player.is_super_admin ? `<div class="form-group"><label><input type="checkbox" id="fp-super-admin"> Super Admin</label></div>` : ''}
     <div style="text-align:right;margin-top:8px">
       <button class="btn-primary" onclick="submitAddPlayer()">Add Player</button>
     </div>`);
@@ -881,6 +882,7 @@ async function submitAddPlayer() {
     last_name:        document.getElementById('fp-last').value.trim(),
     email:            emailRaw || null,
     is_admin:         document.getElementById('fp-admin').checked,
+    is_super_admin:   document.getElementById('fp-super-admin')?.checked ?? false,
     current_handicap: parseFloat(document.getElementById('fp-hcap').value) || null,
     phone:            buildPhone(document.getElementById('fp-dialcode').value, document.getElementById('fp-phone').value),
     active:           true
@@ -911,6 +913,7 @@ function openEditPlayerForm(id) {
       </div>
     </div>
     <div class="form-group"><label><input type="checkbox" id="ep-admin" ${p.is_admin ? 'checked' : ''}> Admin</label></div>
+    ${ST.player.is_super_admin ? `<div class="form-group"><label><input type="checkbox" id="ep-super-admin" ${p.is_super_admin ? 'checked' : ''}> Super Admin</label></div>` : ''}
     <div style="text-align:right;margin-top:8px">
       <button class="btn-primary" onclick="submitEditPlayer('${id}')">Save</button>
     </div>`);
@@ -918,11 +921,12 @@ function openEditPlayerForm(id) {
 
 async function submitEditPlayer(id) {
   const body = {
-    first_name: document.getElementById('ep-first').value.trim(),
-    last_name:  document.getElementById('ep-last').value.trim(),
-    email:      document.getElementById('ep-email').value.trim().toLowerCase(),
-    is_admin:   document.getElementById('ep-admin').checked,
-    phone:      buildPhone(document.getElementById('ep-dialcode').value, document.getElementById('ep-phone').value)
+    first_name:     document.getElementById('ep-first').value.trim(),
+    last_name:      document.getElementById('ep-last').value.trim(),
+    email:          document.getElementById('ep-email').value.trim().toLowerCase(),
+    is_admin:       document.getElementById('ep-admin').checked,
+    is_super_admin: document.getElementById('ep-super-admin')?.checked ?? false,
+    phone:          buildPhone(document.getElementById('ep-dialcode').value, document.getElementById('ep-phone').value)
   };
   const { error } = await sb.from('players').update(body).eq('id', id);
   if (error) { alert(error.message); return; }
