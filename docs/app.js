@@ -1062,7 +1062,20 @@ function renderPlayerHcTable() {
 let hofResults    = [];
 let hofNameFilter = '';
 let hofStatusFilter = 'all';  // 'all' | 'active' | 'inactive'
-let hofPlayerMap  = {};       // normalized name → { active: bool }
+let hofPlayerMap  = {};       // normalized name → { active: bool, id: uuid }
+let hofPlayerList = [];       // [{id, display, normalized}] sorted alpha — for autocomplete
+
+function buildHofPlayerMap(players) {
+  hofPlayerMap  = {};
+  hofPlayerList = [];
+  for (const p of (players || [])) {
+    const display    = `${p.first_name} ${p.last_name}`;
+    const normalized = display.toLowerCase().replace(/\s+/g,' ').trim();
+    hofPlayerMap[normalized] = { active: p.active, id: p.id };
+    hofPlayerList.push({ id: p.id, display, normalized });
+  }
+  hofPlayerList.sort((a, b) => a.display.localeCompare(b.display));
+}
 
 async function loadHof() {
   // Reset filter bar DOM on fresh load so it rebuilds in the right place
@@ -1075,13 +1088,7 @@ async function loadHof() {
   ]);
   if (error) { console.error(error); return; }
   hofResults = data || [];
-
-  hofPlayerMap = {};
-  for (const p of (playerList || [])) {
-    const full = `${p.first_name} ${p.last_name}`.toLowerCase().replace(/\s+/g,' ').trim();
-    hofPlayerMap[full] = { active: p.active };
-  }
-
+  buildHofPlayerMap(playerList);
   renderHof();
 }
 
@@ -1252,9 +1259,11 @@ function renderHof() {
 
 // ── Admin: HoF tab ────────────────────────────────────────────────────────
 async function loadAdminHof() {
-  const { data } = await sb.from('hof_results')
-    .select('*').order('event_month', { ascending: false });
+  const queries = [sb.from('hof_results').select('*').order('event_month', { ascending: false })];
+  if (!hofPlayerList.length) queries.push(sb.from('players').select('id, first_name, last_name, active'));
+  const [{ data }, plResult] = await Promise.all(queries);
   hofResults = data || [];
+  if (plResult?.data) buildHofPlayerMap(plResult.data);
   renderAdminHof();
 }
 
@@ -1304,28 +1313,35 @@ function openHofForm(record = null) {
   showFormModal(isEdit ? 'Edit HoF Result' : 'Add HoF Result', `
     <div class="form-group">
       <label>Month</label>
-      <input type="month" id="hof-month" value="${monthVal}" required>
+      <input type="month" id="hof-month" value="${monthVal}" required
+        onchange="hofOnMonthChange()">
     </div>
     <div class="form-group" style="margin-bottom:8px">
       <label><input type="checkbox" id="hof-not-played" ${r.not_played ? 'checked' : ''}
         onchange="toggleHofNotPlayed()"> Not played</label>
     </div>
     <div id="hof-detail-fields">
-      <div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:end;margin-bottom:8px">
-        <div class="form-group" style="margin:0">
+      <div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:start;margin-bottom:8px">
+        <div class="form-group" style="margin:0;position:relative">
           <label>Champion</label>
           <input type="text" id="hof-winner" value="${esc(r.winner_name||'')}"
-            oninput="hofCheckName('hof-winner','hof-winner-warn')">
+            autocomplete="off"
+            oninput="hofShowAutocomplete('hof-winner','hof-winner-hc','hof-winner-warn','hof-winner-ac')"
+            onblur="setTimeout(()=>document.getElementById('hof-winner-ac')?.classList.add('hidden'),150)">
+          <div id="hof-winner-ac" class="hof-autocomplete hidden"></div>
           <div id="hof-winner-warn" class="hof-name-warn hidden">Name not in player list</div>
         </div>
         <div class="form-group" style="margin:0;width:70px"><label>HC</label><input type="number" id="hof-winner-hc" value="${r.winner_hc ?? ''}" step="1"></div>
         <div class="form-group" style="margin:0;width:70px"><label>Score</label><input type="number" id="hof-winner-score" value="${r.winner_score ?? ''}" step="1" min="0"></div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:end;margin-bottom:8px">
-        <div class="form-group" style="margin:0">
+      <div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:start;margin-bottom:8px">
+        <div class="form-group" style="margin:0;position:relative">
           <label>Runner-Up</label>
           <input type="text" id="hof-runner" value="${esc(r.runner_up_name||'')}"
-            oninput="hofCheckName('hof-runner','hof-runner-warn')">
+            autocomplete="off"
+            oninput="hofShowAutocomplete('hof-runner','hof-runner-hc','hof-runner-warn','hof-runner-ac')"
+            onblur="setTimeout(()=>document.getElementById('hof-runner-ac')?.classList.add('hidden'),150)">
+          <div id="hof-runner-ac" class="hof-autocomplete hidden"></div>
           <div id="hof-runner-warn" class="hof-name-warn hidden">Name not in player list</div>
         </div>
         <div class="form-group" style="margin:0;width:70px"><label>HC</label><input type="number" id="hof-runner-hc" value="${r.runner_up_hc ?? ''}" step="1"></div>
@@ -1339,9 +1355,74 @@ function openHofForm(record = null) {
     </button>
   `);
   toggleHofNotPlayed();
-  // Validate pre-filled names
   if (r.winner_name)     hofCheckName('hof-winner', 'hof-winner-warn');
   if (r.runner_up_name)  hofCheckName('hof-runner', 'hof-runner-warn');
+}
+
+function hofShowAutocomplete(inputId, hcInputId, warnId, acId) {
+  hofCheckName(inputId, warnId);
+  const val = (document.getElementById(inputId)?.value || '').toLowerCase().trim();
+  const ac  = document.getElementById(acId);
+  if (!ac) return;
+  if (!val || val.length < 1) { ac.classList.add('hidden'); return; }
+
+  const matches = hofPlayerList.filter(p => p.normalized.includes(val)).slice(0, 8);
+  if (!matches.length) { ac.classList.add('hidden'); return; }
+
+  ac.innerHTML = matches.map(p =>
+    `<div class="hof-ac-item"
+       data-name="${p.display.replace(/"/g,'&quot;')}"
+       data-id="${p.id}"
+       data-input="${inputId}" data-hc="${hcInputId}"
+       data-warn="${warnId}" data-ac="${acId}"
+       onmousedown="hofPickAcItem(this)">${esc(p.display)}</div>`
+  ).join('');
+  ac.classList.remove('hidden');
+}
+
+function hofPickAcItem(el) {
+  hofSelectPlayer(el.dataset.input, el.dataset.hc, el.dataset.warn, el.dataset.ac,
+    el.dataset.name, el.dataset.id);
+}
+
+async function hofSelectPlayer(inputId, hcInputId, warnId, acId, display, playerId) {
+  document.getElementById(inputId).value = display;
+  document.getElementById(acId)?.classList.add('hidden');
+  hofCheckName(inputId, warnId);
+
+  const monthInput = document.getElementById('hof-month')?.value;
+  if (monthInput && playerId) {
+    const hc = await hofGetHcAtMonth(playerId, monthInput + '-01');
+    if (hc !== null) document.getElementById(hcInputId).value = hc;
+  }
+}
+
+async function hofGetHcAtMonth(playerId, monthISO) {
+  const [year, month] = monthISO.slice(0,7).split('-').map(Number);
+  const nextMonthStart = new Date(Date.UTC(year, month, 1)).toISOString();
+  const { data } = await sb.from('handicap_history')
+    .select('handicap_value')
+    .eq('player_id', playerId)
+    .lt('changed_at', nextMonthStart)
+    .order('changed_at', { ascending: false })
+    .limit(1).maybeSingle();
+  return data?.handicap_value ?? null;
+}
+
+async function hofOnMonthChange() {
+  const monthInput = document.getElementById('hof-month')?.value;
+  if (!monthInput) return;
+  const monthISO = monthInput + '-01';
+  for (const [inputId, hcInputId] of [['hof-winner','hof-winner-hc'],['hof-runner','hof-runner-hc']]) {
+    const name = document.getElementById(inputId)?.value?.trim();
+    if (!name) continue;
+    const key    = name.toLowerCase().replace(/\s+/g,' ');
+    const player = hofPlayerMap[key];
+    if (player?.id) {
+      const hc = await hofGetHcAtMonth(player.id, monthISO);
+      if (hc !== null) document.getElementById(hcInputId).value = hc;
+    }
+  }
 }
 
 function hofCheckName(inputId, warnId) {
@@ -1350,8 +1431,7 @@ function hofCheckName(inputId, warnId) {
   if (!warn) return;
   if (!val) { warn.classList.add('hidden'); return; }
   const key = val.toLowerCase().replace(/\s+/g,' ');
-  const known = hofPlayerMap.hasOwnProperty(key);
-  warn.classList.toggle('hidden', known);
+  warn.classList.toggle('hidden', hofPlayerMap.hasOwnProperty(key));
 }
 
 function toggleHofNotPlayed() {
