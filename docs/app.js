@@ -245,7 +245,7 @@ function loginSuccess(player) {
   showSection('view-schedule');
   setNavActive('schedule');
   loadSchedule();
-  loadUserSwitcher();
+  if (player.is_super_admin) loadUserSwitcher();
   if (player.is_admin) checkPendingBadge();
   showInstallBanner();
 }
