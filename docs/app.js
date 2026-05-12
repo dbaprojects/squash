@@ -462,7 +462,7 @@ let ladderSearch      = '';
 let ladderStatusFilter = 'active';   // 'active' | 'inactive' | 'all'
 let playerHistoryArr  = {};
 let ladderMonths      = [];
-let ladderWindowStart = null;
+let ladderYearMode    = 'last12';    // 'last12' | 'YYYY'
 let ladderAllYears    = [];
 let ladderSectionView = 'list';
 let _sparkChart       = null;
@@ -481,6 +481,24 @@ function getLadderWindowMonths(startKey) {
     months.push(monthKey(d));
   }
   return months;
+}
+
+// Derive ladderMonths from ladderYearMode
+function computeLadderMonths() {
+  const now = new Date();
+  if (ladderYearMode === 'last12') {
+    const start = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+    return getLadderWindowMonths(monthKey(start));
+  }
+  const year = parseInt(ladderYearMode);
+  if (year === now.getFullYear()) {
+    // Current year: Jan through this month only
+    const months = [];
+    for (let m = 1; m <= now.getMonth() + 1; m++)
+      months.push(`${year}.${String(m).padStart(2, '0')}`);
+    return months;
+  }
+  return getLadderWindowMonths(`${year}.01`);
 }
 
 function effectiveHcAt(playerId, targetMonth) {
@@ -540,11 +558,7 @@ async function loadLadder() {
   const curYrStr = String(new Date().getFullYear());
   if (!ladderAllYears.includes(curYrStr)) ladderAllYears.push(curYrStr);
 
-  if (!ladderWindowStart) {
-    const d = new Date(); d.setMonth(d.getMonth() - 11);
-    ladderWindowStart = monthKey(d);
-  }
-  ladderMonths = getLadderWindowMonths(ladderWindowStart);
+  ladderMonths = computeLadderMonths();
 
   renderLadder();
 }
@@ -741,39 +755,45 @@ function renderSectionHistory() {
 
 // ── Navigation helpers ────────────────────────────────────────────────────
 function ladderNavBar() {
-  const maxD     = new Date(); maxD.setMonth(maxD.getMonth() - 11);
-  const isLatest = ladderWindowStart >= monthKey(maxD);
-  const curYear  = ladderWindowStart.slice(0, 4);
-  const yearOpts = ladderAllYears.map(y =>
-    `<option value="${y}"${y === curYear ? ' selected' : ''}>${y}</option>`
-  ).join('');
+  const isLast12  = ladderYearMode === 'last12';
+  const curYear   = String(new Date().getFullYear());
+  const minYear   = ladderAllYears[0];
+
+  const yearOpts  = [
+    `<option value="last12"${isLast12 ? ' selected' : ''}>Last 12 months</option>`,
+    ...ladderAllYears.map(y =>
+      `<option value="${y}"${!isLast12 && ladderYearMode === y ? ' selected' : ''}>${y}</option>`)
+  ].join('');
+
+  const prevDis = isLast12 || ladderYearMode <= minYear ? ' disabled' : '';
+  const nextDis = isLast12 || ladderYearMode >= curYear ? ' disabled' : '';
+
   return `<div class="hc-nav-bar">
-    <button class="hc-nav-btn" onclick="ladderNavPrev()">◀ Prev</button>
+    <button class="hc-nav-btn"${prevDis} onclick="ladderNavPrev()">◀ Prev</button>
     <select class="hc-nav-year" onchange="ladderNavYear(this.value)">${yearOpts}</select>
-    <button class="hc-nav-btn" onclick="ladderNavNext()"${isLatest ? ' disabled' : ''}>Next ▶</button>
+    <button class="hc-nav-btn"${nextDis} onclick="ladderNavNext()">Next ▶</button>
   </div>`;
 }
 
 function ladderNavPrev() {
-  const [y, m] = ladderWindowStart.split('.').map(Number);
-  ladderWindowStart = monthKey(new Date(y, m - 1 - 12, 1));
-  ladderMonths = getLadderWindowMonths(ladderWindowStart);
+  if (ladderYearMode === 'last12') return;
+  ladderYearMode = String(parseInt(ladderYearMode) - 1);
+  ladderMonths = computeLadderMonths();
   renderMyHcCard(); renderSectionCard(); renderSectionHistory();
 }
 
 function ladderNavNext() {
-  const [y, m] = ladderWindowStart.split('.').map(Number);
-  const d = new Date(y, m - 1 + 12, 1);
-  const maxD = new Date(); maxD.setMonth(maxD.getMonth() - 11);
-  if (d > maxD) return;
-  ladderWindowStart = monthKey(d);
-  ladderMonths = getLadderWindowMonths(ladderWindowStart);
+  if (ladderYearMode === 'last12') return;
+  const next = parseInt(ladderYearMode) + 1;
+  if (next > new Date().getFullYear()) return;
+  ladderYearMode = String(next);
+  ladderMonths = computeLadderMonths();
   renderMyHcCard(); renderSectionCard(); renderSectionHistory();
 }
 
-function ladderNavYear(year) {
-  ladderWindowStart = `${year}.01`;
-  ladderMonths = getLadderWindowMonths(ladderWindowStart);
+function ladderNavYear(val) {
+  ladderYearMode = val;
+  ladderMonths = computeLadderMonths();
   renderMyHcCard(); renderSectionCard(); renderSectionHistory();
 }
 
