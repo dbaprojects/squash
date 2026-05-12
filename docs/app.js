@@ -818,7 +818,7 @@ async function submitEditPlayer(id) {
 }
 
 async function deactivatePlayer(id) {
-  if (!confirm('Deactivate this player? They will no longer be able to sign in.')) return;
+  if (!confirm('Deactivate this player? They will be hidden from the active list but can still sign in.')) return;
   const { error } = await sb.from('players').update({ active: false }).eq('id', id);
   if (error) { alert(error.message); return; }
   const p = allPlayers.find(x => x.id === id);
