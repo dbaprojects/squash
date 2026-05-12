@@ -200,6 +200,7 @@ header {
 .header-title { display: flex; flex-direction: column; }
 .logo         { font-weight: 700; font-size: 15px; line-height: 1.2; }
 .logo-sub     { font-size: 10px; color: rgba(255,255,255,0.5); line-height: 1; letter-spacing: 0.05em; }
+.version      { font-size: 9px; color: rgba(255,255,255,0.3); margin-left: 5px; }
 
 nav { display: flex; gap: 4px; flex: 1; }
 
