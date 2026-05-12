@@ -9,9 +9,9 @@
   "theme_color": "#1B2A6B",
   "icons": [
     {
-      "src": "bclogo.jpg",
+      "src": "bcss.png",
       "sizes": "any",
-      "type": "image/jpeg",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ]
