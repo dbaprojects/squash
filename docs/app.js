@@ -89,13 +89,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (e.key === 'Enter') submitLoginPhone();
   });
 
-  document.getElementById('btn-logout').addEventListener('click', signOutAndReset);
-  document.getElementById('btn-hamburger').addEventListener('click', e => {
+  document.getElementById('btn-home-switch').addEventListener('click', e => {
     e.stopPropagation();
-    document.getElementById('hamburger-menu').classList.toggle('hidden');
+    document.getElementById('home-switcher-dropdown').classList.toggle('hidden');
   });
-  document.addEventListener('click', () => {
-    document.getElementById('hamburger-menu')?.classList.add('hidden');
+  document.addEventListener('click', e => {
+    if (!e.target.closest('#home-user-switcher-wrap')) {
+      document.getElementById('home-switcher-dropdown')?.classList.add('hidden');
+    }
   });
 
   // Restore session from localStorage
@@ -328,12 +329,10 @@ async function checkPendingBadge() {
   const { count } = await sb.from('players')
     .select('*', { count: 'exact', head: true })
     .eq('pending', true);
-  const badge = document.getElementById('admin-badge');
-  if (count > 0) {
-    badge.textContent = count;
-    badge.classList.remove('hidden');
-  } else {
-    badge.classList.add('hidden');
+  const el = document.getElementById('home-admin-pending');
+  if (el) {
+    el.textContent = count > 0 ? `${count} pending` : 'All clear';
+    el.className = `home-admin-badge${count > 0 ? '' : ' clear'}`;
   }
 }
 
@@ -341,29 +340,16 @@ function loginSuccess(player) {
   if (!player.active) { showOnboardStep('pending'); return; }
   ST.player = player;
   localStorage.setItem('squash_player', JSON.stringify(player));
-  document.getElementById('header-name').textContent =
-    `${player.first_name} ${player.last_name}`;
-  document.querySelectorAll('.admin-only').forEach(el => {
-    el.classList.toggle('hidden', !player.is_admin);
-  });
   showView('app');
   showSection('view-home');
-  setNavActive('home');
   loadHome();
   if (player.is_super_admin) loadUserSwitcher();
-  if (player.is_admin) checkPendingBadge();
   showInstallBanner();
 }
 
 // ── User switcher ─────────────────────────────────────────────────────────
 function setupUserSwitcher() {
-  document.getElementById('btn-switcher-toggle').addEventListener('click', e => {
-    e.stopPropagation();
-    document.getElementById('switcher-dropdown').classList.toggle('hidden');
-  });
-  document.addEventListener('click', () => {
-    document.getElementById('switcher-dropdown').classList.add('hidden');
-  });
+  // Switcher is now in the home footer — event listeners set up in DOMContentLoaded
 }
 
 async function loadUserSwitcher() {
@@ -371,12 +357,12 @@ async function loadUserSwitcher() {
     .select('id, first_name, last_name')
     .eq('active', true).order('last_name');
   if (!data?.length) return;
-  const dropdown = document.getElementById('switcher-dropdown');
+  const dropdown = document.getElementById('home-switcher-dropdown');
   dropdown.innerHTML = data.map(p =>
     `<button class="switcher-item${p.id === ST.player.id ? ' active-user' : ''}"
       onclick="switchUser('${p.id}')">${esc(p.first_name)} ${esc(p.last_name)}</button>`
   ).join('');
-  document.getElementById('user-switcher').classList.remove('hidden');
+  document.getElementById('home-user-switcher-wrap').classList.remove('hidden');
 }
 
 async function switchUser(playerId) {
@@ -390,19 +376,6 @@ async function switchUser(playerId) {
 
 // ── Navigation ────────────────────────────────────────────────────────────
 function setupNav() {
-  document.querySelectorAll('.nav-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      const v = btn.dataset.view;
-      if (v === 'home')     { showSection('view-home');     loadHome(); }
-      if (v === 'schedule') { showSection('view-schedule'); loadSchedule(); }
-      if (v === 'ladder')   { showSection('view-ladder');   loadLadder(); }
-      if (v === 'hof')      { showSection('view-hof');      loadHof(); }
-      if (v === 'admin')    { showSection('view-admin');   loadAdminTab('tab-players'); }
-    });
-  });
-
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -413,7 +386,6 @@ function setupNav() {
 
   document.getElementById('btn-back-schedule').addEventListener('click', () => {
     showSection('view-schedule');
-    setNavActive('schedule');
   });
 }
 
@@ -429,12 +401,20 @@ function showSection(id) {
     document.getElementById(s).classList.add('hidden');
   });
   document.getElementById(id).classList.remove('hidden');
+  document.getElementById('btn-back-home').classList.toggle('hidden', id === 'view-home');
 }
 
-function setNavActive(name) {
-  document.querySelectorAll('.nav-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.view === name);
-  });
+function setNavActive(name) { /* no-op: nav tabs removed */ }
+
+function goHome() {
+  showSection('view-home');
+  loadHome();
+}
+
+function goToAdmin() {
+  if (!ST.player?.is_admin) return;
+  showSection('view-admin');
+  loadAdminTab('tab-players');
 }
 
 // ── Normalise Supabase nested responses ───────────────────────────────────
@@ -1506,151 +1486,205 @@ async function loadHome() {
   document.getElementById('home-grid').innerHTML =
     '<p style="color:#888;padding:16px 0">Loading…</p>';
 
+  const me    = ST.player;
   const today = new Date().toISOString().slice(0, 10);
 
-  const [
-    { data: nextEvent },
-    { data: allPlayers },
-    { data: recentHc },
-    { data: latestHof }
-  ] = await Promise.all([
+  // 12-month window: HC at start of window vs current
+  const twelveMonthsAgo = new Date();
+  twelveMonthsAgo.setDate(1);
+  twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
+
+  // 14-month history window for section stats
+  const fourteenMonthsAgo = new Date();
+  fourteenMonthsAgo.setDate(1);
+  fourteenMonthsAgo.setMonth(fourteenMonthsAgo.getMonth() - 14);
+
+  const fetches = [
+    // Upcoming events with signups (limit 5)
     sb.from('events')
       .select('id, title, event_date, start_time, end_time, max_signups, signups(id, player_id, is_reserve)')
       .gte('event_date', today)
       .order('event_date').order('start_time')
-      .limit(1).maybeSingle(),
+      .limit(5),
+    // My HC just before 12-month window (for trend)
+    sb.from('handicap_history')
+      .select('handicap_value')
+      .eq('player_id', me.id)
+      .lt('changed_at', twelveMonthsAgo.toISOString())
+      .order('changed_at', { ascending: false })
+      .limit(1),
+    // All active players with current HC (for section stats)
     sb.from('players')
       .select('id, current_handicap')
       .eq('active', true)
       .not('current_handicap', 'is', null)
       .order('current_handicap'),
+    // All players' HC history last 14 months (for improved/worsened)
     sb.from('handicap_history')
-      .select('handicap_value, changed_at')
-      .eq('player_id', ST.player.id)
-      .order('changed_at', { ascending: false })
-      .limit(2),
+      .select('player_id, handicap_value, changed_at')
+      .gte('changed_at', fourteenMonthsAgo.toISOString())
+      .order('changed_at', { ascending: true }),
+    // Latest HoF winner
     sb.from('hof_results')
       .select('event_month, winner_name, winner_hc')
       .eq('not_played', false)
       .order('event_month', { ascending: false })
-      .limit(1).maybeSingle()
-  ]);
+      .limit(1).maybeSingle(),
+  ];
 
-  // Rank
-  const ranked = allPlayers || [];
-  const myRank = ranked.findIndex(p => p.id === ST.player.id) + 1;
-
-  // HC delta
-  let hcDelta = null;
-  if (recentHc && recentHc.length >= 2) {
-    hcDelta = recentHc[0].handicap_value - recentHc[1].handicap_value;
+  if (me.is_admin) {
+    fetches.push(
+      sb.from('players').select('*', { count: 'exact', head: true }).eq('pending', true)
+    );
   }
 
-  renderHome(nextEvent, myRank, ranked.length, hcDelta, latestHof);
+  const results = await Promise.all(fetches);
+  const [eventsRes, myHcRes, playersRes, histRes, hofRes] = results;
+  const pendingCount = me.is_admin ? (results[5]?.count || 0) : 0;
+
+  // HC trend
+  const currentHc = me.current_handicap;
+  let hcTrend = null;
+  if (myHcRes.data?.length && currentHc != null) {
+    const delta = currentHc - myHcRes.data[0].handicap_value;
+    if      (delta < 0) hcTrend = { dir: 'improved', delta: Math.abs(delta) };
+    else if (delta > 0) hcTrend = { dir: 'worsened', delta };
+    else                hcTrend = { dir: 'flat' };
+  }
+
+  // Section stats: improved / worsened over 12 months
+  const histMap = {};
+  for (const h of (histRes.data || [])) {
+    const mk = monthKey(new Date(h.changed_at));
+    if (!histMap[h.player_id]) histMap[h.player_id] = [];
+    histMap[h.player_id].push({ mk, v: h.handicap_value });
+  }
+  const startM = monthKey(new Date(twelveMonthsAgo.getFullYear(), twelveMonthsAgo.getMonth(), 1));
+  function homeHcAt(pid, mk) {
+    const arr = histMap[pid]; if (!arr) return null;
+    for (let i = arr.length - 1; i >= 0; i--) { if (arr[i].mk <= mk) return arr[i].v; }
+    return null;
+  }
+  let improved = 0, worsened = 0;
+  const allPlayers = playersRes.data || [];
+  for (const p of allPlayers) {
+    const s = homeHcAt(p.id, startM), e = p.current_handicap;
+    if (s == null || e == null) continue;
+    if (e < s) improved++; else if (e > s) worsened++;
+  }
+
+  renderHome(eventsRes.data || [], hcTrend, { players: allPlayers.length, improved, worsened }, hofRes.data, pendingCount);
 }
 
-function renderHome(nextEvent, myRank, totalPlayers, hcDelta, latestHof) {
+function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCount) {
   const me = ST.player;
   const hc = me.current_handicap;
 
-  // HC delta badge
-  let deltaBadge = '';
-  if (hcDelta !== null) {
-    const improved = hcDelta < 0;
-    const sign = improved ? '▲' : '▼';
-    const cls  = improved ? 'home-delta-up' : 'home-delta-dn';
-    deltaBadge = `<span class="${cls}">${sign} ${Math.abs(hcDelta)}</span>`;
+  // ── Card 1: Me ───────────────────────────────────────────────────────────
+  let commentHtml = '';
+  if (hcTrend) {
+    if      (hcTrend.dir === 'improved') commentHtml = `<span class="myhc-trend improved">▼ ${hcTrend.delta} over 12 months</span>`;
+    else if (hcTrend.dir === 'worsened') commentHtml = `<span class="myhc-trend worsened">▲ +${hcTrend.delta} over 12 months</span>`;
+    else                                 commentHtml = `<span class="myhc-trend flat">— Unchanged over 12 months</span>`;
   }
-
-  // Me card
   const meCard = `
-    <div class="home-card home-card-me" onclick="navTo('ladder',()=>openPlayerHcModal('${me.id}','${esc(me.first_name + ' ' + me.last_name)}'))">
-      <div class="home-card-label">Me</div>
-      <div class="home-card-name">${esc(me.first_name)} ${esc(me.last_name)}</div>
-      <div class="home-card-hc">
-        HC <strong>${hc ?? '–'}</strong>
-        ${deltaBadge}
+    <div class="home-card home-card-me"
+        onclick="openPlayerHcModal('${me.id}','${esc(me.first_name + ' ' + me.last_name)}')">
+      <div class="myhc-header">
+        <div>
+          <div class="myhc-name">${esc(me.first_name)} ${esc(me.last_name)}</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:2px">My Handicap</div>
+        </div>
+        <div style="text-align:right">
+          <div class="myhc-big">${hc ?? '–'}</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.55)">handicap</div>
+        </div>
       </div>
-      ${myRank ? `<div class="home-card-rank">Rank <strong>#${myRank}</strong> of ${totalPlayers}</div>` : ''}
-      <div class="home-card-link">View HC history →</div>
+      ${commentHtml ? `<div style="margin-top:8px">${commentHtml}</div>` : ''}
+      <button class="myhc-history-btn"
+        onclick="event.stopPropagation();openPlayerHcModal('${me.id}','${esc(me.first_name + ' ' + me.last_name)}')">
+        View full history →
+      </button>
     </div>`;
 
-  // Sign-Up card
-  let signupCard;
-  if (nextEvent) {
-    const ev        = nextEvent;
-    const signups   = ev.signups || [];
-    const confirmed = signups.filter(s => !s.is_reserve);
-    const count     = confirmed.length;
-    const full      = ev.max_signups && count >= ev.max_signups;
-    const mySignup  = signups.find(s => s.player_id === me.id);
-    const countStr  = ev.max_signups ? `${count}/${ev.max_signups}` : `${count} signed up`;
-
-    const actionBtn = mySignup
-      ? `<span class="home-signed-in">✓ You're in</span>`
-      : (full
-          ? `<span class="home-full-badge">Full</span>`
-          : `<button class="home-join-btn" onclick="event.stopPropagation();homeJoin('${ev.id}')">Join</button>`);
-
-    signupCard = `
-      <div class="home-card home-card-signup" onclick="navTo('schedule')">
-        <div class="home-card-label">Next Session</div>
-        <div class="home-card-main">${esc(ev.title)}</div>
-        <div class="home-card-sub">${fmtDate(ev.event_date)}</div>
-        <div class="home-card-sub">${ev.start_time} – ${ev.end_time}</div>
-        <div class="home-card-count${full ? ' full' : ''}">${countStr}</div>
-        <div class="home-card-action">${actionBtn}</div>
-        <div class="home-card-link">View all sessions →</div>
+  // ── Card 2: Sign-Up ──────────────────────────────────────────────────────
+  let sessRows = '';
+  if (upcomingEvents.length) {
+    sessRows = upcomingEvents.slice(0, 4).map(ev => {
+      const confirmed = (ev.signups || []).filter(s => !s.is_reserve);
+      const mySignup  = (ev.signups || []).find(s => s.player_id === me.id);
+      const countStr  = ev.max_signups ? `${confirmed.length}/${ev.max_signups}` : `${confirmed.length}`;
+      const statusEl  = mySignup ? ' <span class="home-sess-in">✓</span>' : '';
+      return `<div class="home-sess-row">
+        <span class="home-sess-date">${fmtDate(ev.event_date)}</span>
+        <span class="home-sess-title">${esc(ev.title)}</span>
+        <span class="home-sess-right">${countStr}${statusEl}</span>
       </div>`;
+    }).join('');
   } else {
-    signupCard = `
-      <div class="home-card home-card-signup" onclick="navTo('schedule')">
-        <div class="home-card-label">Sign-Up</div>
-        <div class="home-card-sub" style="margin-top:8px;color:#aaa">No upcoming sessions</div>
-        <div class="home-card-link">View schedule →</div>
-      </div>`;
+    sessRows = '<div class="home-sess-empty">No upcoming sessions</div>';
   }
+  const signupCard = `
+    <div class="home-card home-card-signup" onclick="navTo('schedule')">
+      <div class="home-card-label">Sign-Up</div>
+      <div class="home-sess-list">${sessRows}</div>
+      <div class="home-card-link">View all sessions →</div>
+    </div>`;
 
-  // Handicaps card
+  // ── Card 3: Handicaps ────────────────────────────────────────────────────
   const ladderCard = `
     <div class="home-card home-card-ladder" onclick="navTo('ladder')">
       <div class="home-card-label">Handicaps</div>
-      <div class="home-card-main">#${myRank || '–'} <span style="font-size:14px;font-weight:400">of ${totalPlayers}</span></div>
-      <div class="home-card-sub">Your HC: <strong>${hc ?? '–'}</strong></div>
-      <div class="home-card-link">View ladder →</div>
+      <div class="sec-stat-row" style="margin-top:8px">
+        <div class="sec-stat">
+          <div class="sec-stat-val">${sectionStats.players}</div>
+          <div class="sec-stat-lbl">Players</div>
+        </div>
+        <div class="sec-stat">
+          <div class="sec-stat-val sec-improved">↓${sectionStats.improved}</div>
+          <div class="sec-stat-lbl">Improved<br><span style="font-size:9px;font-weight:400">12m</span></div>
+        </div>
+        <div class="sec-stat">
+          <div class="sec-stat-val sec-worsened">↑${sectionStats.worsened}</div>
+          <div class="sec-stat-lbl">Worsened<br><span style="font-size:9px;font-weight:400">12m</span></div>
+        </div>
+      </div>
+      <div class="home-card-link" style="margin-top:8px">View ladder →</div>
     </div>`;
 
-  // HoF card
-  let hofCard;
-  if (latestHof) {
-    const hcStr = latestHof.winner_hc != null ? ` (${latestHof.winner_hc})` : '';
-    hofCard = `
-      <div class="home-card home-card-hof" onclick="navTo('hof')">
-        <div class="home-card-label">Hall of Fame</div>
-        <div class="home-card-sub">${fmtHofMonth(latestHof.event_month)}</div>
-        <div class="home-card-main">${esc(latestHof.winner_name || '–')}</div>
-        <div class="home-card-sub" style="font-size:12px;color:#888">Champion${hcStr}</div>
-        <div class="home-card-link">View HoF →</div>
-      </div>`;
-  } else {
-    hofCard = `
-      <div class="home-card home-card-hof" onclick="navTo('hof')">
-        <div class="home-card-label">Hall of Fame</div>
-        <div class="home-card-sub" style="color:#aaa;margin-top:8px">No records yet</div>
-        <div class="home-card-link">View HoF →</div>
-      </div>`;
-  }
+  // ── Card 4: HoF ──────────────────────────────────────────────────────────
+  const hofFullClass = me.is_admin ? '' : ' home-card-hof-full';
+  const hofInner = latestHof
+    ? `<div class="home-hof-trophy">🏆</div>
+       <div class="home-card-sub">${fmtHofMonth(latestHof.event_month)}</div>
+       <div class="home-card-main" style="font-size:15px">${esc(latestHof.winner_name || '–')}</div>`
+    : `<div class="home-hof-trophy">🏆</div>
+       <div class="home-card-sub" style="color:#aaa">No records yet</div>`;
+  const hofCard = `
+    <div class="home-card home-card-hof${hofFullClass}" onclick="navTo('hof')">
+      <div class="home-card-label">Hall of Fame</div>
+      ${hofInner}
+      <div class="home-card-link">View HoF →</div>
+    </div>`;
 
-  document.getElementById('home-grid').innerHTML = meCard + signupCard + ladderCard + hofCard;
+  // ── Card 5: Admin (admin only) ────────────────────────────────────────────
+  const adminCard = me.is_admin ? `
+    <div class="home-card home-card-admin" onclick="goToAdmin()">
+      <div class="home-card-label">Admin</div>
+      <div id="home-admin-pending" class="home-admin-badge${pendingCount > 0 ? '' : ' clear'}">
+        ${pendingCount > 0 ? `${pendingCount} pending` : 'All clear'}
+      </div>
+      <div class="home-card-link" style="margin-top:auto">Manage →</div>
+    </div>` : '';
+
+  document.getElementById('home-grid').innerHTML = meCard + signupCard + ladderCard + hofCard + adminCard;
 }
 
 function navTo(view, callback) {
-  document.querySelectorAll('.nav-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.view === view);
-  });
   if (view === 'schedule') { showSection('view-schedule'); loadSchedule().then(() => callback && callback()); }
   if (view === 'ladder')   { showSection('view-ladder');   loadLadder().then(() => callback && callback()); }
   if (view === 'hof')      { showSection('view-hof');      loadHof().then(() => callback && callback()); }
+  if (view === 'admin')    { showSection('view-admin');    loadAdminTab('tab-players'); callback && callback(); }
 }
 
 async function homeJoin(eventId) {

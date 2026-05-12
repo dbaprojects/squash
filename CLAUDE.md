@@ -5,7 +5,7 @@
 - **Owner:** David Barkess — personal project, unrelated to SAP/DealSensAI work
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `C:\Users\I061437\OneDrive\Projects\Squash`
-- **Current version:** v4.1
+- **Current version:** v4.3
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -187,7 +187,22 @@ reportsFilter  // 'last12' | 'last2y' | 'last3y' | 'all' | 'YYYY'
 
 ---
 
-## Stable filter bar pattern
+## Navigation model (v4.3+)
+
+No nav tabs. The home screen is the hub; users navigate via home cards.
+
+- **Header logo** (`#header-home-btn`) — always clickable, calls `goHome()`
+- **`← Home` button** (`#btn-back-home`) — visible on all non-home sections
+- `showSection(id)` — shows the given section, toggles `#btn-back-home` visibility
+- `goHome()` — calls `showSection('view-home') + loadHome()`
+- `goToAdmin()` — admin-guarded, calls `showSection('view-admin') + loadAdminTab('tab-players')`
+- `navTo(view, callback)` — navigate from home cards to schedule/ladder/hof/admin
+- Sign-out + user-switch: now in the home footer (`#home-footer`), not in a hamburger menu
+- `loadUserSwitcher()` populates `#home-switcher-dropdown` and shows `#home-user-switcher-wrap`
+
+---
+
+
 
 Used in Ladder and HoF: a `#xxx-filter-bar` div is inserted adjacent to the main content div. It's rebuilt on fresh data load but NOT rebuilt on subsequent filter-change renders — preserves input focus. For HoF specifically, `loadHof()` removes the old filter bar before re-creating it (ensures correct DOM position after nav).
 
@@ -255,3 +270,5 @@ SUPABASE_SERVICE_ROLE_KEY=... node db/reseed.js
 | v3.9 | Ladder overhaul: HC chart (inverted y-axis, -35 to +6), movers, distribution, last-12m default year selector, green/orange HC history rows; removed sparklines |
 | v4.0 | Hall of Fame: `hof_results` table, load script from hof.xlsx (53 records), HoF nav tab, public view (leaderboard + year table), admin CRUD |
 | v4.1 | HoF: name/status filters, Most #2's leaderboard, condensed HC-in-brackets layout, edit form fixed (showFormModal), name matching warning, super-admin-only CRUD; chip × delete for admin; player modal signup count (12m); Reports: period filter + Most Frequent Players attendance table |
+| v4.2 | HoF autocomplete + HC auto-fill in edit form; RLS fix for anon-key DML (`db/fix-rls-anon.sql`); home dashboard first pass |
+| v4.3 | Home dashboard redesign: nav tabs + hamburger removed; logo navigates home; `← Home` back button; 5 cards (Me/navy/HC trend, Sign-Up/session list, Handicaps/section stats, HoF/trophy, Admin/pending); sign-out + user-switch in home footer |
