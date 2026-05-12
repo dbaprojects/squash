@@ -31,8 +31,10 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-y: auto;
   background: linear-gradient(160deg, #1B2A6B 0%, #0D1640 100%);
+  padding: 24px 16px;
 }
 
 .login-box {
@@ -46,13 +48,10 @@ body {
 }
 
 .login-logo {
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
-  object-fit: cover;
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
   margin-bottom: 16px;
-  border: 3px solid var(--bc-gold);
-  box-shadow: 0 2px 14px rgba(196,147,42,0.3);
 }
 
 .login-box h1 { font-size: 22px; font-weight: 700; color: var(--bc-navy); margin-bottom: 2px; }
@@ -188,11 +187,9 @@ header {
 }
 
 .header-logo {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 1.5px solid rgba(196,147,42,0.6);
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
   flex-shrink: 0;
 }
 
@@ -817,11 +814,14 @@ nav { display: flex; gap: 4px; flex: 1; }
 #players-list, #ladder-list, #admin-event-list, #templates-list { overflow-x: auto; }
 
 @media (max-width: 640px) {
-  /* Login / onboard box — shrink padding, add margin so it doesn't touch edges */
+  /* Login / onboard box */
   .login-box {
-    padding: 28px 20px;
-    margin: 16px;
-    max-width: none;
+    padding: 24px 18px;
+  }
+
+  /* Prevent iOS auto-zoom on input focus (requires font-size >= 16px) */
+  input, select, textarea {
+    font-size: 16px !important;
   }
 
   /* Header: wrap nav to second row */

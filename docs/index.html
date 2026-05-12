@@ -23,7 +23,8 @@
     <p>Enter your phone number to sign in.</p>
     <div class="phone-input-row" style="margin-bottom:10px">
       <select id="login-dialcode" class="phone-dial-select"></select>
-      <input type="tel" id="login-phone" class="phone-local" placeholder="9123 4567" autocomplete="tel">
+      <input type="tel" id="login-phone" class="phone-local" placeholder="9123 4567"
+        inputmode="numeric" autocomplete="off">
     </div>
     <div id="login-phone-error" class="error-msg" style="margin-bottom:8px"></div>
     <button class="btn-google-full" onclick="submitLoginPhone()">Sign In</button>
