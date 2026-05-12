@@ -1084,7 +1084,7 @@ async function loadHof() {
 
   const [{ data, error }, { data: playerList }] = await Promise.all([
     sb.from('hof_results').select('*').order('event_month', { ascending: false }),
-    sb.from('players').select('first_name, last_name, active')
+    sb.from('players').select('id, first_name, last_name, active')
   ]);
   if (error) { console.error(error); return; }
   hofResults = data || [];
