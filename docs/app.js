@@ -187,6 +187,68 @@ function prefillRegForm(phone) {
   document.getElementById('ob-reg-error').textContent          = '';
 }
 
+// ── Fuzzy name matching ───────────────────────────────────────────────────
+const NICKNAMES = {
+  dick: 'richard', dicky: 'richard', ricky: 'richard', rich: 'richard', rick: 'richard', richie: 'richard',
+  bob: 'robert', rob: 'robert', bobby: 'robert', robbie: 'robert',
+  bill: 'william', will: 'william', billy: 'william', willy: 'william', liam: 'william',
+  jim: 'james', jimmy: 'james', jamie: 'james',
+  mike: 'michael', mick: 'michael', mickey: 'michael', mikey: 'michael',
+  dave: 'david', davy: 'david',
+  steve: 'stephen', steph: 'stephen', stevie: 'stephen',
+  tom: 'thomas', tommy: 'thomas',
+  chris: 'christopher', kit: 'christopher',
+  andy: 'andrew', drew: 'andrew',
+  tony: 'anthony', ant: 'anthony',
+  nick: 'nicholas', nic: 'nicholas',
+  ed: 'edward', ted: 'edward', ned: 'edward', eddie: 'edward',
+  ben: 'benjamin', benny: 'benjamin',
+  alex: 'alexander', al: 'alexander',
+  dan: 'daniel', danny: 'daniel',
+  matt: 'matthew', matty: 'matthew',
+  pete: 'peter', petey: 'peter',
+  sam: 'samuel', sammy: 'samuel',
+  tim: 'timothy', timmy: 'timothy',
+  jon: 'john', johnny: 'john', jack: 'john',
+  charlie: 'charles', chuck: 'charles',
+  harry: 'henry', hal: 'henry', hank: 'henry',
+  fred: 'frederick', freddie: 'frederick',
+  joe: 'joseph', joey: 'joseph',
+  ken: 'kenneth', kenny: 'kenneth',
+  ron: 'ronald', ronnie: 'ronald',
+  terry: 'terence', tel: 'terence',
+  phil: 'philip',
+  sue: 'susan', susie: 'susan',
+  liz: 'elizabeth', beth: 'elizabeth', betty: 'elizabeth', lisa: 'elizabeth',
+  kate: 'katherine', kathy: 'katherine', katie: 'katherine',
+  jen: 'jennifer', jenny: 'jennifer',
+  meg: 'margaret', maggie: 'margaret', peggy: 'margaret',
+  vicky: 'victoria',
+  pat: 'patricia', trish: 'patricia',
+};
+
+function levenshtein(a, b) {
+  const m = a.length, n = b.length;
+  const dp = Array.from({ length: m + 1 }, (_, i) => Array.from({ length: n + 1 }, (_, j) => i || j));
+  for (let i = 1; i <= m; i++)
+    for (let j = 1; j <= n; j++)
+      dp[i][j] = a[i-1] === b[j-1] ? dp[i-1][j-1] : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
+  return dp[m][n];
+}
+
+function firstNameMatch(a, b) {
+  a = a.toLowerCase().replace(/[^a-z]/g, '');
+  b = b.toLowerCase().replace(/[^a-z]/g, '');
+  if (a === b) return true;
+  if (a.length >= 3 && b.startsWith(a)) return true;
+  if (b.length >= 3 && a.startsWith(b)) return true;
+  const ca = NICKNAMES[a] || a, cb = NICKNAMES[b] || b;
+  if (ca === cb || ca === b || cb === a) return true;
+  const maxLen = Math.max(a.length, b.length);
+  if (maxLen >= 4 && levenshtein(a, b) <= Math.floor(maxLen / 4)) return true;
+  return false;
+}
+
 async function submitRegistration() {
   const first = document.getElementById('ob-reg-first').value.trim();
   const last  = document.getElementById('ob-reg-last').value.trim();
@@ -195,12 +257,12 @@ async function submitRegistration() {
   errEl.textContent = '';
   if (!first || !last) { errEl.textContent = 'Please enter your full name.'; return; }
 
-  // Check if name matches an existing active player
+  // Fuzzy name match against existing active players
   const { data: existing } = await sb.from('players')
     .select('*').eq('active', true).eq('pending', false);
-  const norm = s => s.toLowerCase().replace(/[^a-z]/g, '');
+  const normStr = s => s.toLowerCase().replace(/[^a-z]/g, '');
   const candidates = (existing || []).filter(p =>
-    norm(`${p.first_name}${p.last_name}`) === norm(`${first}${last}`)
+    normStr(p.last_name) === normStr(last) && firstNameMatch(p.first_name, first)
   );
 
   if (candidates.length === 1) {
