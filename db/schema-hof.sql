@@ -24,4 +24,9 @@ CREATE POLICY "hof_select" ON hof_results
 
 CREATE POLICY "hof_admin_all" ON hof_results
   FOR ALL TO authenticated
-  USING (is_admin_user()) WITH CHECK (is_admin_user());
+  USING (
+    COALESCE((SELECT is_admin FROM players WHERE email = auth.email() AND active = TRUE LIMIT 1), FALSE)
+  )
+  WITH CHECK (
+    COALESCE((SELECT is_admin FROM players WHERE email = auth.email() AND active = TRUE LIMIT 1), FALSE)
+  );
