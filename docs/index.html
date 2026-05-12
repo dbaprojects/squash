@@ -22,7 +22,8 @@
     <p class="login-section">Squash Section</p>
     <p>Enter your phone number to sign in.</p>
     <div class="phone-input-row" style="margin-bottom:10px">
-      <select id="login-dialcode" class="phone-dial-select"></select>
+      <button type="button" class="dial-code-btn" id="login-dialcode-btn" onclick="openCountryPicker('login-dialcode')">+65 Singapore</button>
+      <input type="hidden" id="login-dialcode" value="65">
       <input type="tel" id="login-phone" class="phone-local" placeholder="9123 4567"
         inputmode="numeric" autocomplete="off">
     </div>
@@ -193,6 +194,17 @@
       <button class="modal-close" id="form-close">✕</button>
     </div>
     <div id="form-body"></div>
+  </div>
+</div>
+
+<!-- ── Country picker ──────────────────────────────────────────────────────── -->
+<div id="country-picker" class="country-picker-overlay hidden" onclick="closeCountryPickerOutside(event)">
+  <div class="country-picker-box">
+    <div class="country-picker-header">
+      <input type="text" id="country-picker-search" placeholder="Search country…" autocomplete="off" inputmode="text">
+      <button class="country-picker-cancel" onclick="closeCountryPicker()">Cancel</button>
+    </div>
+    <div id="country-picker-list" class="country-picker-list"></div>
   </div>
 </div>
 

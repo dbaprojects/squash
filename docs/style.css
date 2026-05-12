@@ -759,16 +759,101 @@ nav { display: flex; gap: 4px; flex: 1; }
 .btn-icon-sm.btn-icon-danger:hover { background: var(--bc-red); color: #fff; }
 
 /* Phone input in forms */
-.phone-input-row { display: flex; gap: 6px; }
-.phone-dial-select {
-  width: 155px;
-  flex-shrink: 0;
-  padding: 8px 8px;
+.phone-input-row { display: flex; gap: 6px; align-items: stretch; }
+
+.dial-code-btn {
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  background: #f8f9fd;
   border: 1.5px solid var(--bc-border);
   border-radius: 6px;
-  font-size: 13px;
+  font-size: 14px;
+  color: var(--bc-text);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-width: 90px;
+  gap: 4px;
 }
-.phone-local { flex: 1; min-width: 0; }
+.dial-code-btn:hover  { border-color: var(--bc-navy); background: var(--bc-navy-lt); }
+.dial-code-btn:focus  { outline: none; border-color: var(--bc-navy); }
+
+.phone-local {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1.5px solid var(--bc-border);
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.15s;
+}
+.phone-local:focus { outline: none; border-color: var(--bc-navy); }
+
+/* ── Country picker ─────────────────────────────────────────────────────── */
+.country-picker-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10,20,60,0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.country-picker-box {
+  background: #fff;
+  width: 100%;
+  max-width: 480px;
+  border-radius: 14px 14px 0 0;
+  max-height: 75vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 -4px 30px rgba(0,0,0,0.2);
+}
+.country-picker-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--bc-border);
+  flex-shrink: 0;
+}
+.country-picker-header input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1.5px solid var(--bc-border);
+  border-radius: 8px;
+  font-size: 16px;
+}
+.country-picker-header input:focus { outline: none; border-color: var(--bc-navy); }
+.country-picker-cancel {
+  background: none;
+  border: none;
+  color: var(--bc-navy);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 6px;
+  flex-shrink: 0;
+}
+.country-picker-list { overflow-y: auto; flex: 1; -webkit-overflow-scrolling: touch; }
+.country-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 13px 16px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid #f0f2f8;
+  text-align: left;
+  cursor: pointer;
+  font-size: 15px;
+  color: var(--bc-text);
+}
+.country-option:last-child { border-bottom: none; }
+.country-option:active { background: var(--bc-navy-lt); }
+.country-code { color: var(--bc-text-dim); font-size: 13px; }
 
 /* ── PWA install banner ─────────────────────────────────────────────────── */
 .pwa-banner {
@@ -879,11 +964,11 @@ nav { display: flex; gap: 4px; flex: 1; }
   .reports-grid { grid-template-columns: 1fr; }
   .stat-num { font-size: 22px; }
 
-  /* Modals — full width, slide from bottom feel */
-  .modal-overlay { align-items: flex-end; padding: 0; }
+  /* Modals — centred, near top on mobile */
+  .modal-overlay { align-items: flex-start; padding: 16px; padding-top: 60px; }
   .modal {
-    border-radius: 14px 14px 0 0;
-    max-height: 92vh;
+    border-radius: 12px;
+    max-height: 85vh;
     max-width: 100%;
   }
 
@@ -893,5 +978,5 @@ nav { display: flex; gap: 4px; flex: 1; }
   .my-hc-value { font-size: 24px; }
 
   /* Phone input */
-  .phone-dial-select { width: 110px; font-size: 12px; }
+  .dial-code-btn { font-size: 13px; min-width: 80px; }
 }

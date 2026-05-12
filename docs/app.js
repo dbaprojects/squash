@@ -85,7 +85,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupModalClose();
   setupUserSwitcher();
 
-  document.getElementById('login-dialcode').innerHTML = dialCodeOptions();
   document.getElementById('login-phone').addEventListener('keydown', e => {
     if (e.key === 'Enter') submitLoginPhone();
   });
@@ -701,6 +700,60 @@ function dialCodeOptions(selected = '65') {
   ).join('');
 }
 
+function dialCodeBtnHtml(id, selectedCode = '65') {
+  const dc = DIAL_CODES.find(d => d.code === selectedCode) || DIAL_CODES[0];
+  return `<button type="button" class="dial-code-btn" id="${id}-btn"
+    onclick="openCountryPicker('${id}')">+${dc.code} ${esc(dc.name)}</button>
+    <input type="hidden" id="${id}" value="${dc.code}">`;
+}
+
+// ── Country picker ────────────────────────────────────────────────────────
+let countryPickerTarget = null;
+
+function openCountryPicker(targetId) {
+  countryPickerTarget = targetId;
+  const overlay = document.getElementById('country-picker');
+  const search  = document.getElementById('country-picker-search');
+  search.value  = '';
+  renderCountryList('');
+  overlay.classList.remove('hidden');
+  setTimeout(() => search.focus(), 80);
+  document.getElementById('country-picker-search').addEventListener('input', e => {
+    renderCountryList(e.target.value);
+  }, { once: true });
+  document.getElementById('country-picker-search').oninput = e => renderCountryList(e.target.value);
+}
+
+function closeCountryPicker() {
+  document.getElementById('country-picker').classList.add('hidden');
+  countryPickerTarget = null;
+}
+
+function closeCountryPickerOutside(e) {
+  if (e.target === document.getElementById('country-picker')) closeCountryPicker();
+}
+
+function selectCountry(code, name) {
+  if (!countryPickerTarget) return;
+  const hidden = document.getElementById(countryPickerTarget);
+  const btn    = document.getElementById(countryPickerTarget + '-btn');
+  if (hidden) hidden.value = code;
+  if (btn)    btn.textContent = `+${code} ${name}`;
+  closeCountryPicker();
+}
+
+function renderCountryList(q) {
+  const lq = q.toLowerCase();
+  const filtered = q
+    ? DIAL_CODES.filter(d => d.name.toLowerCase().includes(lq) || d.code.startsWith(q.replace('+','')))
+    : DIAL_CODES;
+  document.getElementById('country-picker-list').innerHTML = filtered.map(d =>
+    `<button class="country-option" onclick="selectCountry('${d.code}','${esc(d.name)}')">
+      <span>${esc(d.name)}</span><span class="country-code">+${d.code}</span>
+    </button>`
+  ).join('') || '<p style="padding:16px;color:#999">No results</p>';
+}
+
 function parsePhone(stored) {
   if (!stored) return { dialCode: '65', localNumber: '' };
   const m = stored.match(/^\+(\d+)\s*(.*)$/);
@@ -810,8 +863,8 @@ function openAddPlayerForm() {
     <div class="form-group">
       <label>Phone</label>
       <div class="phone-input-row">
-        <select id="fp-dialcode" class="phone-dial-select">${dialCodeOptions()}</select>
-        <input type="tel" id="fp-phone" class="phone-local" placeholder="9123 4567" autocomplete="off">
+        ${dialCodeBtnHtml('fp-dialcode')}
+        <input type="tel" id="fp-phone" class="phone-local" placeholder="9123 4567" autocomplete="off" inputmode="numeric">
       </div>
     </div>
     <div class="form-group"><label>Handicap</label><input type="number" id="fp-hcap" min="-35" max="10" step="0.5"></div>
@@ -853,8 +906,8 @@ function openEditPlayerForm(id) {
     <div class="form-group">
       <label>Phone</label>
       <div class="phone-input-row">
-        <select id="ep-dialcode" class="phone-dial-select">${dialCodeOptions(ph.dialCode)}</select>
-        <input type="tel" id="ep-phone" class="phone-local" value="${esc(ph.localNumber)}" placeholder="9123 4567">
+        ${dialCodeBtnHtml('ep-dialcode', ph.dialCode)}
+        <input type="tel" id="ep-phone" class="phone-local" value="${esc(ph.localNumber)}" placeholder="9123 4567" inputmode="numeric">
       </div>
     </div>
     <div class="form-group"><label><input type="checkbox" id="ep-admin" ${p.is_admin ? 'checked' : ''}> Admin</label></div>
