@@ -20,12 +20,69 @@
     <img src="bclogo.jpg" class="login-logo" alt="The British Club Singapore">
     <h1>British Club</h1>
     <p class="login-section">Squash Section</p>
-    <p>Enter your email to sign in</p>
-    <form id="login-form">
-      <input type="email" id="login-email" placeholder="your@email.com" required autocomplete="email">
-      <button type="submit">Sign In</button>
-    </form>
+    <p>Sign in to access the club schedule.</p>
+    <button id="btn-google-login" class="btn-google">
+      <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/><path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z" fill="#EA4335"/></svg>
+      Sign in with Google
+    </button>
     <div id="login-error" class="error-msg"></div>
+  </div>
+</div>
+
+<!-- ── Onboarding (post-auth, pre-app) ──────────────────────────────────── -->
+<div id="view-onboard" class="view hidden">
+  <div class="login-box">
+    <img src="bclogo.jpg" class="login-logo" alt="The British Club Singapore">
+    <h1>British Club</h1>
+    <p class="login-section">Squash Section</p>
+
+    <!-- Step: phone entry -->
+    <div id="onboard-phone">
+      <p style="margin-bottom:16px">Enter your phone number to find your account.</p>
+      <div class="phone-input-row" style="margin-bottom:10px">
+        <select id="ob-dialcode" class="phone-dial-select"></select>
+        <input type="tel" id="ob-phone" class="phone-local" placeholder="9123 4567" autocomplete="tel">
+      </div>
+      <div id="ob-phone-error" class="error-msg" style="margin-bottom:8px"></div>
+      <button class="btn-google-full" onclick="submitOnboardPhone()">Continue</button>
+    </div>
+
+    <!-- Step: confirm match -->
+    <div id="onboard-confirm" class="hidden">
+      <p style="margin-bottom:14px">We found a matching account. Is this you?</p>
+      <div class="ob-match-card">
+        <div class="ob-match-name" id="ob-confirm-name"></div>
+        <div class="ob-match-meta" id="ob-confirm-phone"></div>
+      </div>
+      <div class="btn-row" style="margin-top:14px">
+        <button class="btn-primary" id="ob-confirm-yes" style="flex:1;padding:10px">Yes, that's me</button>
+        <button class="btn-secondary" id="ob-confirm-no" style="flex:1;padding:10px">Not me</button>
+      </div>
+    </div>
+
+    <!-- Step: register -->
+    <div id="onboard-register" class="hidden">
+      <p style="margin-bottom:14px">You're not in our system yet. Confirm your details and the admin will be notified.</p>
+      <div class="form-group"><label>First name</label><input type="text" id="ob-reg-first" autocomplete="given-name"></div>
+      <div class="form-group"><label>Last name</label><input type="text" id="ob-reg-last" autocomplete="family-name"></div>
+      <div class="form-group">
+        <label>Phone</label>
+        <div class="ob-match-card" id="ob-reg-phone-display" style="text-align:left;padding:8px 12px"></div>
+        <input type="hidden" id="ob-reg-phone-stored">
+      </div>
+      <div id="ob-reg-error" class="error-msg" style="margin-bottom:8px"></div>
+      <button class="btn-google-full" onclick="submitRegistration()">Submit Registration</button>
+      <p style="font-size:12px;color:#999;margin-top:10px">Your request will be reviewed by the club admin.</p>
+    </div>
+
+    <!-- Step: pending approval -->
+    <div id="onboard-pending" class="hidden">
+      <div class="ob-pending-icon"></div>
+      <h2 style="font-size:18px;color:var(--bc-navy);margin-bottom:8px">Awaiting Approval</h2>
+      <p>Your registration has been submitted and is awaiting admin approval.</p>
+      <p style="font-size:13px;color:#999;margin-top:8px">You'll be able to access the app once the admin approves your account.</p>
+      <button class="btn-secondary" style="margin-top:16px;width:100%;padding:10px" onclick="signOutAndReset()">Sign out</button>
+    </div>
   </div>
 </div>
 
@@ -42,7 +99,7 @@
     </div>
     <nav>
       <button class="nav-btn active" data-view="schedule">Schedule</button>
-      <button class="nav-btn admin-only hidden" data-view="admin">Admin ▾</button>
+      <button class="nav-btn admin-only hidden" data-view="admin">Admin <span id="admin-badge" class="admin-badge hidden"></span>▾</button>
     </nav>
     <div class="header-right">
       <span id="header-name"></span>
