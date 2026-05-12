@@ -257,16 +257,25 @@ async function submitRegistration() {
   errEl.textContent = '';
   if (!first || !last) { errEl.textContent = 'Please enter your full name.'; return; }
 
-  // Fuzzy name match against existing active players
   const { data: existing } = await sb.from('players')
     .select('*').eq('active', true).eq('pending', false);
   const normStr = s => s.toLowerCase().replace(/[^a-z]/g, '');
-  const candidates = (existing || []).filter(p =>
+
+  // Tier 1: last name exact + first name fuzzy
+  const fuzzyMatches = (existing || []).filter(p =>
     normStr(p.last_name) === normStr(last) && firstNameMatch(p.first_name, first)
   );
 
-  if (candidates.length === 1) {
-    const found = candidates[0];
+  // Tier 2: last name exact only (surname-only match), exactly one candidate
+  const surnameOnly = fuzzyMatches.length === 0
+    ? (existing || []).filter(p => normStr(p.last_name) === normStr(last))
+    : [];
+
+  const found    = fuzzyMatches[0] || (surnameOnly.length === 1 ? surnameOnly[0] : null);
+  const isFuzzy  = fuzzyMatches.length === 1;
+  const isSurname = !isFuzzy && surnameOnly.length === 1;
+
+  if (found && (isFuzzy || isSurname)) {
     document.getElementById('ob-confirm-name').textContent  = `${found.first_name} ${found.last_name}`;
     document.getElementById('ob-confirm-phone').textContent = phone;
     document.getElementById('ob-confirm-yes').onclick = async () => {
@@ -276,6 +285,7 @@ async function submitRegistration() {
     };
     document.getElementById('ob-confirm-no').onclick = () => createPendingPlayer(first, last, phone);
     showOnboardStep('confirm');
+    if (isSurname) document.getElementById('ob-confirm-msg').textContent = 'We found someone with the same surname. Could this be you?';
     return;
   }
 
@@ -305,6 +315,7 @@ function showOnboardStep(step) {
     document.getElementById(id).classList.toggle('hidden', id !== `onboard-${step}`);
   });
   if (step === 'confirm') {
+    document.getElementById('ob-confirm-msg').textContent = 'We found a matching account. Is this you?';
     document.getElementById('ob-name-fix-form').classList.add('hidden');
     document.getElementById('ob-confirm-name-fix').classList.remove('hidden');
   }
