@@ -347,9 +347,9 @@ function loginSuccess(player) {
     el.classList.toggle('hidden', !player.is_admin);
   });
   showView('app');
-  showSection('view-schedule');
-  setNavActive('schedule');
-  loadSchedule();
+  showSection('view-home');
+  setNavActive('home');
+  loadHome();
   if (player.is_super_admin) loadUserSwitcher();
   if (player.is_admin) checkPendingBadge();
   showInstallBanner();
@@ -395,6 +395,7 @@ function setupNav() {
       document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       const v = btn.dataset.view;
+      if (v === 'home')     { showSection('view-home');     loadHome(); }
       if (v === 'schedule') { showSection('view-schedule'); loadSchedule(); }
       if (v === 'ladder')   { showSection('view-ladder');   loadLadder(); }
       if (v === 'hof')      { showSection('view-hof');      loadHof(); }
@@ -424,7 +425,7 @@ function showView(name) {
 }
 
 function showSection(id) {
-  ['view-schedule','view-event','view-ladder','view-hof','view-admin'].forEach(s => {
+  ['view-home','view-schedule','view-event','view-ladder','view-hof','view-admin'].forEach(s => {
     document.getElementById(s).classList.add('hidden');
   });
   document.getElementById(id).classList.remove('hidden');
@@ -1498,6 +1499,163 @@ async function deleteHofResult(id) {
   if (!confirm('Delete this HoF result?')) return;
   await sb.from('hof_results').delete().eq('id', id);
   loadAdminHof();
+}
+
+// ── Home dashboard ────────────────────────────────────────────────────────
+async function loadHome() {
+  document.getElementById('home-grid').innerHTML =
+    '<p style="color:#888;padding:16px 0">Loading…</p>';
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  const [
+    { data: nextEvent },
+    { data: allPlayers },
+    { data: recentHc },
+    { data: latestHof }
+  ] = await Promise.all([
+    sb.from('events')
+      .select('id, title, event_date, start_time, end_time, max_signups, signups(id, player_id, is_reserve)')
+      .gte('event_date', today)
+      .order('event_date').order('start_time')
+      .limit(1).maybeSingle(),
+    sb.from('players')
+      .select('id, current_handicap')
+      .eq('active', true)
+      .not('current_handicap', 'is', null)
+      .order('current_handicap'),
+    sb.from('handicap_history')
+      .select('handicap_value, changed_at')
+      .eq('player_id', ST.player.id)
+      .order('changed_at', { ascending: false })
+      .limit(2),
+    sb.from('hof_results')
+      .select('event_month, winner_name, winner_hc')
+      .eq('not_played', false)
+      .order('event_month', { ascending: false })
+      .limit(1).maybeSingle()
+  ]);
+
+  // Rank
+  const ranked = allPlayers || [];
+  const myRank = ranked.findIndex(p => p.id === ST.player.id) + 1;
+
+  // HC delta
+  let hcDelta = null;
+  if (recentHc && recentHc.length >= 2) {
+    hcDelta = recentHc[0].handicap_value - recentHc[1].handicap_value;
+  }
+
+  renderHome(nextEvent, myRank, ranked.length, hcDelta, latestHof);
+}
+
+function renderHome(nextEvent, myRank, totalPlayers, hcDelta, latestHof) {
+  const me = ST.player;
+  const hc = me.current_handicap;
+
+  // HC delta badge
+  let deltaBadge = '';
+  if (hcDelta !== null) {
+    const improved = hcDelta < 0;
+    const sign = improved ? '▲' : '▼';
+    const cls  = improved ? 'home-delta-up' : 'home-delta-dn';
+    deltaBadge = `<span class="${cls}">${sign} ${Math.abs(hcDelta)}</span>`;
+  }
+
+  // Me card
+  const meCard = `
+    <div class="home-card home-card-me" onclick="navTo('ladder',()=>openPlayerHcModal('${me.id}','${esc(me.first_name + ' ' + me.last_name)}'))">
+      <div class="home-card-label">Me</div>
+      <div class="home-card-name">${esc(me.first_name)} ${esc(me.last_name)}</div>
+      <div class="home-card-hc">
+        HC <strong>${hc ?? '–'}</strong>
+        ${deltaBadge}
+      </div>
+      ${myRank ? `<div class="home-card-rank">Rank <strong>#${myRank}</strong> of ${totalPlayers}</div>` : ''}
+      <div class="home-card-link">View HC history →</div>
+    </div>`;
+
+  // Sign-Up card
+  let signupCard;
+  if (nextEvent) {
+    const ev        = nextEvent;
+    const signups   = ev.signups || [];
+    const confirmed = signups.filter(s => !s.is_reserve);
+    const count     = confirmed.length;
+    const full      = ev.max_signups && count >= ev.max_signups;
+    const mySignup  = signups.find(s => s.player_id === me.id);
+    const countStr  = ev.max_signups ? `${count}/${ev.max_signups}` : `${count} signed up`;
+
+    const actionBtn = mySignup
+      ? `<span class="home-signed-in">✓ You're in</span>`
+      : (full
+          ? `<span class="home-full-badge">Full</span>`
+          : `<button class="home-join-btn" onclick="event.stopPropagation();homeJoin('${ev.id}')">Join</button>`);
+
+    signupCard = `
+      <div class="home-card home-card-signup" onclick="navTo('schedule')">
+        <div class="home-card-label">Next Session</div>
+        <div class="home-card-main">${esc(ev.title)}</div>
+        <div class="home-card-sub">${fmtDate(ev.event_date)}</div>
+        <div class="home-card-sub">${ev.start_time} – ${ev.end_time}</div>
+        <div class="home-card-count${full ? ' full' : ''}">${countStr}</div>
+        <div class="home-card-action">${actionBtn}</div>
+        <div class="home-card-link">View all sessions →</div>
+      </div>`;
+  } else {
+    signupCard = `
+      <div class="home-card home-card-signup" onclick="navTo('schedule')">
+        <div class="home-card-label">Sign-Up</div>
+        <div class="home-card-sub" style="margin-top:8px;color:#aaa">No upcoming sessions</div>
+        <div class="home-card-link">View schedule →</div>
+      </div>`;
+  }
+
+  // Handicaps card
+  const ladderCard = `
+    <div class="home-card home-card-ladder" onclick="navTo('ladder')">
+      <div class="home-card-label">Handicaps</div>
+      <div class="home-card-main">#${myRank || '–'} <span style="font-size:14px;font-weight:400">of ${totalPlayers}</span></div>
+      <div class="home-card-sub">Your HC: <strong>${hc ?? '–'}</strong></div>
+      <div class="home-card-link">View ladder →</div>
+    </div>`;
+
+  // HoF card
+  let hofCard;
+  if (latestHof) {
+    const hcStr = latestHof.winner_hc != null ? ` (${latestHof.winner_hc})` : '';
+    hofCard = `
+      <div class="home-card home-card-hof" onclick="navTo('hof')">
+        <div class="home-card-label">Hall of Fame</div>
+        <div class="home-card-sub">${fmtHofMonth(latestHof.event_month)}</div>
+        <div class="home-card-main">${esc(latestHof.winner_name || '–')}</div>
+        <div class="home-card-sub" style="font-size:12px;color:#888">Champion${hcStr}</div>
+        <div class="home-card-link">View HoF →</div>
+      </div>`;
+  } else {
+    hofCard = `
+      <div class="home-card home-card-hof" onclick="navTo('hof')">
+        <div class="home-card-label">Hall of Fame</div>
+        <div class="home-card-sub" style="color:#aaa;margin-top:8px">No records yet</div>
+        <div class="home-card-link">View HoF →</div>
+      </div>`;
+  }
+
+  document.getElementById('home-grid').innerHTML = meCard + signupCard + ladderCard + hofCard;
+}
+
+function navTo(view, callback) {
+  document.querySelectorAll('.nav-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.view === view);
+  });
+  if (view === 'schedule') { showSection('view-schedule'); loadSchedule().then(() => callback && callback()); }
+  if (view === 'ladder')   { showSection('view-ladder');   loadLadder().then(() => callback && callback()); }
+  if (view === 'hof')      { showSection('view-hof');      loadHof().then(() => callback && callback()); }
+}
+
+async function homeJoin(eventId) {
+  await joinEvent({ stopPropagation: () => {} }, eventId);
+  loadHome();
 }
 
 // ── Schedule ──────────────────────────────────────────────────────────────

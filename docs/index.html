@@ -29,7 +29,7 @@
     </div>
     <div id="login-phone-error" class="error-msg" style="margin-bottom:8px"></div>
     <button class="btn-google-full" onclick="submitLoginPhone()">Sign In</button>
-    <p class="login-version">v4.1</p>
+    <p class="login-version">v4.2</p>
   </div>
 </div>
 
@@ -94,7 +94,7 @@
       <img src="bcss-transparent.png" class="header-logo" alt="BC">
       <div class="header-title">
         <span class="logo">British Club</span>
-        <span class="logo-sub">Squash Section <span class="version">v4.1</span></span>
+        <span class="logo-sub">Squash Section <span class="version">v4.2</span></span>
       </div>
     </div>
     <div class="header-actions">
@@ -109,7 +109,8 @@
       </div>
     </div>
     <nav>
-      <button class="nav-btn active" data-view="schedule">Sign-Up</button>
+      <button class="nav-btn active" data-view="home">Home</button>
+      <button class="nav-btn" data-view="schedule">Sign-Up</button>
       <button class="nav-btn" data-view="ladder">Handicaps</button>
       <button class="nav-btn" data-view="hof">HoF</button>
       <button class="nav-btn admin-only hidden" data-view="admin">Admin <span id="admin-badge" class="admin-badge hidden"></span>▾</button>
@@ -118,6 +119,11 @@
 
   <!-- ── PWA install banner ──────────────────────────────────────────────── -->
   <div id="pwa-banner" class="pwa-banner hidden"></div>
+
+  <!-- ── Home dashboard ───────────────────────────────────────────────────── -->
+  <main id="view-home" class="section hidden">
+    <div id="home-grid" class="home-grid"></div>
+  </main>
 
   <!-- ── Hall of Fame view ──────────────────────────────────────────────────── -->
   <main id="view-hof" class="section hidden">
