@@ -824,7 +824,46 @@ function renderPlayerListView(el) {
   });
 }
 
+let _playerHcSeries = [];  // filled monthly series: [{month, value, isActual, notes}]
+let _playerHcPeriod = 'all';
+
+// Build complete monthly series from first entry to now, carrying forward unchanged values
+function buildFilledSeries(history) {
+  if (!history?.length) return [];
+  const byMonth = {};
+  for (const h of history) {
+    const k = monthKey(new Date(h.changed_at));
+    byMonth[k] = h; // last entry in month wins
+  }
+  const firstKey = monthKey(new Date(history[0].changed_at));
+  const nowKey   = monthKey(new Date());
+  const series   = [];
+  let lastVal    = null;
+  let [y, m]     = firstKey.split('.').map(Number);
+  const [ly, lm] = nowKey.split('.').map(Number);
+  while (y < ly || (y === ly && m <= lm)) {
+    const key    = `${y}.${String(m).padStart(2, '0')}`;
+    const actual = byMonth[key];
+    if (actual) lastVal = actual.handicap_value;
+    if (lastVal !== null) {
+      series.push({ month: key, value: lastVal, isActual: !!actual, notes: actual?.notes || '' });
+    }
+    m++;
+    if (m > 12) { m = 1; y++; }
+  }
+  return series;
+}
+
+function filterSeriesByPeriod(series, period) {
+  if (period === 'all') return series;
+  const years   = parseInt(period);
+  const cutoff  = new Date(); cutoff.setFullYear(cutoff.getFullYear() - years);
+  const cutoffK = monthKey(cutoff);
+  return series.filter(s => s.month >= cutoffK);
+}
+
 async function openPlayerHcModal(playerId, playerName) {
+  _playerHcPeriod = 'all';
   document.getElementById('modal-title').textContent = playerName;
   document.getElementById('modal-body').innerHTML = '<p style="color:#888;padding:12px 0">Loading…</p>';
   openModal();
@@ -840,61 +879,99 @@ async function openPlayerHcModal(playerId, playerName) {
     return;
   }
 
-  // Collapse to one entry per month (last wins)
-  const byMonth = {};
-  for (const h of history) {
-    const k = monthKey(new Date(h.changed_at));
-    byMonth[k] = h;
-  }
-  const sortedM     = Object.keys(byMonth).sort();
-  const chartLabels = sortedM;
-  const chartVals   = sortedM.map(m => byMonth[m].handicap_value);
-
-  // Table: newest first, grouped by year
-  let tableHtml = `<table class="ph-table">
-    <thead><tr><th>Month</th><th>HC</th><th>Notes</th></tr></thead><tbody>`;
-  let lastYear = null;
-  for (const m of [...sortedM].reverse()) {
-    const yr = m.slice(0, 4);
-    if (yr !== lastYear) {
-      tableHtml += `<tr class="ph-year-row"><td colspan="3">${yr}</td></tr>`;
-      lastYear = yr;
-    }
-    const h = byMonth[m];
-    tableHtml += `<tr>
-      <td>${m}</td>
-      <td><strong>${h.handicap_value}</strong></td>
-      <td style="color:#888;font-size:12px">${esc(h.notes || '')}</td>
-    </tr>`;
-  }
-  tableHtml += '</tbody></table>';
-
-  document.getElementById('modal-body').innerHTML =
-    `<div class="ph-chart-wrap"><canvas id="ph-chart"></canvas></div>${tableHtml}`;
-
-  setTimeout(() => {
-    const ctx = document.getElementById('ph-chart')?.getContext('2d');
-    if (!ctx) return;
-    if (_playerHcChart) { _playerHcChart.destroy(); _playerHcChart = null; }
-    _playerHcChart = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: chartLabels,
-        datasets: [{ data: chartVals, borderColor: '#1B2A6B', backgroundColor: 'rgba(27,42,107,.1)',
-          borderWidth: 2, pointRadius: 4, tension: 0.2, fill: true }]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => `HC: ${c.raw}` } } },
-        scales: {
-          x: { ticks: { font: { size: 10 }, maxRotation: 45 } },
-          y: { ticks: { font: { size: 10 } } }
-        }
-      }
-    });
-  }, 0);
+  _playerHcSeries = buildFilledSeries(history);
+  renderPlayerHcModal();
 }
 
+function renderPlayerHcModal() {
+  const periodBtns = ['1yr', '2yr', '3yr', 'all'].map(p =>
+    `<button class="ph-period-btn${_playerHcPeriod === p ? ' active' : ''}"
+      data-period="${p}" onclick="setPlayerHcPeriod('${p}')">${p === 'all' ? 'All' : p}</button>`
+  ).join('');
+
+  document.getElementById('modal-body').innerHTML = `
+    <div class="ph-period-row">${periodBtns}</div>
+    <div class="ph-chart-wrap"><canvas id="ph-chart"></canvas></div>
+    <div id="ph-table-wrap"></div>`;
+
+  setTimeout(() => { renderPlayerHcChart(); renderPlayerHcTable(); }, 0);
+}
+
+function setPlayerHcPeriod(period) {
+  _playerHcPeriod = period;
+  document.querySelectorAll('.ph-period-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.period === period);
+  });
+  renderPlayerHcChart();
+  renderPlayerHcTable();
+}
+
+function renderPlayerHcChart() {
+  const ctx = document.getElementById('ph-chart')?.getContext('2d');
+  if (!ctx) return;
+  if (_playerHcChart) { _playerHcChart.destroy(); _playerHcChart = null; }
+  const slice = filterSeriesByPeriod(_playerHcSeries, _playerHcPeriod);
+  if (!slice.length) return;
+
+  // Point radius: bigger for actual entries, 0 for carried-forward
+  const radii = slice.map(s => s.isActual ? 4 : 0);
+
+  _playerHcChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: slice.map(s => s.month),
+      datasets: [{
+        data: slice.map(s => s.value),
+        borderColor: '#1B2A6B', backgroundColor: 'rgba(27,42,107,.08)',
+        borderWidth: 2, pointRadius: radii, pointHoverRadius: 5,
+        tension: 0, fill: true
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: c => `HC: ${c.raw}` } }
+      },
+      scales: {
+        x: { ticks: { font: { size: 10 }, maxRotation: 45 } },
+        y: { ticks: { font: { size: 10 } } }
+      }
+    }
+  });
+}
+
+function renderPlayerHcTable() {
+  const wrap = document.getElementById('ph-table-wrap');
+  if (!wrap) return;
+  const slice = filterSeriesByPeriod(_playerHcSeries, _playerHcPeriod);
+  // Table shows every month in the period (carry-forwards greyed)
+  let html = `<table class="ph-table">
+    <thead><tr><th>Month</th><th>HC</th><th>Notes</th></tr></thead><tbody>`;
+  let lastYear = null;
+  for (const s of [...slice].reverse()) {
+    const yr = s.month.slice(0, 4);
+    if (yr !== lastYear) {
+      html += `<tr class="ph-year-row"><td colspan="3">${yr}</td></tr>`;
+      lastYear = yr;
+    }
+    if (s.isActual) {
+      html += `<tr>
+        <td>${s.month}</td>
+        <td><strong>${s.value}</strong></td>
+        <td style="color:#888;font-size:12px">${esc(s.notes)}</td>
+      </tr>`;
+    } else {
+      html += `<tr class="ph-carryforward">
+        <td>${s.month}</td>
+        <td>${s.value}</td>
+        <td></td>
+      </tr>`;
+    }
+  }
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+}
 
 
 // ── Schedule ──────────────────────────────────────────────────────────────
