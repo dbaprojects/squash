@@ -1,11 +1,12 @@
 # Squash Club — Claude Reference
 
 ## Project identity
-- **Name:** Squash Club Booking & Handicap Manager
+- **Name:** BC Squash Section — Booking & Handicap Manager
 - **Owner:** David Barkess — personal project, unrelated to SAP/DealSensAI work
-- **Purpose:** Court session booking, player handicap tracking, weekly schedule management
+- **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `C:\Users\I061437\OneDrive\Projects\Squash`
-- **Current version:** v2.0 (Supabase + GitHub Pages)
+- **Current version:** v4.1
+- **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
 
@@ -16,160 +17,241 @@ Update this file after every non-trivial change. Record new patterns, gotchas, a
 
 ## Architecture
 
-- **Backend:** Node.js + Express (`server.js`)
-- **DB adapter pattern:** `db/index.js` picks adapter from `DB_BACKEND` env var
-  - `db/sqlite.js` — local dev (better-sqlite3, synchronous API)
-  - `db/supabase.js` — production stub (all methods throw; implement when migrating)
-- **Frontend:** Single-page app — `public/index.html` + `public/app.js` + `public/style.css`
-- **Auth:** Session-based (`express-session` + SQLite session store locally)
-  - Local: enter email → instant login if found in players table
-  - Prod (Supabase): swap `routes/auth.js` to call `supabase.auth.signInWithOtp`
-- **No framework, no build step** — vanilla JS fetch-based SPA
+- **Backend:** None in production — pure static SPA served from GitHub Pages (`docs/`)
+- **Database:** Supabase (Postgres) — JS client v2 called directly from the browser
+- **Auth:** Phone number login → localStorage session persistence; cookie fallback for iOS/PWA
+  - On sign-in: user enters phone → matched against `players.phone` → confirm identity → `localStorage.setItem('squash_player', JSON.stringify(player))`
+  - On reload: `localStorage` fast path → re-validates against Supabase; falls back to cookie
+  - No Supabase Auth / OTP — all auth is app-level
+- **Frontend:** Single-page app — `docs/index.html` + `docs/app.js` + `docs/style.css`
+- **No framework, no build step** — vanilla JS, Supabase JS CDN, Chart.js CDN
 
 ---
 
-## Running locally
+## Supabase credentials
 
-```bash
-cd "C:\Users\I061437\OneDrive\Projects\Squash"
-npm install
-node db/seed.js        # creates squash.db with seed data
-npm start              # http://localhost:3000
-```
-
-Seed login emails:
-- `admin@squashclub.local` (admin)
-- `alice@squashclub.local`
-- `bob@squashclub.local`
+- **URL:** `https://ikfzmqtglgeotyooosur.supabase.co`
+- **Anon key:** `sb_publishable_zs7ClfRPKw5TEaVSn2_oTA_kqVLhZfe` (safe to be in client code)
+- **Service role key:** stored in memory only — used for seed scripts, never committed
 
 ---
 
 ## File structure
 
 ```
-server.js              — Express entry; mounts all routes; session middleware
+docs/
+  index.html          — SPA shell; nav: Sign-Up | Handicaps | HoF | Admin▾
+  app.js              — all frontend logic (~2500 lines)
+  style.css           — mobile-first styles, BC navy/gold palette
+  bcss-transparent.png — BC crest logo
+  manifest.json       — PWA manifest
 db/
-  index.js             — exports chosen adapter (DB_BACKEND env var)
-  sqlite.js            — full SQLite implementation (better-sqlite3, sync)
-  supabase.js          — stub; implement when switching to Supabase
-  schema-sqlite.sql    — SQLite DDL
-  schema-supabase.sql  — Postgres/Supabase DDL (run in Supabase SQL editor)
-  seed.js              — dev seed data
-routes/
-  auth.js              — login/logout/me; exports requireSession + requireAdmin middleware
-  players.js           — /api/me, /api/players CRUD, /api/players/:id/handicaps
-  events.js            — /api/events CRUD + /api/events/generate-week
-  templates.js         — /api/templates CRUD
-  signups.js           — /api/signups CRUD
-public/
-  index.html           — SPA shell (2 top-level views: #view-login, #view-app)
-  app.js               — all frontend logic; ST = global state object
-  style.css            — minimal mobile-friendly styles
+  schema-supabase.sql — Postgres DDL for core tables
+  schema-hof.sql      — DDL for hof_results table + RLS
+  load-hof.js         — seeds hof_results from hof.xlsx (run once with service role key)
+  reseed.js           — rebuilds historical signups/handicap data
+hof.xlsx              — source data for Hall of Fame (53 records, 2019–2026)
+names and hcs.xlsx    — player name/HC reference data
 ```
 
 ---
 
-## Data model summary
+## Data model
 
 | Table | Key columns |
 |---|---|
-| `players` | id, email (unique), first_name, last_name, is_admin, current_handicap, active |
+| `players` | id (UUID), first_name, last_name, phone, email, is_admin, is_super_admin, current_handicap, active, pending |
 | `handicap_history` | id, player_id, handicap_value (-35 to +10), changed_at, changed_by, notes |
 | `session_templates` | id, name, day_of_week (1=Mon,3=Wed,6=Sat), start_time, end_time, max_signups |
 | `events` | id, title, event_date, start_time, end_time, max_signups, template_id |
-| `signups` | id, event_id, signed_up_by, player_id (nullable), guest_name (nullable), is_reserve |
+| `signups` | id, event_id, signed_up_by, player_id (nullable), guest_name (nullable), is_reserve, signed_up_at, notes |
+| `hof_results` | id, event_month (DATE, unique, always 1st), winner_name, winner_hc, winner_score, runner_up_name, runner_up_hc, runner_up_score, not_played, notes, created_by, created_at |
 
 **Signup constraint (app-level):** exactly one of `player_id` or `guest_name` must be set.
 `signed_up_by` = who performed the action; `player_id` = who is attending (may differ).
 
 **Attendance:** implicit — presence in `signups` = attended. No separate attendance column.
 
+**`hof_results.event_month`:** always stored as `YYYY-MM-01` (first of month). Unique index enforces one result per month.
+
 ---
 
-## Adapter interface (both adapters must implement)
+## RLS policy pattern
 
+All tables use inline admin check (NOT a helper function — Supabase SQL editor can't resolve functions defined outside the policy):
+
+```sql
+COALESCE((SELECT is_admin FROM players WHERE email = auth.email() AND active = TRUE LIMIT 1), FALSE)
 ```
-players:   list(), get(id), getByEmail(email), create(data), update(id, data), deactivate(id)
-handicaps: history(playerId), add({playerId, value, changedBy, notes})
-events:    list(from, to), get(id), create(data), update(id, data), delete(id), findByTemplateAndDate(templateId, date)
-templates: list(), get(id), create(data), update(id, data), delete(id)
-signups:   forEvent(eventId), countForEvent(eventId), findPlayerOnEvent(eventId, playerId), get(id), add(data), remove(id)
-```
 
-SQLite adapter is synchronous (better-sqlite3). Supabase adapter must be async — routes use `await` so both work.
+HoF SELECT policy allows anon access (`FOR SELECT USING (TRUE)` with no role restriction) because the app queries HoF before Supabase session is always restored on mobile.
 
 ---
 
-## Generate-week logic
+## Player roles
 
-`POST /api/events/generate-week` (admin)
-- Accepts optional `{weekStartDate: 'YYYY-MM-DD'}` — defaults to next Monday
-- For each active template: computes date for that `day_of_week` within the target week
-- Skips if an event already exists with same `template_id` + `event_date` (idempotent)
-- `day_of_week`: 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat, 0=Sun
-- Date arithmetic uses UTC noon to avoid DST edge cases in `dateForDow()`
+| Field | Meaning |
+|---|---|
+| `active` | Can log in and appears in player lists |
+| `pending` | Registered but awaiting admin approval |
+| `is_admin` | Can manage events, players, HoF (view-only for HoF CRUD) |
+| `is_super_admin` | Full access including HoF add/edit/delete |
 
----
-
-## Reserve logic
-
-- When `event.max_signups` is set and `signups.countForEvent()` >= max: `is_reserve = true`
-- No hard block — anyone can sign up; overflow is auto-flagged
-- Reserve count shown in event detail UI with yellow badge
+HoF CRUD (add/edit/delete) is restricted to `is_super_admin` only — regular admins can view the admin HoF list but buttons are hidden.
 
 ---
 
-## Frontend state (ST object in app.js)
+## Frontend sections (nav views)
+
+| View | ID | Load fn | Description |
+|---|---|---|---|
+| Sign-Up | `view-schedule` | `loadSchedule()` | Upcoming events with Join/Cancel and attendance chips |
+| Handicaps | `view-ladder` | `loadLadder()` | Player HC list, grid, movers, distribution; player HC modal |
+| HoF | `view-hof` | `loadHof()` | Hall of Fame — leaderboards + year-grouped results table |
+| Admin | `view-admin` | tabs | Players, Events, Templates, HoF, Reports |
+
+---
+
+## Key frontend state variables
 
 ```js
-ST = {
-  player: null,       // current session player (set after login)
-  players: [],        // all players — loaded lazily for admin dropdown
-  events: [],         // upcoming events from GET /api/events
-  templates: [],      // session templates
-  currentEvent: null  // event detail being viewed
-}
+// Global
+ST = { player, players, events, templates, currentEvent }
+
+// Ladder
+ladderPlayers, ladderSearch, ladderStatusFilter ('active'|'inactive'|'all')
+playerHistoryArr, ladderMonths, ladderYearMode ('last12'|'YYYY')
+ladderAllYears, ladderSectionView ('list'|'grid'|'movers'|'dist')
+_playerHcChart, _distChart
+_playerHcSeries, _playerHcPeriod, _playerSignupCount12m
+
+// HoF
+hofResults, hofNameFilter, hofStatusFilter ('all'|'active'|'inactive')
+hofPlayerMap  // normalized name → { active: bool } — for name matching in filter + edit form
+
+// Reports
+reportsFilter  // 'last12' | 'last2y' | 'last3y' | 'all' | 'YYYY'
 ```
 
 ---
 
-## Auth middleware (routes/auth.js)
+## HC ladder logic
 
-- `requireSession` — sets `req.player`; returns 401 if no session
-- `requireAdmin` — calls `requireSession` then checks `req.player.is_admin`; returns 403 if not admin
-- Both exported and imported by all other route files
+- `computeLadderMonths()` — derives `ladderMonths` array from `ladderYearMode`:
+  - `'last12'` → rolling 12 months from today
+  - current year → Jan to current month
+  - past year → Jan–Dec of that year
+- `buildFilledSeries(history)` — complete monthly series with carry-forward from first entry to today
+- `effectiveHcAt(playerId, targetMonth)` — carry-forward HC value at a given month
+- `getFilteredPlayers()` — shared filter by search text + status (active/inactive/all)
+- HC chart y-axis: reversed, fixed range min:-35 max:6
+- HC table row colors: `ph-row-improved` (green, HC decreased = better) / `ph-row-worsened` (orange, HC increased)
+
+---
+
+## HoF public view
+
+- Filter bar: name search (applies to winner OR runner-up) + Active/Inactive/All status buttons
+- Status filter matches names via `hofPlayerMap` built from players table
+- Two side-by-side leaderboards: Most Titles (🏆) and Most #2's (🥈), top 5 each
+- HC shown inline in brackets: "David Barkess (-6)"
+- Table: Month | Champion (HC) | Runner-Up (HC) | Score — no separate HC columns
+- `hofPlayerMap` is built in `loadHof()` by fetching all players in parallel with hof_results
+
+---
+
+## HoF edit form
+
+- `openHofForm(record)` calls `showFormModal(...)` — NOT `openFormModal` (that doesn't exist)
+- Name fields show inline warning "Name not in player list" when entry doesn't match `hofPlayerMap`
+- `hofCheckName(inputId, warnId)` — checks input value against hofPlayerMap on each keystroke
+
+---
+
+## Schedule / event cards
+
+- No click-to-open detail — clicking a card does nothing (detail view `openEvent()` still exists but is not wired to card clicks)
+- Admin/super-admin: each attendance chip has a `×` delete button calling `removeSignupChip(signupId, eventId)`
+- `removeSignupChip()` deletes the signup and calls `promoteFirstReserve()` to backfill if needed
+
+---
+
+## Reports tab
+
+- Period filter at top: Last 12m / Last 2y / Last 3y / All time / per-year buttons (years derived from earliest event)
+- All data (KPIs, charts, attendance table) re-fetches on filter change via `renderReportsTab(filter)`
+- `getReportsDateRange(filter)` returns `{ from, to, label }` for the chosen period
+- Charts: Weekly Attendance (stacked bar) + Avg Fill Rate by Session
+- New: **Most Frequent Players** table — derived from confirmed signups for events in the period (filtered by event_date, not signed_up_at)
+- KPIs: Sessions, Total Attendances, Avg Fill %, Avg per Session
+
+---
+
+## Stable filter bar pattern
+
+Used in Ladder and HoF: a `#xxx-filter-bar` div is inserted adjacent to the main content div. It's rebuilt on fresh data load but NOT rebuilt on subsequent filter-change renders — preserves input focus. For HoF specifically, `loadHof()` removes the old filter bar before re-creating it (ensures correct DOM position after nav).
+
+---
+
+## Modal / form modal functions
+
+| Function | Purpose |
+|---|---|
+| `openModal()` / `closeModal()` | `#modal-overlay` — used for HC history modal |
+| `showFormModal(title, html)` | `#form-overlay` — used for all CRUD forms |
+| `closeFormModal()` | Closes `#form-overlay` |
+
+Do NOT use `openFormModal` — it doesn't exist. Always use `showFormModal`.
+
+---
+
+## PWA
+
+- `manifest.json` in `docs/`; theme color `#1B2A6B`; Apple touch icon `bcss-transparent.png`
+- Install banner: iOS shows "Add to Home Screen" instructions; Android shows native install prompt
+- `localStorage.pwa_dismissed` prevents re-showing after dismissal
+
+---
+
+## Seed / utility scripts
+
+```bash
+# Load HoF data from hof.xlsx (run once)
+SUPABASE_SERVICE_ROLE_KEY=... node db/load-hof.js
+
+# Rebuild historical signups + handicap history
+SUPABASE_SERVICE_ROLE_KEY=... node db/reseed.js
+```
 
 ---
 
 ## Gotchas & decisions
 
-- **`node:sqlite` (built-in)** used instead of `better-sqlite3` — no native compilation required. Available in Node 22+; stable in Node 24+. API is nearly identical to better-sqlite3 (`prepare().run()`, `.get()`, `.all()`).
-- **Session store:** `memorystore` (pure JS, in-memory). Sessions survive server runtime but reset on restart — acceptable for local dev. For production, swap to a persistent store.
-- **SQLite `is_admin`/`is_reserve`/`active`** stored as INTEGER (0/1) — SQLite has no BOOLEAN. Route responses return them as JS booleans.
-- **Players dropdown in signup form:** only loaded when `is_admin = true` (non-admins can only sign up themselves or a guest). All players are pre-loaded into `ST.players` on first click.
-- **`ensurePlayers()`** in app.js pre-loads the players list lazily on first interaction with the app view.
-- **Date display:** `fmtDate()` uses `dateStr + 'T12:00:00'` (local noon) to prevent timezone-off-by-one when rendering dates.
-- **`deactivate` vs delete:** Players are soft-deleted (active=0). They still appear in `signups` history but cannot log in and don't appear in the active player list.
-
----
-
-## Migrating to Supabase
-
-1. Run `db/schema-supabase.sql` in the Supabase SQL editor
-2. Implement all methods in `db/supabase.js` using `supabase.from(...)`
-3. Update `routes/auth.js` to use `supabase.auth.signInWithOtp` + OTP verify flow
-4. Set env vars: `DB_BACKEND=supabase`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`
-5. Note: Supabase uses UUID natively; SQLite uses `crypto.randomUUID()` strings — both are UUID strings, compatible
+- **`is_admin_user()` SQL function does NOT work** in Supabase SQL editor — inline the check directly in each policy
+- **HoF SELECT policy must allow anon** — mobile Safari sometimes hasn't restored the Supabase session when the HoF query runs; data is not sensitive
+- **HC carry-forward:** `buildFilledSeries()` fills every calendar month from first HC entry to today, carrying forward the last known value. Chart shows 0-radius points for carry-forward months
+- **Signup reserve promotion:** `promoteFirstReserve()` is called after any signup deletion (leave or admin chip delete) to backfill from the reserve list
+- **Reports attendance query:** uses events in the date range (filtered by `event_date`) with nested signups — NOT `signed_up_at` — so the period correctly reflects when sessions occurred
+- **HoF event_month:** stored as `YYYY-MM-01` string; `fmtHofMonth()` displays as "Jan 2026" etc.
+- **Date display:** `fmtDate()` uses `dateStr + 'T12:00:00'` (local noon) to prevent timezone off-by-one
+- **`deactivate` vs delete:** Players are soft-deleted (`active=false`). They appear in history but can't log in
+- **`pending` players:** submitted registration but not yet approved by admin
+- **Phone normalisation:** `normalizePhone()` strips all non-digits before matching — handles spaces, dashes, country codes
 
 ---
 
 ## Versioning
-Increment version comment in this file and add a note below for each meaningful change.
 
 | Version | Description |
 |---|---|
 | v1.0 | Initial build — SQLite backend, all core features |
-| v1.1 | Schedule card redesign: Join/Cancel top-left, horizontal attendee chips (green=confirmed, amber=reserve, blue=guest), inline Add Guest when signed up; user switcher dropdown in header; 12 total test players in seed |
-| v1.2 | Join/Cancel button moved to RHS of card, larger; admin events filter (upcoming/past/date-range); `db/seed-history.js` generates 10 weeks past + next week at 80-110% capacity; fixed `forEvent` missing `player_first` field causing "Guest" chip bug |
-| v2.0 | Migrated to Supabase (DB + Auth) + GitHub Pages; removed Express backend from production path; Google OAuth replaces email login; user switcher removed; docs/app.js uses Supabase JS client directly; normaliseSignup/normaliseEvent map nested responses to existing field names |
-| v2.1 | Rebrand to British Club Singapore: navy #1B2A6B + gold #C4932A palette, BC crest logo, PWA manifest; Reports tab with Chart.js (weekly attendance bar + fill rate bar, KPI summary); guest signup removed temporarily; chip short names (First L.); `db/reseed-supabase.js` rebuilds 52-week history (40-120% fill) |
+| v1.1 | Schedule card redesign: Join/Cancel, horizontal attendee chips, inline Add Guest, user switcher |
+| v1.2 | Join/Cancel moved RHS; admin events filter; `db/seed-history.js`; fixed `player_first` chip bug |
+| v2.0 | Migrated to Supabase + GitHub Pages; Google OAuth; `docs/` replaces `public/`; normaliseSignup/normaliseEvent |
+| v2.1 | BC rebrand (navy/gold, crest logo, PWA); Reports tab (Chart.js); chip short names; `db/reseed-supabase.js` |
+| v3.0 | Phone number auth replaces Google OAuth; localStorage session + cookie fallback for iOS/PWA |
+| v3.5 | Onboarding flow (confirm/register/pending); phone input with country picker |
+| v3.8 | Admin players: search, active/inactive filter, condensed rows, phone field, sort |
+| v3.9 | Ladder overhaul: HC chart (inverted y-axis, -35 to +6), movers, distribution, last-12m default year selector, green/orange HC history rows; removed sparklines |
+| v4.0 | Hall of Fame: `hof_results` table, load script from hof.xlsx (53 records), HoF nav tab, public view (leaderboard + year table), admin CRUD |
+| v4.1 | HoF: name/status filters, Most #2's leaderboard, condensed HC-in-brackets layout, edit form fixed (showFormModal), name matching warning, super-admin-only CRUD; chip × delete for admin; player modal signup count (12m); Reports: period filter + Most Frequent Players attendance table |
