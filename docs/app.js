@@ -1249,7 +1249,6 @@ function renderHof() {
 
   wrap.innerHTML = html;
 }
-}
 
 // ── Admin: HoF tab ────────────────────────────────────────────────────────
 async function loadAdminHof() {
