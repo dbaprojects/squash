@@ -26,8 +26,9 @@ body {
 
 .hidden { display: none !important; }
 
-/* ── Login ─────────────────────────────────────────────────────────────── */
-#view-login {
+/* ── Login / Onboard ────────────────────────────────────────────────────── */
+#view-login,
+#view-onboard {
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -600,8 +601,9 @@ nav { display: flex; gap: 4px; flex: 1; }
 .admin-event-row .ev-info { font-weight: 600; }
 .admin-event-row .ev-sub  { font-size: 12px; color: var(--bc-text-dim); margin-top: 2px; }
 
-.tag-admin  { font-size: 11px; background: var(--bc-navy-lt); color: var(--bc-navy); padding: 2px 7px; border-radius: 10px; font-weight: 600; }
-.tag-active { font-size: 11px; background: #e6f4ea; color: #1e6b3c; padding: 2px 7px; border-radius: 10px; }
+.tag-admin       { font-size: 11px; background: var(--bc-navy-lt); color: var(--bc-navy); padding: 2px 7px; border-radius: 10px; font-weight: 600; }
+.tag-superadmin  { font-size: 11px; background: #ede9f8; color: #5b2d9e; padding: 2px 7px; border-radius: 10px; font-weight: 600; }
+.tag-active      { font-size: 11px; background: #e6f4ea; color: #1e6b3c; padding: 2px 7px; border-radius: 10px; }
 
 /* ── Handicap ladder ────────────────────────────────────────────────────── */
 .my-hc-card {
@@ -737,13 +739,24 @@ nav { display: flex; gap: 4px; flex: 1; }
 }
 .players-search:focus { outline: none; border-color: var(--bc-navy); }
 
-.players-status-btns { display: flex; gap: 4px; }
+.players-status-btns { display: flex; gap: 4px; flex-wrap: wrap; }
+.players-role-btns   { display: flex; gap: 4px; flex-wrap: wrap; }
 
 /* Condensed players table */
 .players-table td { padding: 6px 10px; }
 .players-table th { padding: 7px 10px; font-size: 11px; }
 .player-name  { font-weight: 600; font-size: 13px; }
-.player-email { font-size: 11px; color: var(--bc-text-dim); margin-top: 1px; }
+
+/* Sortable column headers */
+.th-sort { cursor: pointer; user-select: none; }
+.th-sort:hover { background: rgba(27,42,107,0.1); }
+.sort-arrow      { font-size: 10px; margin-left: 2px; }
+.sort-arrow.muted { opacity: 0.3; }
+
+/* Consistent action button row */
+.btn-actions { display: flex; gap: 3px; align-items: center; justify-content: flex-end; }
+.btn-actions .btn-icon-sm { min-width: 52px; text-align: center; margin-right: 0; }
+.btn-placeholder { display: inline-block; min-width: 52px; }
 
 .tag-inactive {
   font-size: 10px;
@@ -808,18 +821,19 @@ nav { display: flex; gap: 4px; flex: 1; }
   background: rgba(10,20,60,0.5);
   z-index: 1000;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
+  padding: 16px;
 }
 .country-picker-box {
   background: #fff;
   width: 100%;
-  max-width: 480px;
-  border-radius: 14px 14px 0 0;
-  max-height: 75vh;
+  max-width: 420px;
+  border-radius: 14px;
+  max-height: 70vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 -4px 30px rgba(0,0,0,0.2);
+  box-shadow: 0 8px 40px rgba(0,0,0,0.25);
 }
 .country-picker-header {
   display: flex;
@@ -914,12 +928,17 @@ nav { display: flex; gap: 4px; flex: 1; }
   .login-box {
     padding: 24px 18px;
   }
-  #view-login { padding: 24px 16px 40px; }
+  #view-login, #view-onboard { padding: 24px 16px 40px; }
 
   /* Prevent iOS auto-zoom on input focus (requires font-size >= 16px) */
   input, select, textarea {
     font-size: 16px !important;
   }
+
+  /* Players toolbar — stack search and filter buttons */
+  .players-toolbar { flex-direction: column; align-items: stretch; }
+  .players-search { width: 100%; }
+  .players-status-btns, .players-role-btns { flex-wrap: wrap; }
 
   /* Header: wrap nav to second row */
   header {

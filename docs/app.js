@@ -692,7 +692,7 @@ const DIAL_CODES = [
 ];
 
 let allPlayers    = [];
-let playersFilter = { status: 'active', search: '' };
+let playersFilter = { status: 'active', search: '', sortBy: 'name', sortDir: 'asc', role: 'all' };
 
 function dialCodeOptions(selected = '65') {
   return DIAL_CODES.map(d =>
@@ -774,29 +774,49 @@ async function renderPlayersTab() {
 }
 
 function renderPlayersTable() {
-  const { status, search } = playersFilter;
+  const { status, search, sortBy, sortDir, role } = playersFilter;
   const q = search.toLowerCase();
   const isPending = p => p.pending === true;
-  const players = allPlayers.filter(p => {
+
+  let players = allPlayers.filter(p => {
     if (status === 'active'   && !p.active) return false;
     if (status === 'inactive' && (p.active || isPending(p))) return false;
     if (status === 'pending'  && !isPending(p)) return false;
+    if (role === 'superadmin' && !p.is_super_admin) return false;
+    if (role === 'admin'      && !(p.is_admin && !p.is_super_admin)) return false;
+    if (role === 'regular'    && p.is_admin) return false;
     if (q) {
       const name = `${p.first_name} ${p.last_name}`.toLowerCase();
       if (!name.includes(q)) return false;
     }
     return true;
   });
+
+  players = [...players].sort((a, b) => {
+    let av, bv;
+    if (sortBy === 'hc') {
+      av = a.current_handicap ?? 999;
+      bv = b.current_handicap ?? 999;
+    } else {
+      av = `${a.last_name} ${a.first_name}`.toLowerCase();
+      bv = `${b.last_name} ${b.first_name}`.toLowerCase();
+    }
+    if (av < bv) return sortDir === 'asc' ? -1 : 1;
+    if (av > bv) return sortDir === 'asc' ?  1 : -1;
+    return 0;
+  });
+
   const pendingCount = allPlayers.filter(isPending).length;
   const wrap = document.getElementById('players-table-wrap');
 
-  // Build toolbar once — re-rendering it destroys focus on every keystroke
+  // Build toolbar once — re-rendering destroys focus on every keystroke
   if (!document.getElementById('players-search')) {
     wrap.innerHTML = `
       <div class="players-toolbar">
         <input type="text" id="players-search" class="players-search"
           placeholder="Search by name…" autocomplete="off">
         <div id="players-status-btns" class="players-status-btns"></div>
+        <div id="players-role-btns" class="players-role-btns"></div>
       </div>
       <div id="players-list"></div>`;
     document.getElementById('players-search').addEventListener('input', e => {
@@ -805,44 +825,59 @@ function renderPlayersTable() {
     });
   }
 
-  // Update filter buttons (no input element involved, safe to replace)
   document.getElementById('players-status-btns').innerHTML = `
     <button class="admin-filter-btn${status === 'active'   ? ' active' : ''}" onclick="setPlayersStatus('active')">Active</button>
     <button class="admin-filter-btn${status === 'inactive' ? ' active' : ''}" onclick="setPlayersStatus('inactive')">Inactive</button>
     <button class="admin-filter-btn${status === 'pending'  ? ' active' : ''}" onclick="setPlayersStatus('pending')">Pending${pendingCount > 0 ? ` (${pendingCount})` : ''}</button>
     <button class="admin-filter-btn${status === 'all'      ? ' active' : ''}" onclick="setPlayersStatus('all')">All</button>`;
 
-  // Update table body only
+  document.getElementById('players-role-btns').innerHTML = `
+    <button class="admin-filter-btn${role === 'all'       ? ' active' : ''}" onclick="setPlayersRole('all')">All roles</button>
+    <button class="admin-filter-btn${role === 'admin'     ? ' active' : ''}" onclick="setPlayersRole('admin')">Admin</button>
+    <button class="admin-filter-btn${role === 'superadmin'? ' active' : ''}" onclick="setPlayersRole('superadmin')">SuperAdmin</button>
+    <button class="admin-filter-btn${role === 'regular'   ? ' active' : ''}" onclick="setPlayersRole('regular')">Regular</button>`;
+
+  const arrow = f => sortBy === f
+    ? `<span class="sort-arrow">${sortDir === 'asc' ? '↑' : '↓'}</span>`
+    : `<span class="sort-arrow muted">↕</span>`;
+
   document.getElementById('players-list').innerHTML = players.length
     ? `<table class="data-table players-table">
       <thead><tr>
-        <th>Name</th>
+        <th class="th-sort" onclick="setPlayersSort('name')">Name ${arrow('name')}</th>
         <th class="col-phone">Phone</th>
-        <th>HC</th>
+        <th class="th-sort" onclick="setPlayersSort('hc')">HC ${arrow('hc')}</th>
         <th class="col-role">Role</th>
         <th></th>
       </tr></thead>
       <tbody>
       ${players.map(p => {
         const pending = isPending(p);
+        const roleLabel = p.is_super_admin
+          ? '<span class="tag-superadmin">SuperAdmin</span>'
+          : p.is_admin ? '<span class="tag-admin">Admin</span>' : '';
         return `<tr>
         <td>
           <div class="player-name">${esc(p.first_name)} ${esc(p.last_name)}${pending ? ' <span class="tag-pending">Pending</span>' : !p.active ? ' <span class="tag-inactive">Inactive</span>' : ''}</div>
-          <div class="player-email">${esc(p.email || '')}</div>
         </td>
         <td class="col-phone">${esc(p.phone || '')}</td>
         <td><span class="hcap-badge">${p.current_handicap ?? '–'}</span></td>
-        <td class="col-role">${p.is_admin ? '<span class="tag-admin">Admin</span>' : ''}</td>
-        <td style="white-space:nowrap">
+        <td class="col-role">${roleLabel}</td>
+        <td>
+          <div class="btn-actions">
           ${pending
             ? `<button class="btn-icon-sm" onclick="approvePlayer('${p.id}')">Approve</button>
                <button class="btn-icon-sm btn-icon-danger" onclick="rejectPlayer('${p.id}')">Reject</button>`
             : `<button class="btn-icon-sm btn-hc-mobile" onclick="openHandicapModal('${p.id}','${esc(p.first_name)} ${esc(p.last_name)}')">HC</button>
                <button class="btn-icon-sm" onclick="openEditPlayerForm('${p.id}')">Edit</button>
                ${p.active
-                 ? `<button class="btn-icon-sm btn-icon-danger" onclick="deactivatePlayer('${p.id}')">Deactivate</button>`
+                 ? `<button class="btn-icon-sm btn-icon-danger" onclick="deactivatePlayer('${p.id}')">Deact.</button>
+                    <span class="btn-placeholder"></span>`
                  : `<button class="btn-icon-sm" onclick="reactivatePlayer('${p.id}')">Restore</button>
-                    ${ST.player.is_super_admin ? `<button class="btn-icon-sm btn-icon-danger" onclick="deletePlayer('${p.id}','${esc(p.first_name)} ${esc(p.last_name)}')">Delete</button>` : ''}`}`}
+                    ${ST.player.is_super_admin
+                      ? `<button class="btn-icon-sm btn-icon-danger" onclick="deletePlayer('${p.id}','${esc(p.first_name)} ${esc(p.last_name)}')">Delete</button>`
+                      : '<span class="btn-placeholder"></span>'}`}`}
+          </div>
         </td>
       </tr>`;
       }).join('')}
@@ -855,11 +890,25 @@ function setPlayersStatus(status) {
   renderPlayersTable();
 }
 
+function setPlayersSort(field) {
+  if (playersFilter.sortBy === field) {
+    playersFilter.sortDir = playersFilter.sortDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    playersFilter.sortBy = field;
+    playersFilter.sortDir = 'asc';
+  }
+  renderPlayersTable();
+}
+
+function setPlayersRole(role) {
+  playersFilter.role = role;
+  renderPlayersTable();
+}
+
 function openAddPlayerForm() {
   showFormModal('Add Player', `
     <div class="form-group"><label>First name</label><input type="text" id="fp-first" autocomplete="off"></div>
     <div class="form-group"><label>Last name</label><input type="text" id="fp-last" autocomplete="off"></div>
-    <div class="form-group"><label>Email</label><input type="email" id="fp-email" autocomplete="off"></div>
     <div class="form-group">
       <label>Phone</label>
       <div class="phone-input-row">
@@ -876,11 +925,9 @@ function openAddPlayerForm() {
 }
 
 async function submitAddPlayer() {
-  const emailRaw = document.getElementById('fp-email').value.trim().toLowerCase();
   const body = {
     first_name:       document.getElementById('fp-first').value.trim(),
     last_name:        document.getElementById('fp-last').value.trim(),
-    email:            emailRaw || null,
     is_admin:         document.getElementById('fp-admin').checked,
     is_super_admin:   document.getElementById('fp-super-admin')?.checked ?? false,
     current_handicap: parseFloat(document.getElementById('fp-hcap').value) || null,
@@ -901,10 +948,12 @@ function openEditPlayerForm(id) {
   const p = allPlayers.find(x => x.id === id);
   if (!p) return;
   const ph = parsePhone(p.phone);
+  const isSelf = p.id === ST.player.id;
+  const saLocked = isSelf || p.is_super_admin;
+  const saNote = isSelf ? '(cannot change own)' : '(cannot revoke)';
   showFormModal('Edit Player', `
     <div class="form-group"><label>First name</label><input type="text" id="ep-first" value="${esc(p.first_name)}"></div>
     <div class="form-group"><label>Last name</label><input type="text" id="ep-last" value="${esc(p.last_name)}"></div>
-    <div class="form-group"><label>Email</label><input type="email" id="ep-email" value="${esc(p.email)}"></div>
     <div class="form-group">
       <label>Phone</label>
       <div class="phone-input-row">
@@ -913,20 +962,20 @@ function openEditPlayerForm(id) {
       </div>
     </div>
     <div class="form-group"><label><input type="checkbox" id="ep-admin" ${p.is_admin ? 'checked' : ''}> Admin</label></div>
-    ${ST.player.is_super_admin ? `<div class="form-group"><label><input type="checkbox" id="ep-super-admin" ${p.is_super_admin ? 'checked' : ''}> Super Admin</label></div>` : ''}
+    ${ST.player.is_super_admin ? `<div class="form-group"><label><input type="checkbox" id="ep-super-admin" ${p.is_super_admin ? 'checked' : ''} ${saLocked ? 'disabled' : ''}> Super Admin${saLocked ? ` <span style="font-size:11px;color:#aaa">${saNote}</span>` : ''}</label></div>` : ''}
     <div style="text-align:right;margin-top:8px">
       <button class="btn-primary" onclick="submitEditPlayer('${id}')">Save</button>
     </div>`);
 }
 
 async function submitEditPlayer(id) {
+  const superAdminEl = document.getElementById('ep-super-admin');
   const body = {
-    first_name:     document.getElementById('ep-first').value.trim(),
-    last_name:      document.getElementById('ep-last').value.trim(),
-    email:          document.getElementById('ep-email').value.trim().toLowerCase(),
-    is_admin:       document.getElementById('ep-admin').checked,
-    is_super_admin: document.getElementById('ep-super-admin')?.checked ?? false,
-    phone:          buildPhone(document.getElementById('ep-dialcode').value, document.getElementById('ep-phone').value)
+    first_name:  document.getElementById('ep-first').value.trim(),
+    last_name:   document.getElementById('ep-last').value.trim(),
+    is_admin:    document.getElementById('ep-admin').checked,
+    phone:       buildPhone(document.getElementById('ep-dialcode').value, document.getElementById('ep-phone').value),
+    ...(superAdminEl && !superAdminEl.disabled ? { is_super_admin: superAdminEl.checked } : {})
   };
   const { error } = await sb.from('players').update(body).eq('id', id);
   if (error) { alert(error.message); return; }
