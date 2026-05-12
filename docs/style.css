@@ -29,12 +29,12 @@ body {
 /* ── Login ─────────────────────────────────────────────────────────────── */
 #view-login {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   min-height: 100dvh;
   overflow-y: auto;
   background: linear-gradient(160deg, #1B2A6B 0%, #0D1640 100%);
-  padding: 24px 16px;
+  padding: 48px 16px 40px;
 }
 
 .login-box {
@@ -66,6 +66,7 @@ body {
 }
 
 .login-box > p:not(.login-section) { color: #666; margin-bottom: 20px; font-size: 13px; }
+.login-version { margin-top: 14px; font-size: 11px; color: #bbb; text-align: center; }
 
 .login-box input {
   width: 100%;
@@ -764,7 +765,7 @@ nav { display: flex; gap: 4px; flex: 1; }
 .dial-code-btn {
   display: flex;
   align-items: center;
-  padding: 0 10px;
+  padding: 8px 10px;
   background: #f8f9fd;
   border: 1.5px solid var(--bc-border);
   border-radius: 6px;
@@ -903,6 +904,7 @@ nav { display: flex; gap: 4px; flex: 1; }
   .login-box {
     padding: 24px 18px;
   }
+  #view-login { padding: 24px 16px 40px; }
 
   /* Prevent iOS auto-zoom on input focus (requires font-size >= 16px) */
   input, select, textarea {
