@@ -624,6 +624,7 @@ async function leaveEvent(e, signupId, eventId) {
   try {
     const { error } = await sb.from('signups').delete().eq('id', signupId);
     if (error) throw error;
+    await promoteFirstReserve(eventId);
     refreshCard(eventId, await fetchEventSignups(eventId));
   } catch (err) { alert(err.message); }
 }
@@ -631,6 +632,20 @@ async function leaveEvent(e, signupId, eventId) {
 function addGuestInCard() {}
 function cancelGuestInCard() {}
 async function submitGuestInCard() {}
+
+async function promoteFirstReserve(eventId) {
+  const { data: ev } = await sb.from('events').select('max_signups').eq('id', eventId).single();
+  if (!ev?.max_signups) return;
+  const { count } = await sb.from('signups')
+    .select('id', { count: 'exact', head: true })
+    .eq('event_id', eventId).eq('is_reserve', false);
+  if (count < ev.max_signups) {
+    const { data: first } = await sb.from('signups')
+      .select('id').eq('event_id', eventId).eq('is_reserve', true)
+      .order('signed_up_at').limit(1).maybeSingle();
+    if (first) await sb.from('signups').update({ is_reserve: false }).eq('id', first.id);
+  }
+}
 
 // ── Event detail ──────────────────────────────────────────────────────────
 async function openEvent(id) {
@@ -744,8 +759,10 @@ async function submitSignup(eventId, type) {
 
 async function removeSignup(signupId) {
   if (!confirm('Remove this signup?')) return;
+  const eventId = ST.currentEvent?.id;
   const { error } = await sb.from('signups').delete().eq('id', signupId);
   if (error) { alert(error.message); return; }
+  if (eventId) await promoteFirstReserve(eventId);
   if (ST.currentEvent) openEvent(ST.currentEvent.id);
 }
 
