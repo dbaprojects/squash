@@ -721,7 +721,7 @@ function renderPlayersTable() {
           ${pending
             ? `<button class="btn-icon-sm" onclick="approvePlayer('${p.id}')">Approve</button>
                <button class="btn-icon-sm btn-icon-danger" onclick="rejectPlayer('${p.id}')">Reject</button>`
-            : `<button class="btn-icon-sm" onclick="openHandicapModal('${p.id}','${esc(p.first_name)} ${esc(p.last_name)}')">HC</button>
+            : `<button class="btn-icon-sm btn-hc-mobile" onclick="openHandicapModal('${p.id}','${esc(p.first_name)} ${esc(p.last_name)}')">HC</button>
                <button class="btn-icon-sm" onclick="openEditPlayerForm('${p.id}')">Edit</button>
                ${p.active
                  ? `<button class="btn-icon-sm btn-icon-danger" onclick="deactivatePlayer('${p.id}')">Deactivate</button>`

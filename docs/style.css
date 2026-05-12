@@ -774,14 +774,32 @@ nav { display: flex; gap: 4px; flex: 1; }
 .phone-local { flex: 1; min-width: 0; }
 
 /* ── Responsive ────────────────────────────────────────────────────────── */
+
+/* Table scroll containers — prevent horizontal overflow */
+#players-list, #ladder-list, #admin-event-list, #templates-list { overflow-x: auto; }
+
 @media (max-width: 640px) {
+  /* Login / onboard box — shrink padding, add margin so it doesn't touch edges */
+  .login-box {
+    padding: 28px 20px;
+    margin: 16px;
+    max-width: none;
+  }
+
+  /* Header: wrap nav to second row */
   header {
     flex-wrap: wrap;
     height: auto;
-    padding: 10px 14px 8px;
-    gap: 8px;
+    padding: 8px 12px 6px;
+    gap: 6px;
   }
   .header-left { flex: 1; min-width: 0; }
+
+  /* Hide username — keep only Sign out */
+  #header-name { display: none; }
+
+  .header-right { font-size: 12px; gap: 6px; }
+
   nav {
     order: 10;
     width: 100%;
@@ -789,14 +807,53 @@ nav { display: flex; gap: 4px; flex: 1; }
     padding-top: 6px;
     padding-bottom: 2px;
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 2px;
   }
-  .header-right { font-size: 12px; gap: 8px; }
-  .section { padding: 12px; }
+  .nav-btn { padding: 6px 10px; font-size: 13px; }
+
+  /* Sections */
+  .section { padding: 10px 12px; }
+
+  /* Event cards: single column */
   .card-grid { grid-template-columns: 1fr; gap: 10px; }
-  .data-table th:nth-child(3), .data-table td:nth-child(3) { display: none; }
+
+  /* Join/Leave buttons — big enough to tap */
+  .btn-join, .btn-leave { padding: 10px 12px; font-size: 13px; min-height: 44px; }
+
+  /* Admin players table — hide less critical columns, tighten actions */
   .col-phone, .col-role { display: none; }
-  .phone-dial-select { width: 120px; }
-  .btn-join, .btn-leave { padding: 10px 12px; font-size: 13px; }
+  .btn-icon-sm { padding: 4px 6px; font-size: 11px; margin-right: 1px; }
+
+  /* Hide HC button on mobile — saves space, HC is in handicaps tab */
+  .btn-hc-mobile { display: none; }
+
+  /* Admin event rows — stack info and buttons */
+  .admin-event-row { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .admin-event-row .btn-row { flex-wrap: wrap; gap: 4px; }
+
+  /* Players toolbar — stack search and filter buttons */
+  .players-toolbar { flex-direction: column; align-items: stretch; }
+  .players-search { width: 100%; }
+  .players-status-btns { flex-wrap: wrap; }
+
+  /* Reports */
   .reports-grid { grid-template-columns: 1fr; }
   .stat-num { font-size: 22px; }
+
+  /* Modals — full width, slide from bottom feel */
+  .modal-overlay { align-items: flex-end; padding: 0; }
+  .modal {
+    border-radius: 14px 14px 0 0;
+    max-height: 92vh;
+    max-width: 100%;
+  }
+
+  /* Handicap ladder card */
+  .my-hc-rank  { font-size: 18px; min-width: 36px; }
+  .my-hc-name  { font-size: 14px; }
+  .my-hc-value { font-size: 24px; }
+
+  /* Phone input */
+  .phone-dial-select { width: 110px; font-size: 12px; }
 }
