@@ -402,6 +402,7 @@ function setupNav() {
       const v = btn.dataset.view;
       if (v === 'schedule') { showSection('view-schedule'); loadSchedule(); }
       if (v === 'ladder')   { showSection('view-ladder');   loadLadder(); }
+      if (v === 'hof')      { showSection('view-hof');      loadHof(); }
       if (v === 'admin')    { showSection('view-admin');   loadAdminTab('tab-players'); }
     });
   });
@@ -428,7 +429,7 @@ function showView(name) {
 }
 
 function showSection(id) {
-  ['view-schedule','view-event','view-ladder','view-admin'].forEach(s => {
+  ['view-schedule','view-event','view-ladder','view-hof','view-admin'].forEach(s => {
     document.getElementById(s).classList.add('hidden');
   });
   document.getElementById(id).classList.remove('hidden');
@@ -1047,6 +1048,234 @@ function renderPlayerHcTable() {
 }
 
 
+
+
+// ── Hall of Fame ───────────────────────────────────────────────────────────
+let hofResults = [];
+
+async function loadHof() {
+  const { data, error } = await sb.from('hof_results')
+    .select('*')
+    .order('event_month', { ascending: false });
+  if (error) { console.error(error); return; }
+  hofResults = data || [];
+  renderHof();
+}
+
+function fmtHofMonth(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00');
+  return d.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
+}
+
+function fmtScore(ws, ls) {
+  if (ws == null || ls == null) return '';
+  return `${ws} – ${ls}`;
+}
+
+function renderHof() {
+  const wrap = document.getElementById('hof-wrap');
+  if (!hofResults.length) { wrap.innerHTML = '<p style="color:#888">No records yet.</p>'; return; }
+
+  // Group by year descending
+  const byYear = {};
+  for (const r of hofResults) {
+    const yr = r.event_month.slice(0, 4);
+    if (!byYear[yr]) byYear[yr] = [];
+    byYear[yr].push(r);
+  }
+
+  // Tally wins per champion
+  const wins = {};
+  for (const r of hofResults) {
+    if (!r.not_played && r.winner_name) {
+      wins[r.winner_name] = (wins[r.winner_name] || 0) + 1;
+    }
+  }
+  const topWinners = Object.entries(wins)
+    .sort((a,b) => b[1] - a[1])
+    .slice(0, 5);
+
+  const hasScores = hofResults.some(r => r.winner_score != null);
+
+  let html = '';
+
+  // Champions leaderboard
+  if (topWinners.length) {
+    html += `<div class="hof-leaders">
+      <div class="hof-leaders-title">🏆 Most titles</div>
+      <div class="hof-leaders-row">
+        ${topWinners.map(([name, count], i) =>
+          `<div class="hof-leader-chip ${i === 0 ? 'hof-leader-first' : ''}">
+            <span class="hof-leader-name">${esc(name)}</span>
+            <span class="hof-leader-count">${count}</span>
+          </div>`
+        ).join('')}
+      </div>
+    </div>`;
+  }
+
+  // Results by year
+  for (const yr of Object.keys(byYear).sort((a,b) => b - a)) {
+    const rows = byYear[yr];
+    html += `<div class="hof-year-section">
+      <div class="hof-year-hdr">${yr}</div>
+      <table class="hof-table">
+        <thead><tr>
+          <th>Month</th>
+          <th>Champion</th>
+          <th class="hof-hc-col">HC</th>
+          <th>Runner-Up</th>
+          <th class="hof-hc-col">HC</th>
+          <th class="hof-score-col">Score</th>
+        </tr></thead>
+        <tbody>
+          ${rows.map(r => {
+            if (r.not_played) {
+              return `<tr class="hof-not-played">
+                <td>${fmtHofMonth(r.event_month)}</td>
+                <td colspan="5" style="color:#bbb;font-style:italic">Not played</td>
+              </tr>`;
+            }
+            const score = fmtScore(r.winner_score, r.runner_up_score);
+            return `<tr class="hof-result-row">
+              <td class="hof-month">${fmtHofMonth(r.event_month)}</td>
+              <td class="hof-winner">${esc(r.winner_name || '–')}</td>
+              <td class="hof-hc-col hof-hc">${r.winner_hc ?? '–'}</td>
+              <td class="hof-runnerup">${esc(r.runner_up_name || '–')}</td>
+              <td class="hof-hc-col hof-hc">${r.runner_up_hc ?? '–'}</td>
+              <td class="hof-score-col hof-score">${score}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>`;
+  }
+
+  wrap.innerHTML = html;
+}
+
+// ── Admin: HoF tab ────────────────────────────────────────────────────────
+async function loadAdminHof() {
+  const { data } = await sb.from('hof_results')
+    .select('*').order('event_month', { ascending: false });
+  hofResults = data || [];
+  renderAdminHof();
+}
+
+function renderAdminHof() {
+  const wrap = document.getElementById('hof-admin-list');
+  if (!hofResults.length) { wrap.innerHTML = '<p style="color:#888">No records yet.</p>'; return; }
+
+  const rows = hofResults.map(r => {
+    if (r.not_played) {
+      return `<tr class="hof-not-played">
+        <td>${fmtHofMonth(r.event_month)}</td>
+        <td colspan="4" style="color:#bbb;font-style:italic">Not played</td>
+        <td class="btn-actions">
+          <button class="btn-icon-sm" onclick="editHofResult('${r.id}')">Edit</button>
+          <button class="btn-icon-sm btn-danger" onclick="deleteHofResult('${r.id}')">Del</button>
+        </td>
+      </tr>`;
+    }
+    const score = fmtScore(r.winner_score, r.runner_up_score);
+    return `<tr>
+      <td>${fmtHofMonth(r.event_month)}</td>
+      <td>${esc(r.winner_name || '–')} ${r.winner_hc != null ? `<span class="hcap-badge">${r.winner_hc}</span>` : ''}</td>
+      <td>${esc(r.runner_up_name || '–')} ${r.runner_up_hc != null ? `<span class="hcap-badge">${r.runner_up_hc}</span>` : ''}</td>
+      <td>${score}</td>
+      <td class="btn-actions">
+        <button class="btn-icon-sm" onclick="editHofResult('${r.id}')">Edit</button>
+        <button class="btn-icon-sm btn-danger" onclick="deleteHofResult('${r.id}')">Del</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  wrap.innerHTML = `<table class="data-table hof-admin-table">
+    <thead><tr><th>Month</th><th>Champion</th><th>Runner-Up</th><th>Score</th><th></th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+function openHofForm(record = null) {
+  const isEdit = !!record;
+  const r = record || {};
+  const monthVal = r.event_month ? r.event_month.slice(0,7) : '';
+  openFormModal(isEdit ? 'Edit HoF Result' : 'Add HoF Result', `
+    <div class="form-group">
+      <label>Month</label>
+      <input type="month" id="hof-month" value="${monthVal}" required>
+    </div>
+    <div class="form-group" style="margin-bottom:8px">
+      <label><input type="checkbox" id="hof-not-played" ${r.not_played ? 'checked' : ''}
+        onchange="toggleHofNotPlayed()"> Not played</label>
+    </div>
+    <div id="hof-detail-fields">
+      <div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:end;margin-bottom:8px">
+        <div class="form-group" style="margin:0"><label>Champion</label><input type="text" id="hof-winner" value="${esc(r.winner_name||'')}"></div>
+        <div class="form-group" style="margin:0;width:70px"><label>HC</label><input type="number" id="hof-winner-hc" value="${r.winner_hc ?? ''}" step="1"></div>
+        <div class="form-group" style="margin:0;width:70px"><label>Score</label><input type="number" id="hof-winner-score" value="${r.winner_score ?? ''}" step="1" min="0"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:end;margin-bottom:8px">
+        <div class="form-group" style="margin:0"><label>Runner-Up</label><input type="text" id="hof-runner" value="${esc(r.runner_up_name||'')}"></div>
+        <div class="form-group" style="margin:0;width:70px"><label>HC</label><input type="number" id="hof-runner-hc" value="${r.runner_up_hc ?? ''}" step="1"></div>
+        <div class="form-group" style="margin:0;width:70px"><label>Score</label><input type="number" id="hof-runner-score" value="${r.runner_up_score ?? ''}" step="1" min="0"></div>
+      </div>
+    </div>
+    <div class="form-group"><label>Notes</label><input type="text" id="hof-notes" value="${esc(r.notes||'')}"></div>
+    <div id="hof-form-error" class="error-msg" style="margin-bottom:8px"></div>
+    <button class="btn-google-full" onclick="submitHofForm('${isEdit ? r.id : ''}')">
+      ${isEdit ? 'Save Changes' : 'Add Result'}
+    </button>
+  `);
+  toggleHofNotPlayed();
+}
+
+function toggleHofNotPlayed() {
+  const notPlayed = document.getElementById('hof-not-played')?.checked;
+  const fields    = document.getElementById('hof-detail-fields');
+  if (fields) fields.style.display = notPlayed ? 'none' : '';
+}
+
+async function submitHofForm(id) {
+  const monthInput = document.getElementById('hof-month').value;
+  if (!monthInput) { document.getElementById('hof-form-error').textContent = 'Month is required.'; return; }
+
+  const notPlayed = document.getElementById('hof-not-played').checked;
+  const payload = {
+    event_month:     monthInput + '-01',
+    not_played:      notPlayed,
+    winner_name:     notPlayed ? null : (document.getElementById('hof-winner').value.trim() || null),
+    winner_hc:       notPlayed ? null : (document.getElementById('hof-winner-hc').value !== '' ? Number(document.getElementById('hof-winner-hc').value) : null),
+    winner_score:    notPlayed ? null : (document.getElementById('hof-winner-score').value !== '' ? Number(document.getElementById('hof-winner-score').value) : null),
+    runner_up_name:  notPlayed ? null : (document.getElementById('hof-runner').value.trim() || null),
+    runner_up_hc:    notPlayed ? null : (document.getElementById('hof-runner-hc').value !== '' ? Number(document.getElementById('hof-runner-hc').value) : null),
+    runner_up_score: notPlayed ? null : (document.getElementById('hof-runner-score').value !== '' ? Number(document.getElementById('hof-runner-score').value) : null),
+    notes:           document.getElementById('hof-notes').value.trim() || null,
+  };
+
+  let error;
+  if (id) {
+    ({ error } = await sb.from('hof_results').update(payload).eq('id', id));
+  } else {
+    ({ error } = await sb.from('hof_results').insert(payload));
+  }
+
+  if (error) { document.getElementById('hof-form-error').textContent = error.message; return; }
+  closeFormModal();
+  loadAdminHof();
+}
+
+function editHofResult(id) {
+  const r = hofResults.find(x => x.id === id);
+  if (r) openHofForm(r);
+}
+
+async function deleteHofResult(id) {
+  if (!confirm('Delete this HoF result?')) return;
+  await sb.from('hof_results').delete().eq('id', id);
+  loadAdminHof();
+}
+
 // ── Schedule ──────────────────────────────────────────────────────────────
 async function loadSchedule() {
   const today = new Date().toISOString().slice(0, 10);
@@ -1299,7 +1528,12 @@ async function loadAdminTab(tabId) {
   if (tabId === 'tab-players')   await renderPlayersTab();
   if (tabId === 'tab-events')    await renderAdminEvents();
   if (tabId === 'tab-templates') await renderTemplatesTab();
+  if (tabId === 'tab-hof')       await loadAdminHof();
   if (tabId === 'tab-reports')   await renderReportsTab();
+
+  if (tabId === 'tab-hof') {
+    document.getElementById('btn-add-hof')?.addEventListener('click', () => openHofForm());
+  }
 }
 
 // ── Players tab ───────────────────────────────────────────────────────────

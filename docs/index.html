@@ -29,7 +29,7 @@
     </div>
     <div id="login-phone-error" class="error-msg" style="margin-bottom:8px"></div>
     <button class="btn-google-full" onclick="submitLoginPhone()">Sign In</button>
-    <p class="login-version">v3.9</p>
+    <p class="login-version">v4.0</p>
   </div>
 </div>
 
@@ -94,7 +94,7 @@
       <img src="bcss-transparent.png" class="header-logo" alt="BC">
       <div class="header-title">
         <span class="logo">British Club</span>
-        <span class="logo-sub">Squash Section <span class="version">v3.9</span></span>
+        <span class="logo-sub">Squash Section <span class="version">v4.0</span></span>
       </div>
     </div>
     <div class="header-actions">
@@ -111,12 +111,22 @@
     <nav>
       <button class="nav-btn active" data-view="schedule">Sign-Up</button>
       <button class="nav-btn" data-view="ladder">Handicaps</button>
+      <button class="nav-btn" data-view="hof">HoF</button>
       <button class="nav-btn admin-only hidden" data-view="admin">Admin <span id="admin-badge" class="admin-badge hidden"></span>▾</button>
     </nav>
   </header>
 
   <!-- ── PWA install banner ──────────────────────────────────────────────── -->
   <div id="pwa-banner" class="pwa-banner hidden"></div>
+
+  <!-- ── Hall of Fame view ──────────────────────────────────────────────────── -->
+  <main id="view-hof" class="section hidden">
+    <div class="section-header">
+      <h2>Hall of Fame</h2>
+      <p class="hof-subtitle">Monthly Round Robin Championship</p>
+    </div>
+    <div id="hof-wrap"></div>
+  </main>
 
   <!-- ── Players / Ladder view ───────────────────────────────────────────── -->
   <main id="view-ladder" class="section hidden">
@@ -146,6 +156,7 @@
       <button class="tab-btn active" data-tab="tab-players">Players</button>
       <button class="tab-btn" data-tab="tab-events">Events</button>
       <button class="tab-btn" data-tab="tab-templates">Templates</button>
+      <button class="tab-btn" data-tab="tab-hof">HoF</button>
       <button class="tab-btn" data-tab="tab-reports">Reports</button>
     </div>
 
@@ -181,6 +192,15 @@
 
     <!-- Reports tab -->
     <div id="tab-reports" class="tab-panel hidden"></div>
+
+    <!-- HoF admin tab -->
+    <div id="tab-hof" class="tab-panel hidden">
+      <div class="panel-header">
+        <h3>Hall of Fame</h3>
+        <button class="btn-primary" id="btn-add-hof">+ Add Result</button>
+      </div>
+      <div id="hof-admin-list"></div>
+    </div>
 
   </main>
 
