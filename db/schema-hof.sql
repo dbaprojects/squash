@@ -20,7 +20,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_hof_month ON hof_results(event_month);
 ALTER TABLE hof_results ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "hof_select" ON hof_results
-  FOR SELECT TO authenticated USING (TRUE);
+  FOR SELECT USING (TRUE);
 
 CREATE POLICY "hof_admin_all" ON hof_results
   FOR ALL TO authenticated
