@@ -193,9 +193,9 @@ body {
 header {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 0 16px;
-  height: 54px;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 16px 6px;
   background: var(--bc-navy);
   color: #fff;
   position: sticky;
@@ -205,11 +205,13 @@ header {
 }
 
 .header-logo {
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   object-fit: contain;
   flex-shrink: 0;
-  mix-blend-mode: multiply;
+  background: #fff;
+  border-radius: 50%;
+  padding: 3px;
 }
 
 .header-left  { display: flex; align-items: center; gap: 9px; }
@@ -218,7 +220,7 @@ header {
 .logo-sub     { font-size: 10px; color: rgba(255,255,255,0.5); line-height: 1; letter-spacing: 0.05em; }
 .version      { font-size: 9px; color: rgba(255,255,255,0.3); margin-left: 5px; }
 
-nav { display: flex; gap: 4px; flex: 1; }
+nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 4px; }
 
 .nav-btn {
   background: none;
@@ -957,25 +959,8 @@ nav { display: flex; gap: 4px; flex: 1; }
   .players-search { width: 100%; }
   .players-status-btns, .players-role-btns { flex-wrap: wrap; }
 
-  /* Header: wrap nav to second row */
-  header {
-    flex-wrap: wrap;
-    height: auto;
-    padding: 8px 12px 6px;
-    gap: 6px;
-  }
+  /* Header: base styles now handle wrap; keep only overrides */
   .header-left { flex: 1; min-width: 0; }
-
-  nav {
-    order: 10;
-    width: 100%;
-    border-top: 1px solid rgba(255,255,255,0.1);
-    padding-top: 6px;
-    padding-bottom: 2px;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    gap: 2px;
-  }
   .nav-btn { padding: 6px 10px; font-size: 13px; }
 
   /* Sections */
