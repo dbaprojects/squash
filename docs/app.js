@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.27';
+const APP_VERSION = '4.28';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -1813,12 +1813,24 @@ function renderSchedule() {
     if (!groupMap[ev.event_date]) { groupMap[ev.event_date] = []; dates.push(ev.event_date); }
     groupMap[ev.event_date].push(ev);
   }
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   el.innerHTML = dates.map(d => {
-    const dObj = new Date(d + 'T12:00:00');
-    const hdr  = dObj.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    const dObj  = new Date(d + 'T12:00:00');
+    const abbr  = dObj.toLocaleDateString('en-GB', { weekday: 'short' }).toUpperCase();
+    const num   = dObj.getDate();
+    const label = `${dObj.toLocaleDateString('en-GB',{weekday:'long'}).toUpperCase()} • ${num} ${MONTHS[dObj.getMonth()].toUpperCase()} ${dObj.getFullYear()}`;
     return `<div class="schedule-day-group">
-      <div class="schedule-day-header">${hdr}</div>
-      <div class="schedule-day-row">${groupMap[d].map(ev => eventCard(ev)).join('')}</div>
+      <div class="sched-aside">
+        <div class="sched-day-circle">
+          <span class="sched-day-abbr">${abbr}</span>
+          <span class="sched-day-num">${num}</span>
+        </div>
+        <div class="sched-vline"></div>
+      </div>
+      <div class="sched-main">
+        <div class="sched-day-label">${label}</div>
+        <div class="sched-sessions">${groupMap[d].map(ev => eventCard(ev)).join('')}</div>
+      </div>
     </div>`;
   }).join('');
 }
@@ -1833,20 +1845,24 @@ function eventCard(ev) {
   const isAdmin   = ST.player?.is_admin || ST.player?.is_super_admin;
   const enrolled  = !!mySignup;
 
-  const timeStr    = ev.start_time.slice(0, 5) + '–' + ev.end_time.slice(0, 5);
-  const countLabel = ev.max_signups ? `${count}/${ev.max_signups}` : String(count);
+  const [h, mm] = ev.start_time.slice(0, 5).split(':').map(Number);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12  = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  const timeH = `${h12}:${mm.toString().padStart(2, '0')}`;
 
-  // Tapping the row joins (unenrolled) or toggles names (enrolled)
+  const fillPct    = ev.max_signups ? Math.min(100, Math.round(count / ev.max_signups * 100)) : 0;
+  const countLabel = ev.max_signups ? `${count} / ${ev.max_signups} players` : `${count} players`;
+
   const rowClick = enrolled
     ? `onclick="toggleAttendees('${ev.id}')"`
     : `onclick="joinEvent(event,'${ev.id}')"`;
 
-  const rowRight = enrolled
-    ? `<span class="ev-enrolled-badge">&#10003; Enrolled</span>`
-    : `<span class="ev-join-pill">Join</span>`;
+  const actionBtn = enrolled
+    ? `<span class="ev-btn-enrolled">&#10003; ENROLLED</span>`
+    : `<span class="ev-btn-join">JOIN <span class="ev-btn-arrow">&#8594;</span></span>`;
 
   const leaveBtn = enrolled
-    ? `<button class="btn-leave--row" onclick="event.stopPropagation();leaveEvent(event,'${mySignup.id}','${ev.id}')">Leave</button>`
+    ? `<button class="btn-leave--row" onclick="event.stopPropagation();leaveEvent(event,'${mySignup.id}','${ev.id}')">Leave session</button>`
     : '';
 
   const confirmedNames = confirmed.map(s => {
@@ -1871,22 +1887,25 @@ function eventCard(ev) {
         ${confirmed.length ? confirmedNames : '<span style="color:#bbb;font-style:italic">No signups yet</span>'}
       </div>
       ${reserveNames ? `<div class="ev-names-reserves">${reserveNames}</div>` : ''}
+      ${leaveBtn ? `<div style="margin-top:10px">${leaveBtn}</div>` : ''}
     </div>`;
 
   return `
-    <div class="ev-row${enrolled ? ' ev-row--enrolled' : ''}" id="ev-card-${ev.id}" ${rowClick}>
-      <div class="ev-row-main">
-        <div class="ev-row-left">
-          <div class="ev-row-title">${esc(ev.title)}</div>
-          <div class="ev-row-time">${timeStr}</div>
+    <div class="ev-row${enrolled ? ' ev-row--enrolled' : ''}" id="ev-card-${ev.id}">
+      <div class="ev-row-main" ${rowClick}>
+        <div class="ev-time-col">
+          <span class="ev-time-h">${timeH}</span>
+          <span class="ev-time-p">${ampm}</span>
         </div>
-        ${rowRight}
-      </div>
-      <div class="ev-row-foot" onclick="event.stopPropagation()">
-        <button class="ev-count-btn${full ? ' full' : ''}" onclick="toggleAttendees('${ev.id}')">
-          Players ${countLabel} <span class="ev-chevron">&#9660;</span>
-        </button>
-        ${leaveBtn}
+        <div class="ev-info-col">
+          <div class="ev-row-title">${esc(ev.title)}</div>
+          <div class="ev-meta-row" onclick="event.stopPropagation();toggleAttendees('${ev.id}')">
+            <span class="ev-players-icon">&#128101;</span>
+            <span class="ev-players-text">${countLabel}</span>
+            ${ev.max_signups ? `<div class="ev-progress"><div class="ev-progress-fill${full ? ' full' : ''}" style="width:${fillPct}%"></div></div>` : ''}
+          </div>
+        </div>
+        <div class="ev-action-col">${actionBtn}</div>
       </div>
       ${namesPanel}
     </div>`
@@ -1894,11 +1913,8 @@ function eventCard(ev) {
 
 function toggleAttendees(eventId) {
   const panel = document.getElementById('ev-names-' + eventId);
-  const btn   = panel?.previousElementSibling?.querySelector('.ev-count-btn');
   if (!panel) return;
-  const open = !panel.hidden;
-  panel.hidden = open;
-  if (btn) btn.classList.toggle('open', !open);
+  panel.hidden = !panel.hidden;
 }
 
 function refreshCard(eventId, signups) {
