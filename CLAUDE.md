@@ -5,7 +5,7 @@
 - **Owner:** David Barkess — personal project, unrelated to SAP/DealSensAI work
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `C:\Users\I061437\OneDrive\Projects\Squash`
-- **Current version:** v4.5
+- **Current version:** v4.6
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -275,3 +275,4 @@ SUPABASE_SERVICE_ROLE_KEY=... node db/reseed.js
 | v4.3 | Home dashboard redesign: nav tabs + hamburger removed; logo navigates home; `← Home` back button; 5 cards (Me/navy/HC trend, Sign-Up/session list, Handicaps/section stats, HoF/trophy, Admin/pending); sign-out + user-switch in home footer |
 | v4.4 | Me card: name-only header (no "ME" label), dynamic font scaling, "Handicap:"/"Attendance:" prefixes; Sign-Up card: "Click to Sign-up" label, 5 rows + "+ N more" indicator, no "View all" link; data consistency: full HC history fetch, is_reserve=false filter in modal signup count; reseed script generates current+next week events with light signups |
 | v4.5 | Mobile streamlining: page title in header bar (between logo and ← Home button, centered via flex:1), filter/picker area tightened (fonts reduced to 11–12px, padding tightened on nav bar / filter rows / role buttons), movers column headers simplified to "Improved" / "Worsened" |
+| v4.6 | HoF redesign: removed subtitle; leaderboard moved to top (all-time, status filter only, unaffected by name/year); filter bar below leaderboard with name input + year dropdown (default All) + status buttons; results filtered by name+year+status; compact table (12px font, table-layout:fixed, 5px padding, ellipsis on name cols) |

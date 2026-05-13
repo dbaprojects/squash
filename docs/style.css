@@ -1046,24 +1046,38 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 }
 
 /* ── Hall of Fame ───────────────────────────────────────────────────────── */
-.hof-subtitle { font-size: 13px; color: #888; margin: -8px 0 12px; }
-
 .hof-filter-bar {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 14px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
 }
+.hof-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .hof-name-filter {
   flex: 1;
-  min-width: 160px;
+  min-width: 0;
   padding: 5px 8px;
   border: 1.5px solid var(--bc-border);
   border-radius: 6px;
   font-size: 12px;
 }
 .hof-name-filter:focus { outline: none; border-color: var(--bc-navy); }
+.hof-year-sel {
+  padding: 4px 6px;
+  border: 1.5px solid var(--bc-border);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--bc-navy);
+  background: #fff;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.hof-year-sel:focus { outline: none; border-color: var(--bc-navy); }
 .hof-status-btns { display: flex; gap: 4px; }
 .hof-status-btn {
   padding: 5px 10px;
@@ -1124,23 +1138,26 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 .hof-leader-count  { background: rgba(255,255,255,.2); border-radius: 10px; flex-shrink: 0;
   padding: 1px 7px; font-size: 11px; font-weight: 700; }
 
-.hof-year-section  { margin-bottom: 24px; }
-.hof-year-hdr      { font-size: 15px; font-weight: 700; color: var(--bc-navy);
-  border-bottom: 2px solid var(--bc-navy); padding-bottom: 4px; margin-bottom: 8px; }
+.hof-year-hdr      { font-size: 13px; font-weight: 700; color: var(--bc-navy);
+  border-bottom: 2px solid var(--bc-navy); padding-bottom: 3px; margin-bottom: 6px; margin-top: 4px; }
 
-.hof-table         { width: 100%; border-collapse: collapse; font-size: 14px; }
-.hof-table th      { background: var(--bc-navy); color: #fff; padding: 7px 10px;
-  font-weight: 600; text-align: left; font-size: 12px; }
-.hof-table td      { padding: 7px 10px; border-bottom: 1px solid #f0f0f0; }
+.hof-table         { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
+.hof-table th      { background: var(--bc-navy); color: #fff; padding: 5px 8px;
+  font-weight: 600; text-align: left; font-size: 11px; }
+.hof-table td      { padding: 5px 8px; border-bottom: 1px solid #f0f0f0; }
 .hof-table tr:last-child td { border-bottom: none; }
 .hof-table tr:hover td { background: var(--bc-navy-lt); }
-.hof-hc-col        { text-align: center; width: 48px; }
-.hof-score-col     { text-align: center; width: 72px; }
-.hof-hc            { font-size: 12px; color: #888; }
-.hof-hc-inline     { font-size: 12px; color: #888; font-weight: 400; }
-.hof-winner        { font-weight: 600; color: var(--bc-navy); }
-.hof-month         { white-space: nowrap; color: #666; font-size: 13px; width: 90px; }
-.hof-score         { font-weight: 700; color: var(--bc-navy); font-size: 13px; }
+.hof-col-month     { width: 60px; }
+.hof-col-score     { width: 48px; text-align: center; }
+.hof-hc-col        { text-align: center; width: 40px; }
+.hof-score-col     { text-align: center; width: 48px; }
+.hof-hc            { font-size: 11px; color: #888; }
+.hof-hc-inline     { font-size: 10px; color: #888; font-weight: 400; }
+.hof-winner        { font-weight: 600; color: var(--bc-navy);
+                     overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hof-runnerup      { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hof-month         { color: #666; }
+.hof-score         { font-weight: 700; color: var(--bc-navy); }
 .hof-not-played td { color: #ccc; }
 
 .hof-admin-table td { padding: 6px 10px; }
@@ -1398,7 +1415,6 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
   /* Reports */
   .reports-grid { grid-template-columns: 1fr; }
   .stat-num { font-size: 22px; }
-  .hof-filter-bar { flex-direction: column; align-items: stretch; }
 
   /* Modals — centred, near top on mobile */
   .modal-overlay { align-items: flex-start; padding: 16px; padding-top: 60px; }

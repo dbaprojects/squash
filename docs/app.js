@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.5';
+const APP_VERSION = '4.6';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -1105,6 +1105,7 @@ function renderPlayerHcTable() {
 let hofResults    = [];
 let hofNameFilter = '';
 let hofStatusFilter = 'all';  // 'all' | 'active' | 'inactive'
+let hofYearFilter   = 'all';  // 'all' | 'YYYY'
 let hofPlayerMap  = {};       // normalized name → { active: bool, id: uuid }
 let hofPlayerList = [];       // [{id, display, normalized}] sorted alpha — for autocomplete
 
@@ -1121,9 +1122,9 @@ function buildHofPlayerMap(players) {
 }
 
 async function loadHof() {
-  // Reset filter bar DOM on fresh load so it rebuilds in the right place
-  const old = document.getElementById('hof-filter-bar');
-  if (old) old.remove();
+  // Clear wrap so renderHof rebuilds the three-div structure fresh
+  const wrap = document.getElementById('hof-wrap');
+  if (wrap) wrap.innerHTML = '';
 
   const [{ data, error }, { data: playerList }] = await Promise.all([
     sb.from('hof_results').select('*').order('event_month', { ascending: false }),
@@ -1149,18 +1150,87 @@ function renderHof() {
   const wrap = document.getElementById('hof-wrap');
   if (!hofResults.length) { wrap.innerHTML = '<p style="color:#888">No records yet.</p>'; return; }
 
-  // Filter bar (persistent — only rebuild if not present)
-  let filterBar = document.getElementById('hof-filter-bar');
-  if (!filterBar) {
-    filterBar = document.createElement('div');
-    filterBar.id = 'hof-filter-bar';
-    filterBar.className = 'hof-filter-bar';
-    wrap.parentNode.insertBefore(filterBar, wrap);
+  // Ensure three sub-divs exist in correct order (leaders → filter → results)
+  if (!document.getElementById('hof-leaders-div')) {
+    wrap.innerHTML =
+      '<div id="hof-leaders-div"></div>' +
+      '<div id="hof-filter-bar" class="hof-filter-bar"></div>' +
+      '<div id="hof-results-div"></div>';
   }
+  const leadersDiv = document.getElementById('hof-leaders-div');
+  const filterBar  = document.getElementById('hof-filter-bar');
+  const resultsDiv = document.getElementById('hof-results-div');
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  const nameLow = hofNameFilter.toLowerCase().trim();
+  function matchesStatus(name) {
+    if (hofStatusFilter === 'all') return true;
+    const key  = (name || '').toLowerCase().replace(/\s+/g,' ').trim();
+    const info = hofPlayerMap[key];
+    if (hofStatusFilter === 'active')   return info?.active === true;
+    if (hofStatusFilter === 'inactive') return info?.active === false;
+    return true;
+  }
+  function matchesName(r) {
+    if (!nameLow) return true;
+    return (r.winner_name || '').toLowerCase().includes(nameLow) ||
+           (r.runner_up_name || '').toLowerCase().includes(nameLow);
+  }
+  function filterLeader(entries) {
+    if (hofStatusFilter === 'all') return entries;
+    return entries.filter(([name]) => matchesStatus(name));
+  }
+
+  // ── Leaderboard — all-time, status filter only (unaffected by name/year) ──
+  const wins = {}, ru = {};
+  for (const r of hofResults) {
+    if (r.not_played) continue;
+    if (r.winner_name)    wins[r.winner_name]    = (wins[r.winner_name]    || 0) + 1;
+    if (r.runner_up_name) ru[r.runner_up_name]   = (ru[r.runner_up_name]  || 0) + 1;
+  }
+  const topWinners  = filterLeader(Object.entries(wins).sort((a,b) => b[1]-a[1])).slice(0,5);
+  const topRunnerUp = filterLeader(Object.entries(ru).sort((a,b)  => b[1]-a[1])).slice(0,5);
+
+  let leadersHtml = '';
+  if (topWinners.length || topRunnerUp.length) {
+    leadersHtml += `<div class="hof-leaders-dual">`;
+    if (topWinners.length) {
+      leadersHtml += `<div class="hof-leaders-col">
+        <div class="hof-leaders-title">🏆 Most Titles</div>
+        ${topWinners.map(([name, count], i) =>
+          `<div class="hof-leader-chip${i===0?' hof-leader-first':''}">
+            <span class="hof-leader-name">${esc(name)}</span>
+            <span class="hof-leader-count">${count}</span>
+          </div>`).join('')}
+      </div>`;
+    }
+    if (topWinners.length && topRunnerUp.length) leadersHtml += `<div class="hof-leaders-divider"></div>`;
+    if (topRunnerUp.length) {
+      leadersHtml += `<div class="hof-leaders-col">
+        <div class="hof-leaders-title">🥈 Most #2's</div>
+        ${topRunnerUp.map(([name, count], i) =>
+          `<div class="hof-leader-chip${i===0?' hof-leader-ru-first':''}">
+            <span class="hof-leader-name">${esc(name)}</span>
+            <span class="hof-leader-count">${count}</span>
+          </div>`).join('')}
+      </div>`;
+    }
+    leadersHtml += `</div>`;
+  }
+  leadersDiv.innerHTML = leadersHtml;
+
+  // ── Filter bar (persistent — preserves input focus) ──────────────────────
+  const allYears = [...new Set(hofResults.map(r => r.event_month.slice(0,4)))].sort((a,b) => b-a);
   const wasFocused = document.activeElement?.id === 'hof-name-input';
   filterBar.innerHTML = `
-    <input type="text" id="hof-name-input" class="hof-name-filter" placeholder="Filter by name…"
-      value="${esc(hofNameFilter)}" oninput="hofNameFilter=this.value;renderHof()">
+    <div class="hof-filter-row">
+      <input type="text" id="hof-name-input" class="hof-name-filter" placeholder="Filter by name…"
+        value="${esc(hofNameFilter)}" oninput="hofNameFilter=this.value;renderHof()">
+      <select id="hof-year-sel" class="hof-year-sel" onchange="hofYearFilter=this.value;renderHof()">
+        <option value="all"${hofYearFilter==='all'?' selected':''}>All</option>
+        ${allYears.map(y => `<option value="${y}"${hofYearFilter===y?' selected':''}>${y}</option>`).join('')}
+      </select>
+    </div>
     <div class="hof-status-btns">
       ${['all','active','inactive'].map(s =>
         `<button class="hof-status-btn${hofStatusFilter===s?' active':''}"
@@ -1172,131 +1242,60 @@ function renderHof() {
     if (inp) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
   }
 
-  // Apply filters
-  const nameLow = hofNameFilter.toLowerCase().trim();
-  function matchesStatus(name) {
-    if (hofStatusFilter === 'all') return true;
-    const key = (name || '').toLowerCase().replace(/\s+/g,' ').trim();
-    const info = hofPlayerMap[key];
-    if (hofStatusFilter === 'active')   return info?.active === true;
-    if (hofStatusFilter === 'inactive') return info?.active === false;
-    return true;
-  }
-  function matchesName(r) {
-    if (!nameLow) return true;
-    return (r.winner_name || '').toLowerCase().includes(nameLow) ||
-           (r.runner_up_name || '').toLowerCase().includes(nameLow);
-  }
-
+  // ── Results — name + year + status filters ────────────────────────────────
   const filtered = hofResults.filter(r => {
-    if (r.not_played) return !nameLow; // only show not-played rows when no name filter
+    if (hofYearFilter !== 'all' && r.event_month.slice(0,4) !== hofYearFilter) return false;
+    if (r.not_played) return !nameLow;
     if (!matchesName(r)) return false;
-    // status filter: at least one participant must match
-    if (hofStatusFilter !== 'all') {
-      return matchesStatus(r.winner_name) || matchesStatus(r.runner_up_name);
-    }
+    if (hofStatusFilter !== 'all') return matchesStatus(r.winner_name) || matchesStatus(r.runner_up_name);
     return true;
   });
 
-  // Group by year descending
   const byYear = {};
   for (const r of filtered) {
-    const yr = r.event_month.slice(0, 4);
+    const yr = r.event_month.slice(0,4);
     if (!byYear[yr]) byYear[yr] = [];
     byYear[yr].push(r);
   }
 
-  // Tally wins and runner-ups (from filtered set when name filter active, else all)
-  const source = nameLow ? filtered : hofResults.filter(r => !r.not_played);
-  const wins = {};
-  const ru   = {};
-  for (const r of source) {
-    if (r.not_played) continue;
-    if (r.winner_name)     wins[r.winner_name] = (wins[r.winner_name] || 0) + 1;
-    if (r.runner_up_name)  ru[r.runner_up_name] = (ru[r.runner_up_name] || 0) + 1;
-  }
+  const showYearHdrs = hofYearFilter === 'all';
+  let resultsHtml = '';
 
-  // Apply status filter to leaderboards
-  function filterLeader(entries) {
-    if (hofStatusFilter === 'all') return entries;
-    return entries.filter(([name]) => matchesStatus(name));
-  }
-  const topWinners  = filterLeader(Object.entries(wins).sort((a,b) => b[1]-a[1])).slice(0, 5);
-  const topRunnerUp = filterLeader(Object.entries(ru).sort((a,b) => b[1]-a[1])).slice(0, 5);
-
-  let html = '';
-
-  // Leaderboards — single panel, two columns
-  if (topWinners.length || topRunnerUp.length) {
-    html += `<div class="hof-leaders-dual">`;
-    if (topWinners.length) {
-      html += `<div class="hof-leaders-col">
-        <div class="hof-leaders-title">🏆 Most Titles</div>
-        ${topWinners.map(([name, count], i) =>
-          `<div class="hof-leader-chip ${i === 0 ? 'hof-leader-first' : ''}">
-            <span class="hof-leader-name">${esc(name)}</span>
-            <span class="hof-leader-count">${count}</span>
-          </div>`
-        ).join('')}
-      </div>`;
-    }
-    if (topWinners.length && topRunnerUp.length) {
-      html += `<div class="hof-leaders-divider"></div>`;
-    }
-    if (topRunnerUp.length) {
-      html += `<div class="hof-leaders-col">
-        <div class="hof-leaders-title">🥈 Most #2's</div>
-        ${topRunnerUp.map(([name, count], i) =>
-          `<div class="hof-leader-chip ${i === 0 ? 'hof-leader-ru-first' : ''}">
-            <span class="hof-leader-name">${esc(name)}</span>
-            <span class="hof-leader-count">${count}</span>
-          </div>`
-        ).join('')}
-      </div>`;
-    }
-    html += `</div>`;
-  }
-
-  // Results by year
-  for (const yr of Object.keys(byYear).sort((a,b) => b - a)) {
-    const rows = byYear[yr];
-    html += `<div class="hof-year-section">
-      <div class="hof-year-hdr">${yr}</div>
-      <table class="hof-table">
-        <thead><tr>
-          <th>Month</th>
-          <th>Champion</th>
-          <th>Runner-Up</th>
-          <th class="hof-score-col">Score</th>
-        </tr></thead>
-        <tbody>
-          ${rows.map(r => {
-            if (r.not_played) {
-              return `<tr class="hof-not-played">
-                <td>${fmtHofMonth(r.event_month)}</td>
-                <td colspan="3" style="color:#bbb;font-style:italic">Not played</td>
-              </tr>`;
-            }
-            const score = fmtScore(r.winner_score, r.runner_up_score);
-            const winnerHc = r.winner_hc != null ? ` <span class="hof-hc-inline">(${r.winner_hc})</span>` : '';
-            const ruHc     = r.runner_up_hc != null ? ` <span class="hof-hc-inline">(${r.runner_up_hc})</span>` : '';
-            return `<tr class="hof-result-row">
-              <td class="hof-month">${fmtHofMonth(r.event_month)}</td>
-              <td class="hof-winner">${esc(r.winner_name || '–')}${winnerHc}</td>
-              <td class="hof-runnerup">${esc(r.runner_up_name || '–')}${ruHc}</td>
-              <td class="hof-score-col hof-score">${score}</td>
+  for (const yr of Object.keys(byYear).sort((a,b) => b-a)) {
+    if (showYearHdrs) resultsHtml += `<div class="hof-year-hdr">${yr}</div>`;
+    resultsHtml += `<table class="hof-table">
+      <thead><tr>
+        <th class="hof-col-month">Month</th>
+        <th>Champion</th>
+        <th>Runner-Up</th>
+        <th class="hof-col-score">Score</th>
+      </tr></thead>
+      <tbody>
+        ${byYear[yr].map(r => {
+          if (r.not_played) {
+            return `<tr class="hof-not-played">
+              <td>${fmtHofMonth(r.event_month)}</td>
+              <td colspan="3" style="color:#bbb;font-style:italic">Not played</td>
             </tr>`;
-          }).join('')}
-        </tbody>
-      </table>
-    </div>`;
+          }
+          const score = fmtScore(r.winner_score, r.runner_up_score);
+          const wHc = r.winner_hc    != null ? ` <span class="hof-hc-inline">(${r.winner_hc})</span>`    : '';
+          const rHc = r.runner_up_hc != null ? ` <span class="hof-hc-inline">(${r.runner_up_hc})</span>` : '';
+          return `<tr>
+            <td class="hof-month">${fmtHofMonth(r.event_month)}</td>
+            <td class="hof-winner">${esc(r.winner_name || '–')}${wHc}</td>
+            <td class="hof-runnerup">${esc(r.runner_up_name || '–')}${rHc}</td>
+            <td class="hof-col-score hof-score">${score}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>${showYearHdrs ? '<div style="margin-bottom:14px"></div>' : ''}`;
   }
 
   if (!Object.keys(byYear).length) {
-    html += '<p style="color:#888;margin-top:12px">No results match the filter.</p>';
+    resultsHtml = '<p style="color:#888;margin-top:12px">No results match the filter.</p>';
   }
-
-  wrap.innerHTML = html;
+  resultsDiv.innerHTML = resultsHtml;
 }
 
 // ── Admin: HoF tab ────────────────────────────────────────────────────────
