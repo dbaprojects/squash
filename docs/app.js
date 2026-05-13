@@ -1857,13 +1857,13 @@ function eventCard(ev) {
 
   return `<div class="event-card${enrolled ? ' event-card--enrolled' : ''}" id="ev-card-${ev.id}">
     <div class="ev-body">
-      <div class="ev-title">${dayStr}: ${esc(ev.title)}</div>
+      <div class="ev-title">${dayStr} · ${esc(ev.title)}</div>
       <div class="ev-meta">${dateStr} &nbsp;·&nbsp; ${timeStr}</div>
       ${enrolledBadge}
     </div>
     <div class="ev-foot">
       <button class="ev-count-btn${full ? ' full' : ''}" onclick="toggleAttendees('${ev.id}')">
-        ${countLabel} <span class="ev-chevron">&#9660;</span>
+        Players ${countLabel} <span class="ev-chevron">&#9660;</span>
       </button>
       ${actionBtn}
     </div>
