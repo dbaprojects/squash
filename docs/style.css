@@ -1235,14 +1235,16 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 }
 .hof-ac-item:hover { background: var(--bc-navy-lt); }
 
+.hof-leaders-card {
+  background: var(--bc-navy);
+  border-radius: 10px;
+  padding: 14px 16px 12px;
+  margin-bottom: 20px;
+  color: #fff;
+}
 .hof-leaders-dual {
   display: flex;
   gap: 0;
-  background: var(--bc-navy);
-  border-radius: 10px;
-  padding: 14px 16px;
-  margin-bottom: 20px;
-  color: #fff;
 }
 .hof-leaders-col        { flex: 1; min-width: 0; }
 .hof-leaders-divider    { width: 1px; background: rgba(255,255,255,.18); margin: 0 14px; flex-shrink: 0; }

@@ -1195,9 +1195,9 @@ function renderHof() {
 
   let leadersHtml = '';
   if (topWinners.length || topRunnerUp.length) {
-    leadersHtml += `<div class="hof-leaders-dual">`;
+    let dualHtml = `<div class="hof-leaders-dual">`;
     if (topWinners.length) {
-      leadersHtml += `<div class="hof-leaders-col">
+      dualHtml += `<div class="hof-leaders-col">
         <div class="hof-leaders-title">🏆 Most Titles</div>
         ${topWinners.map(([name, count], i) =>
           `<div class="hof-leader-chip${i===0?' hof-leader-first':''}">
@@ -1206,9 +1206,9 @@ function renderHof() {
           </div>`).join('')}
       </div>`;
     }
-    if (topWinners.length && topRunnerUp.length) leadersHtml += `<div class="hof-leaders-divider"></div>`;
+    if (topWinners.length && topRunnerUp.length) dualHtml += `<div class="hof-leaders-divider"></div>`;
     if (topRunnerUp.length) {
-      leadersHtml += `<div class="hof-leaders-col">
+      dualHtml += `<div class="hof-leaders-col">
         <div class="hof-leaders-title">🥈 Most #2's</div>
         ${topRunnerUp.map(([name, count], i) =>
           `<div class="hof-leader-chip${i===0?' hof-leader-ru-first':''}">
@@ -1217,10 +1217,12 @@ function renderHof() {
           </div>`).join('')}
       </div>`;
     }
-    leadersHtml += `<div class="hof-leaders-status">
+    dualHtml += `</div>`;
+    const statusHtml = `<div class="hof-leaders-status">
       <button class="hof-lstatus-btn${hofStatusFilter==='all'?' active':''}" onclick="hofStatusFilter='all';renderHof()">All</button>
       <button class="hof-lstatus-btn${hofStatusFilter==='active'?' active':''}" onclick="hofStatusFilter='active';renderHof()">Active Players Only</button>
-    </div></div>`;
+    </div>`;
+    leadersHtml = `<div class="hof-leaders-card">${dualHtml}${statusHtml}</div>`;
   }
   leadersDiv.innerHTML = leadersHtml;
 
@@ -1245,7 +1247,6 @@ function renderHof() {
     if (hofYearFilter !== 'all' && r.event_month.slice(0,4) !== hofYearFilter) return false;
     if (r.not_played) return !nameLow;
     if (!matchesName(r)) return false;
-    if (hofStatusFilter !== 'all') return matchesStatus(r.winner_name) || matchesStatus(r.runner_up_name);
     return true;
   });
 
@@ -1263,7 +1264,7 @@ function renderHof() {
     if (showYearHdrs) resultsHtml += `<div class="hof-year-hdr">${yr}</div>`;
     resultsHtml += `<table class="hof-table">
       <thead><tr>
-        <th class="hof-col-month">Month</th>
+        <th class="hof-col-month"></th>
         <th>Champion</th>
         <th>Runner-Up</th>
         <th class="hof-col-score">Score</th>
