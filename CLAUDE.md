@@ -5,7 +5,7 @@
 - **Owner:** David Barkess — personal project, unrelated to SAP/DealSensAI work
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `C:\Users\I061437\OneDrive\Projects\Squash`
-- **Current version:** v4.22
+- **Current version:** v4.23
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -292,3 +292,4 @@ SUPABASE_SERVICE_ROLE_KEY=... node db/reseed.js
 | v4.20 | HoF home card: winner01-small.png replaces trophy emoji, sized 52×52px |
 | v4.21 | Version bump to force PWA cache refresh after image assets were added |
 | v4.22 | HoF home card: winner image enlarged to 70px |
+| v4.23 | HoF home card: champ name 12px, month 11px |
