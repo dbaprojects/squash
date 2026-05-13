@@ -1795,16 +1795,21 @@ async function loadSchedule() {
 function renderSchedule() {
   const el = document.getElementById('event-list');
   if (!ST.events.length) { el.innerHTML = '<p style="color:#666">No upcoming sessions.</p>'; return; }
-  // Group events by date (already ordered by event_date, start_time)
   const groupMap = {};
   const dates = [];
   for (const ev of ST.events) {
     if (!groupMap[ev.event_date]) { groupMap[ev.event_date] = []; dates.push(ev.event_date); }
     groupMap[ev.event_date].push(ev);
   }
-  el.innerHTML = dates.map(d =>
-    `<div class="schedule-day-group"><div class="schedule-day-row">${groupMap[d].map(ev => eventCard(ev)).join('')}</div></div>`
-  ).join('');
+  el.innerHTML = dates.map(d => {
+    const dObj = new Date(d + 'T12:00:00');
+    const hdr  = dObj.toLocaleDateString('en-GB', { weekday: 'short' }).toUpperCase()
+               + ', ' + dObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }).toUpperCase();
+    return `<div class="schedule-day-group">
+      <div class="schedule-day-header">${hdr}</div>
+      <div class="schedule-day-row">${groupMap[d].map(ev => eventCard(ev)).join('')}</div>
+    </div>`;
+  }).join('');
 }
 
 function eventCard(ev) {
@@ -1817,18 +1822,19 @@ function eventCard(ev) {
   const isAdmin   = ST.player?.is_admin || ST.player?.is_super_admin;
   const enrolled  = !!mySignup;
 
-  const actionBtn = mySignup
-    ? `<button class="btn-leave btn-leave--sm" onclick="leaveEvent(event,'${mySignup.id}','${ev.id}')">Cancel</button>`
-    : `<button class="btn-join btn-join--sm" onclick="joinEvent(event,'${ev.id}')">Join</button>`;
-
-  const d       = new Date(ev.event_date + 'T12:00:00');
-  const dayStr  = d.toLocaleDateString('en-GB', { weekday: 'short' });
-  const dateStr = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-  const timeStr = ev.start_time.slice(0, 5) + '–' + ev.end_time.slice(0, 5);
+  const d        = new Date(ev.event_date + 'T12:00:00');
+  const dayStr   = d.toLocaleDateString('en-GB', { weekday: 'short' });
+  const timeStr  = ev.start_time.slice(0, 5) + '–' + ev.end_time.slice(0, 5);
   const countLabel = ev.max_signups ? `${count}/${ev.max_signups}` : String(count);
 
-  const enrolledBadge = enrolled
+  // Top-right: enrolled badge OR join button
+  const topRight = enrolled
     ? `<span class="ev-enrolled-badge">&#10003; Enrolled</span>`
+    : `<button class="btn-join--card" onclick="joinEvent(event,'${ev.id}')">Join</button>`;
+
+  // Footer: leave button only when enrolled
+  const leaveBtn = enrolled
+    ? `<button class="btn-leave--card" onclick="leaveEvent(event,'${mySignup.id}','${ev.id}')">Leave</button>`
     : '';
 
   const confirmedNames = confirmed.map(s => {
@@ -1857,15 +1863,17 @@ function eventCard(ev) {
 
   return `<div class="event-card${enrolled ? ' event-card--enrolled' : ''}" id="ev-card-${ev.id}">
     <div class="ev-body">
-      <div class="ev-title">${dayStr} · ${esc(ev.title)}</div>
-      <div class="ev-meta">${dateStr} &nbsp;·&nbsp; ${timeStr}</div>
-      ${enrolledBadge}
+      <div class="ev-head-row">
+        <div class="ev-title">${dayStr} · ${esc(ev.title)}</div>
+        ${topRight}
+      </div>
+      <div class="ev-meta">${timeStr}</div>
     </div>
     <div class="ev-foot">
       <button class="ev-count-btn${full ? ' full' : ''}" onclick="toggleAttendees('${ev.id}')">
         Players ${countLabel} <span class="ev-chevron">&#9660;</span>
       </button>
-      ${actionBtn}
+      ${leaveBtn}
     </div>
     ${namesPanel}
   </div>`;

@@ -340,8 +340,17 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 /* ── Event cards ───────────────────────────────────────────────────────── */
 .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
 
-.schedule-day-group { margin-bottom: 14px; }
-.schedule-day-row   { display: flex; flex-wrap: wrap; gap: 10px; }
+.schedule-day-group  { margin-bottom: 18px; }
+.schedule-day-header {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  color: var(--bc-text-dim);
+  padding: 0 2px 7px;
+  border-bottom: 1px solid var(--bc-border);
+  margin-bottom: 10px;
+}
+.schedule-day-row { display: flex; flex-wrap: wrap; gap: 10px; }
 
 .event-card {
   flex: 1 1 160px;
@@ -350,30 +359,49 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
   border-radius: 12px;
   border: 1.5px solid var(--bc-border);
   overflow: hidden;
-  transition: box-shadow 0.15s, border-color 0.15s;
+  transition: box-shadow 0.15s;
 }
 .event-card:hover { box-shadow: 0 4px 16px rgba(27,42,107,0.13); }
-.event-card--enrolled {
-  background: var(--bc-surface);
-  border-color: #86efac;
-}
+.event-card--enrolled { border-color: var(--bc-border); }
 
-/* Card body — title + date/time + badge */
+/* Card body */
 .ev-body { padding: 10px 12px 8px; }
-.ev-body .ev-title { font-weight: 700; font-size: 14px; color: var(--bc-navy); margin-bottom: 3px; }
-.ev-body .ev-meta  { font-size: 11px; color: var(--bc-text-dim); }
+.ev-head-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.ev-body .ev-title { font-weight: 700; font-size: 14px; color: var(--bc-navy); }
+.ev-body .ev-meta  { font-size: 11px; color: var(--bc-text-dim); margin-top: 2px; }
 .ev-enrolled-badge {
-  display: inline-block;
-  margin-top: 5px;
+  flex-shrink: 0;
   font-size: 11px;
   font-weight: 600;
   color: #15803d;
   background: #dcfce7;
   border-radius: 10px;
   padding: 2px 8px;
+  white-space: nowrap;
 }
 
-/* Card footer — count toggle + action button */
+/* Join button in card header */
+.btn-join--card {
+  flex-shrink: 0;
+  background: var(--bc-gold);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 3px 11px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn-join--card:hover { background: var(--bc-gold-dk); }
+
+/* Card footer */
 .ev-foot {
   display: flex;
   align-items: center;
@@ -382,7 +410,6 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
   border-top: 1px solid var(--bc-border);
   gap: 6px;
 }
-.event-card--enrolled .ev-foot { border-top-color: #bbf7d0; }
 
 .ev-count-btn {
   background: var(--bc-navy-lt);
@@ -403,13 +430,26 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 .ev-chevron { font-size: 9px; transition: transform 0.15s; display: inline-block; }
 .ev-count-btn.open .ev-chevron { transform: rotate(180deg); }
 
+/* Leave button in footer — matches count chip scale */
+.btn-leave--card {
+  background: #f3f4f6;
+  border: 1.5px solid #d1d5db;
+  color: #6b7280;
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn-leave--card:hover { background: #fdecea; border-color: #fca5a5; color: var(--bc-red); }
+
 /* Names panel (hidden by default, toggled via JS) */
 .ev-names-panel {
   padding: 8px 12px 10px;
   border-top: 1px solid var(--bc-border);
   font-size: 12px;
 }
-.event-card--enrolled .ev-names-panel { border-top-color: #bbf7d0; }
 .ev-names-group { display: flex; flex-wrap: wrap; gap: 4px; }
 .ev-names-reserves { margin-top: 5px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
 .ev-names-reserves::before { content: 'Reserve:'; font-size: 11px; color: #92400e; font-weight: 600; margin-right: 2px; }
