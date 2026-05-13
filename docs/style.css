@@ -655,14 +655,10 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 
 /* ── Handicap ladder ────────────────────────────────────────────────────── */
 
-/* Top two-card row */
-.hc-top-row  { display: flex; gap: 12px; margin-bottom: 16px; }
-.hc-top-card { flex: 1; min-width: 0; background: #fff; border-radius: 10px;
-               padding: 14px 16px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
-@media (max-width: 520px) { .hc-top-row { flex-direction: column; } }
+/* Top two-card row — always 2 columns, matches home grid */
+.hc-top-row  { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
 
 /* My HC card – navy bg */
-#ladder-my-card { background: var(--bc-navy); color: #fff; }
 .myhc-header    { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
 .myhc-name      { font-weight: 600; font-size: 18px; line-height: 1.25; word-break: break-word; }
 .myhc-rank      { font-size: 12px; color: rgba(255,255,255,.55); margin-top: 2px; }

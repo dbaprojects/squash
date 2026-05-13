@@ -557,8 +557,8 @@ function renderLadder() {
   const wrap = document.getElementById('ladder-wrap');
   wrap.innerHTML = `
     <div class="hc-top-row">
-      <div id="ladder-my-card" class="hc-top-card"></div>
-      <div id="ladder-section-card" class="hc-top-card"></div>
+      <div id="ladder-my-card" class="home-card home-card-me"></div>
+      <div id="ladder-section-card" class="home-card home-card-ladder"></div>
     </div>
     <div id="ladder-view-toggle"></div>
     <div id="ladder-filter-bar"></div>
@@ -672,7 +672,8 @@ function renderSectionCard() {
   ];
 
   el.innerHTML = `
-    <div class="sec-card-title">Section Summary</div>
+    <div class="home-card-label">Handicaps</div>
+    <div class="home-card-sublabel">Last 12 Months · Active Players</div>
     <div class="home-hc-grid">
       <div class="home-hc-stat"><div class="home-hc-val">${fp.length}</div><div class="home-hc-lbl">Players</div></div>
       <div class="home-hc-stat"><div class="home-hc-val">${avgHc}</div><div class="home-hc-lbl">Avg HC</div></div>
