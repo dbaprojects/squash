@@ -1,6 +1,19 @@
 /* app.js — Squash Club SPA (Supabase, phone login) */
 'use strict';
 
+// ── Version guard — forces hard reload when app updates ───────────────────
+const APP_VERSION = '4.4';
+(function() {
+  const stored = localStorage.getItem('_app_ver');
+  if (stored !== APP_VERSION) {
+    localStorage.setItem('_app_ver', APP_VERSION);
+    // Only reload if we're not already on a cache-busted URL to avoid loops
+    if (!location.search.includes('_cb=')) {
+      location.replace(location.pathname + '?_cb=' + APP_VERSION);
+    }
+  }
+})();
+
 // ── PWA install prompt ────────────────────────────────────────────────────
 let deferredInstallPrompt = null;
 window.addEventListener('beforeinstallprompt', e => {
