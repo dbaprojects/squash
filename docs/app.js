@@ -1138,7 +1138,7 @@ function fmtHofMonthShort(dateStr) {
   return d.toLocaleDateString('en-GB', { month: 'short' });
 }
 
-
+function fmtHofMonth(dateStr) {
   const d = new Date(dateStr + 'T12:00:00');
   return d.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
 }
