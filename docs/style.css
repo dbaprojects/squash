@@ -348,31 +348,46 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
   border-bottom: 1px solid var(--bc-border);
   margin-bottom: 10px;
 }
-.schedule-day-row { display: flex; flex-wrap: wrap; gap: 10px; }
+.schedule-day-row { display: flex; flex-direction: column; gap: 8px; }
 
-.event-card {
-  flex: 1 1 160px;
-  min-width: 150px;
+/* ── Session row (single-column tap-to-join list) ───────────────────────── */
+.ev-row {
   background: var(--bc-surface);
   border-radius: 12px;
   border: 1.5px solid var(--bc-border);
   overflow: hidden;
-  transition: box-shadow 0.15s;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.1s;
+  user-select: none;
 }
-.event-card:hover { box-shadow: 0 4px 16px rgba(27,42,107,0.13); }
-.event-card--enrolled { border-color: var(--bc-border); }
+.ev-row:active { background: var(--bc-navy-lt); }
+.ev-row--enrolled { border-left: 4px solid #22c55e; background: #f0fdf4; }
+.ev-row--enrolled:active { background: #dcfce7; }
 
-/* Card body */
-.ev-body { padding: 10px 12px 8px; }
-.ev-head-row {
+.ev-row-main {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 4px;
+  padding: 14px 14px 10px;
+  gap: 12px;
 }
-.ev-body .ev-title { font-weight: 700; font-size: 16px; color: var(--bc-navy); }
-.ev-body .ev-meta  { font-size: 13px; color: var(--bc-text-dim); margin-top: 2px; }
+.ev-row-left  { flex: 1; min-width: 0; }
+.ev-row-title { font-weight: 700; font-size: 16px; color: var(--bc-navy); }
+.ev-row-time  { font-size: 13px; color: var(--bc-text-dim); margin-top: 3px; }
+
+/* Join affordance — visual hint, not a button */
+.ev-join-pill {
+  background: var(--bc-gold);
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
 .ev-enrolled-badge {
   flex-shrink: 0;
   font-size: 13px;
@@ -380,33 +395,17 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
   color: #15803d;
   background: #dcfce7;
   border-radius: 10px;
-  padding: 2px 8px;
+  padding: 4px 10px;
   white-space: nowrap;
 }
 
-/* Join button in card header */
-.btn-join--card {
-  flex-shrink: 0;
-  background: var(--bc-gold);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 3px 11px;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  white-space: nowrap;
-}
-.btn-join--card:hover { background: var(--bc-gold-dk); }
-
-/* Card footer */
-.ev-foot {
+/* Row footer — stops propagation so footer clicks don't trigger row join */
+.ev-row-foot {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 10px 9px;
-  border-top: 1px solid var(--bc-border);
-  gap: 6px;
+  padding: 0 14px 12px;
+  gap: 8px;
 }
 
 .ev-count-btn {
@@ -428,37 +427,40 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 .ev-chevron { font-size: 11px; transition: transform 0.15s; display: inline-block; }
 .ev-count-btn.open .ev-chevron { transform: rotate(180deg); }
 
-/* Leave button in footer — matches count chip scale */
-.btn-leave--card {
-  background: #f3f4f6;
-  border: 1.5px solid #d1d5db;
-  color: #6b7280;
-  border-radius: 8px;
-  padding: 4px 10px;
+/* Leave — understated, must be tapped deliberately */
+.btn-leave--row {
+  background: none;
+  border: none;
+  color: var(--bc-text-dim);
   font-size: 14px;
-  font-weight: 600;
   cursor: pointer;
-  white-space: nowrap;
+  padding: 4px 2px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
-.btn-leave--card:hover { background: #fdecea; border-color: #fca5a5; color: var(--bc-red); }
+.btn-leave--row:hover { color: var(--bc-red); }
 
-/* Names panel (hidden by default, toggled via JS) */
+/* Names panel */
 .ev-names-panel {
-  padding: 8px 12px 10px;
+  padding: 8px 14px 12px;
   border-top: 1px solid var(--bc-border);
   font-size: 14px;
 }
 .ev-names-group { display: flex; flex-wrap: wrap; gap: 4px; }
-.ev-names-reserves { margin-top: 5px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
-.ev-names-reserves::before { content: 'Reserve:'; font-size: 11px; color: #92400e; font-weight: 600; margin-right: 2px; }
+.ev-names-reserves { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.ev-names-reserves::before { content: 'Reserve:'; font-size: 12px; color: #92400e; font-weight: 600; margin-right: 4px; }
 .ev-name-item {
   display: inline-flex;
   align-items: center;
   background: var(--bc-navy-lt);
   color: var(--bc-navy);
   border-radius: 8px;
-  padding: 2px 8px;
-  font-size: 12px; color: #bbb; font-style: italic; }
+  padding: 3px 9px;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.ev-name-reserve { background: #fff3cd; color: #92400e; }
 
 /* ── Attendee chips (kept for compatibility) ────────────────────────────── */
 .attendee-chip {
@@ -1564,10 +1566,8 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 
   /* Schedule */
   .schedule-day-header { font-size: 13px; }
-  .schedule-day-row { gap: 12px; }
-  .event-card { flex: 1 1 200px; }
-  .ev-title { font-size: 15px; }
-  .ev-meta { font-size: 12px; }
+  .ev-row-title { font-size: 17px; }
+  .ev-row-time  { font-size: 14px; }
 
   /* Home grid */
   .home-grid { grid-template-columns: repeat(3, 1fr); }
@@ -1597,8 +1597,8 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 
   /* Schedule */
   .schedule-day-header { font-size: 14px; letter-spacing: 0.05em; }
-  .event-card { flex: 1 1 240px; }
-  .ev-title { font-size: 16px; }
+  .ev-row-title { font-size: 18px; }
+  .ev-row-time  { font-size: 15px; }
 
   /* Home grid */
   .home-grid { grid-template-columns: repeat(3, 1fr); gap: 16px; }

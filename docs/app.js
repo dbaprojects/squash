@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.26';
+const APP_VERSION = '4.27';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -1833,18 +1833,20 @@ function eventCard(ev) {
   const isAdmin   = ST.player?.is_admin || ST.player?.is_super_admin;
   const enrolled  = !!mySignup;
 
-  const d        = new Date(ev.event_date + 'T12:00:00');
-  const timeStr  = ev.start_time.slice(0, 5) + '–' + ev.end_time.slice(0, 5);
+  const timeStr    = ev.start_time.slice(0, 5) + '–' + ev.end_time.slice(0, 5);
   const countLabel = ev.max_signups ? `${count}/${ev.max_signups}` : String(count);
 
-  // Top-right: enrolled badge OR join button
-  const topRight = enrolled
-    ? `<span class="ev-enrolled-badge">&#10003; Enrolled</span>`
-    : `<button class="btn-join--card" onclick="joinEvent(event,'${ev.id}')">Join</button>`;
+  // Tapping the row joins (unenrolled) or toggles names (enrolled)
+  const rowClick = enrolled
+    ? `onclick="toggleAttendees('${ev.id}')"`
+    : `onclick="joinEvent(event,'${ev.id}')"`;
 
-  // Footer: leave button only when enrolled
+  const rowRight = enrolled
+    ? `<span class="ev-enrolled-badge">&#10003; Enrolled</span>`
+    : `<span class="ev-join-pill">Join</span>`;
+
   const leaveBtn = enrolled
-    ? `<button class="btn-leave--card" onclick="leaveEvent(event,'${mySignup.id}','${ev.id}')">Leave</button>`
+    ? `<button class="btn-leave--row" onclick="event.stopPropagation();leaveEvent(event,'${mySignup.id}','${ev.id}')">Leave</button>`
     : '';
 
   const confirmedNames = confirmed.map(s => {
@@ -1864,29 +1866,30 @@ function eventCard(ev) {
   }).join('') : '';
 
   const namesPanel = `
-    <div class="ev-names-panel" id="ev-names-${ev.id}" hidden>
+    <div class="ev-names-panel" id="ev-names-${ev.id}" hidden onclick="event.stopPropagation()">
       <div class="ev-names-group">
-        ${confirmed.length ? confirmedNames : '<span class="ev-no-signups">No signups yet</span>'}
+        ${confirmed.length ? confirmedNames : '<span style="color:#bbb;font-style:italic">No signups yet</span>'}
       </div>
-      ${reserveNames ? `<div class="ev-names-reserves">Reserve: ${reserveNames}</div>` : ''}
+      ${reserveNames ? `<div class="ev-names-reserves">${reserveNames}</div>` : ''}
     </div>`;
 
-  return `<div class="event-card${enrolled ? ' event-card--enrolled' : ''}" id="ev-card-${ev.id}">
-    <div class="ev-body">
-      <div class="ev-head-row">
-        <div class="ev-title">${esc(ev.title)}</div>
-        ${topRight}
+  return `
+    <div class="ev-row${enrolled ? ' ev-row--enrolled' : ''}" id="ev-card-${ev.id}" ${rowClick}>
+      <div class="ev-row-main">
+        <div class="ev-row-left">
+          <div class="ev-row-title">${esc(ev.title)}</div>
+          <div class="ev-row-time">${timeStr}</div>
+        </div>
+        ${rowRight}
       </div>
-      <div class="ev-meta">${timeStr}</div>
-    </div>
-    <div class="ev-foot">
-      <button class="ev-count-btn${full ? ' full' : ''}" onclick="toggleAttendees('${ev.id}')">
-        Players ${countLabel} <span class="ev-chevron">&#9660;</span>
-      </button>
-      ${leaveBtn}
-    </div>
-    ${namesPanel}
-  </div>`;
+      <div class="ev-row-foot" onclick="event.stopPropagation()">
+        <button class="ev-count-btn${full ? ' full' : ''}" onclick="toggleAttendees('${ev.id}')">
+          Players ${countLabel} <span class="ev-chevron">&#9660;</span>
+        </button>
+        ${leaveBtn}
+      </div>
+      ${namesPanel}
+    </div>`
 }
 
 function toggleAttendees(eventId) {
