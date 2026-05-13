@@ -2487,16 +2487,25 @@ async function openHandicapModal(playerId, playerName) {
     .order('changed_at', { ascending: false });
   const p = allPlayers.find(x => x.id === playerId);
 
+  // Derive true current HC from history (most recent changed_at), not the cached players field
+  const trueCurrentHc = history?.length ? history[0].handicap_value : (p?.current_handicap ?? null);
+
+  // Silently repair players.current_handicap if it's stale
+  if (p && trueCurrentHc !== null && p.current_handicap !== trueCurrentHc) {
+    await sb.from('players').update({ current_handicap: trueCurrentHc }).eq('id', playerId);
+    p.current_handicap = trueCurrentHc;
+  }
+
   const todayStr = new Date().toISOString().slice(0, 10);
   document.getElementById('modal-body').innerHTML = `
     <div style="margin-bottom:16px">
-      <strong>Current handicap:</strong> <span class="hcap-badge">${p?.current_handicap ?? '–'}</span>
+      <strong>Current handicap:</strong> <span class="hcap-badge">${trueCurrentHc ?? '–'}</span>
     </div>
     <div class="signup-form" style="margin-bottom:16px">
       <h3 style="font-size:14px;margin-bottom:10px">Add new entry</h3>
       <div class="form-group">
         <label>New handicap value</label>
-        <input type="number" id="hc-value" min="-35" max="10" step="0.5" value="${p?.current_handicap ?? ''}">
+        <input type="number" id="hc-value" min="-35" max="10" step="0.5" value="${trueCurrentHc ?? ''}">
       </div>
       <div class="form-group">
         <label>Date</label>
