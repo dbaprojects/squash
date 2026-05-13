@@ -487,6 +487,20 @@ function effectiveHcAt(playerId, targetMonth) {
   return result;
 }
 
+// Like effectiveHcAt but falls back to first known entry if no data at/before targetMonth
+function effectiveHcAtOrFirst(playerId, targetMonth) {
+  const hist = playerHistoryArr[playerId] || [];
+  if (!hist.length) return null;
+  let result = null;
+  for (const entry of hist) {
+    if (entry.month <= targetMonth) result = entry.value;
+    else break;
+  }
+  return result ?? hist[0].value;
+}
+  return result;
+}
+
 function hasActualEntry(playerId, month) {
   return (playerHistoryArr[playerId] || []).some(e => e.month === month);
 }
@@ -643,7 +657,7 @@ function renderSectionCard() {
   const endM   = ladderMonths[ladderMonths.length - 1];
   let improved = 0, worsened = 0;
   for (const p of fp) {
-    const s = effectiveHcAt(p.id, startM), e = effectiveHcAt(p.id, endM);
+    const s = effectiveHcAtOrFirst(p.id, startM), e = effectiveHcAt(p.id, endM);
     if (s == null || e == null) continue;
     if (e < s) improved++; else if (e > s) worsened++;
   }
@@ -826,7 +840,7 @@ function renderMoversView(el) {
   const fp     = getFilteredPlayers();
   const startM = ladderMonths[0], endM = ladderMonths[ladderMonths.length - 1];
   const withDelta = fp.map(p => {
-    const s = effectiveHcAt(p.id, startM), e = effectiveHcAt(p.id, endM);
+    const s = effectiveHcAtOrFirst(p.id, startM), e = effectiveHcAt(p.id, endM);
     return { p, delta: (s != null && e != null) ? e - s : null };
   }).filter(x => x.delta !== null);
 
@@ -1570,7 +1584,9 @@ async function loadHome() {
   let improved = 0, worsened = 0;
   const allPlayers = playersRes.data || [];
   for (const p of allPlayers) {
-    const s = homeHcAt(p.id, startM), e = p.current_handicap;
+    let s = homeHcAt(p.id, startM);
+    if (s == null) { const arr = histMap[p.id]; if (arr?.length) s = arr[0].v; }
+    const e = p.current_handicap;
     if (s == null || e == null) continue;
     if (e < s) improved++; else if (e > s) worsened++;
   }
