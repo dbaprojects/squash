@@ -753,6 +753,11 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 /* Movers two-column layout */
 .movers-grid { display: flex; gap: 16px; flex-wrap: wrap; }
 .movers-grid .hc-lb-section { flex: 1; min-width: 180px; }
+.movers-topn-bar { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #888; margin-bottom: 10px; }
+.movers-topn-btn { font-size: 12px; padding: 2px 10px; border-radius: 12px; border: 1px solid var(--bc-border);
+  background: #fff; color: #555; cursor: pointer; }
+.movers-topn-btn.active { background: var(--bc-navy); color: #fff; border-color: var(--bc-navy); }
+.movers-more { font-size: 11px; color: #aaa; padding: 4px 0; font-style: italic; }
 
 .ladder-me td { background: var(--bc-gold-lt) !important; font-weight: 600; }
 

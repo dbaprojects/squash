@@ -442,6 +442,7 @@ let ladderMonths      = [];
 let ladderYearMode    = 'last12';    // 'last12' | 'YYYY'
 let ladderAllYears    = [];
 let ladderSectionView = 'list';
+let moversTopN        = 10;
 let _playerHcChart    = null;
 let _distChart        = null;
 
@@ -613,8 +614,8 @@ function renderMyHcCard() {
   let commentHtml = '';
   if (hcAgo12 !== null && currentHc !== null) {
     const delta = currentHc - hcAgo12;
-    if      (delta < 0) commentHtml = `<span class="myhc-trend improved">↑ ${Math.abs(delta)} over 12 months</span>`;
-    else if (delta > 0) commentHtml = `<span class="myhc-trend worsened">↓ +${delta} over 12 months</span>`;
+    if      (delta < 0) commentHtml = `<span class="myhc-trend improved">▲ ${Math.abs(delta)} over 12 months</span>`;
+    else if (delta > 0) commentHtml = `<span class="myhc-trend worsened">▼ +${delta} over 12 months</span>`;
     else                commentHtml = `<span class="myhc-trend flat">— Unchanged over 12 months</span>`;
   } else {
     // Fallback: 3-month commentary if not enough 12-month data
@@ -622,28 +623,28 @@ function renderMyHcCard() {
     const hcAgo3 = effectiveHcAt(me.id, monthKey(ago3));
     if (hcAgo3 !== null && currentHc !== null) {
       const delta = currentHc - hcAgo3;
-      if      (delta < 0) commentHtml = `<span class="myhc-trend improved">↑ ${Math.abs(delta)} over 3 months</span>`;
-      else if (delta > 0) commentHtml = `<span class="myhc-trend worsened">↓ +${delta} over 3 months</span>`;
+      if      (delta < 0) commentHtml = `<span class="myhc-trend improved">▲ ${Math.abs(delta)} over 3 months</span>`;
+      else if (delta > 0) commentHtml = `<span class="myhc-trend worsened">▼ +${delta} over 3 months</span>`;
       else                commentHtml = `<span class="myhc-trend flat">— Unchanged over 3 months</span>`;
     }
   }
 
+  const nameLen = (me.first_name + ' ' + me.last_name).length;
+  const nameFontSize = nameLen <= 10 ? 22 : nameLen <= 15 ? 18 : nameLen <= 20 ? 15 : 13;
+
   el.innerHTML = `
-    <div class="myhc-header">
-      <div>
-        <div class="myhc-name">${esc(me.first_name)} ${esc(me.last_name)}</div>
+    <div class="myhc-header" style="cursor:pointer" onclick="openPlayerHcModal('${me.id}','${esc(me.first_name + ' ' + me.last_name)}')">
+      <div style="flex:1;min-width:0">
+        <div class="myhc-name" style="font-size:${nameFontSize}px;white-space:normal;word-break:break-word">${esc(me.first_name)} ${esc(me.last_name)}</div>
         <div class="myhc-rank">#${myIdx + 1} of ${activePlayers.length}</div>
       </div>
-      <div style="text-align:right">
+      <div style="text-align:right;flex-shrink:0">
         <div class="myhc-big">${currentHc ?? '–'}</div>
         <div style="font-size:11px;color:rgba(255,255,255,.55)">handicap</div>
       </div>
     </div>
-    ${commentHtml ? `<div style="margin-top:8px">${commentHtml}</div>` : ''}
-    <button class="myhc-history-btn"
-      onclick="openPlayerHcModal('${me.id}','${esc(me.first_name + ' ' + me.last_name)}')">
-      View full history →
-    </button>`;
+    ${commentHtml ? `<div style="margin-top:6px;font-size:12px"><span style="color:rgba(255,255,255,.45);font-size:11px">Handicap: </span>${commentHtml}</div>` : ''}
+    <div class="home-card-link" style="padding-top:8px" onclick="openPlayerHcModal('${me.id}','${esc(me.first_name + ' ' + me.last_name)}')">View full history →</div>`;
 }
 
 // ── Section summary card ──────────────────────────────────────────────────
@@ -676,8 +677,8 @@ function renderSectionCard() {
     <div class="sec-stat-row">
       <div class="sec-stat"><div class="sec-stat-val">${fp.length}</div><div class="sec-stat-lbl">Players</div></div>
       <div class="sec-stat"><div class="sec-stat-val">${avgHc}</div><div class="sec-stat-lbl">Avg HC</div></div>
-      <div class="sec-stat"><div class="sec-stat-val sec-improved">↑${improved}</div><div class="sec-stat-lbl">Improved<br><span style="font-size:9px;font-weight:400">12 months</span></div></div>
-      <div class="sec-stat"><div class="sec-stat-val sec-worsened">↓${worsened}</div><div class="sec-stat-lbl">Worsened<br><span style="font-size:9px;font-weight:400">12 months</span></div></div>
+      <div class="sec-stat"><div class="sec-stat-val sec-improved">▲${improved}</div><div class="sec-stat-lbl">Improved<br><span style="font-size:9px;font-weight:400">12 months</span></div></div>
+      <div class="sec-stat"><div class="sec-stat-val sec-worsened">▼${worsened}</div><div class="sec-stat-lbl">Worsened<br><span style="font-size:9px;font-weight:400">12 months</span></div></div>
     </div>
     <div class="hc-view-toggle">
       ${views.map(({ v, label }) =>
@@ -712,7 +713,7 @@ function ladderNavBar() {
 
   const yearOpts  = [
     `<option value="last12"${isLast12 ? ' selected' : ''}>Last 12 months</option>`,
-    ...ladderAllYears.map(y =>
+    ...[...ladderAllYears].reverse().map(y =>
       `<option value="${y}"${!isLast12 && ladderYearMode === y ? ' selected' : ''}>${y}</option>`)
   ].join('');
 
@@ -835,6 +836,12 @@ function renderDistributionView(el) {
 }
 
 // ── Movers view ───────────────────────────────────────────────────────────
+function setMoversTopN(n) {
+  moversTopN = n;
+  const el = document.getElementById('ladder-section-history');
+  if (el) renderMoversView(el);
+}
+
 function renderMoversView(el) {
   const fp     = getFilteredPlayers();
   const startM = ladderMonths[0], endM = ladderMonths[ladderMonths.length - 1];
@@ -843,13 +850,23 @@ function renderMoversView(el) {
     return { p, delta: (s != null && e != null) ? e - s : null };
   }).filter(x => x.delta !== null);
 
-  const improved  = withDelta.filter(x => x.delta < 0).sort((a, b) => a.delta - b.delta);
-  const worsened  = withDelta.filter(x => x.delta > 0).sort((a, b) => b.delta - a.delta);
-  const unchanged = withDelta.filter(x => x.delta === 0).length;
+  const allImproved = withDelta.filter(x => x.delta < 0).sort((a, b) => a.delta - b.delta);
+  const allWorsened = withDelta.filter(x => x.delta > 0).sort((a, b) => b.delta - a.delta);
+  const unchanged   = withDelta.filter(x => x.delta === 0).length;
+  const improved    = moversTopN ? allImproved.slice(0, moversTopN) : allImproved;
+  const worsened    = moversTopN ? allWorsened.slice(0, moversTopN) : allWorsened;
+
+  const topNOptions = [5, 10, 20, 0];
+  const topNBar = `<div class="movers-topn-bar">
+    Show top:
+    ${topNOptions.map(n =>
+      `<button class="movers-topn-btn${moversTopN === n ? ' active' : ''}" onclick="setMoversTopN(${n})">${n === 0 ? 'All' : n}</button>`
+    ).join('')}
+  </div>`;
 
   function moverRow({ p, delta }) {
     const isMe = p.id === ST.player.id;
-    const sign = delta < 0 ? `↑ ${Math.abs(delta)}` : `↓ +${delta}`;
+    const sign = delta < 0 ? `▲ ${Math.abs(delta)}` : `▼ +${delta}`;
     const cls  = delta < 0 ? 'lb-improved' : 'lb-worsened';
     return `<div class="hc-lb-row${isMe ? ' ladder-me-lb' : ''}">
       <span class="hc-lb-delta ${cls}">${sign}</span>
@@ -859,14 +876,17 @@ function renderMoversView(el) {
   }
 
   el.innerHTML = `${ladderNavBar()}
+    ${topNBar}
     <div class="movers-grid">
       ${improved.length ? `<div class="hc-lb-section">
-        <div class="hc-lb-title">Most improved (${ladderMonths[0]} → ${ladderMonths[11]})</div>
+        <div class="hc-lb-title">Most improved (${ladderMonths[0]} → ${ladderMonths[ladderMonths.length - 1]})</div>
         ${improved.map(moverRow).join('')}
+        ${allImproved.length > improved.length ? `<div class="movers-more">… ${allImproved.length - improved.length} more</div>` : ''}
       </div>` : ''}
       ${worsened.length ? `<div class="hc-lb-section">
         <div class="hc-lb-title">Most worsened</div>
         ${worsened.map(moverRow).join('')}
+        ${allWorsened.length > worsened.length ? `<div class="movers-more">… ${allWorsened.length - worsened.length} more</div>` : ''}
       </div>` : ''}
     </div>
     ${!withDelta.length ? '<p style="color:#888;font-size:13px;padding:12px 0">Not enough data for this period.</p>' : ''}
@@ -1600,8 +1620,8 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
   // ── Card 1: Me ───────────────────────────────────────────────────────────
   let commentHtml = '';
   if (hcTrend) {
-    if      (hcTrend.dir === 'improved') commentHtml = `<span class="myhc-trend improved">↑ ${hcTrend.delta} over 12m</span>`;
-    else if (hcTrend.dir === 'worsened') commentHtml = `<span class="myhc-trend worsened">↓ +${hcTrend.delta} over 12m</span>`;
+    if      (hcTrend.dir === 'improved') commentHtml = `<span class="myhc-trend improved">▲ ${hcTrend.delta} over 12m</span>`;
+    else if (hcTrend.dir === 'worsened') commentHtml = `<span class="myhc-trend worsened">▼ +${hcTrend.delta} over 12m</span>`;
     else                                 commentHtml = `<span class="myhc-trend flat">— Unchanged 12m</span>`;
   }
   const fullName = `${esc(me.first_name)} ${esc(me.last_name)}`;
@@ -1664,11 +1684,11 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
           <div class="sec-stat-lbl">Players</div>
         </div>
         <div class="sec-stat">
-          <div class="sec-stat-val sec-improved">↑${sectionStats.improved}</div>
+          <div class="sec-stat-val sec-improved">▲${sectionStats.improved}</div>
           <div class="sec-stat-lbl">Improved<br><span style="font-size:9px;font-weight:400">12m</span></div>
         </div>
         <div class="sec-stat">
-          <div class="sec-stat-val sec-worsened">↓${sectionStats.worsened}</div>
+          <div class="sec-stat-val sec-worsened">▼${sectionStats.worsened}</div>
           <div class="sec-stat-lbl">Worsened<br><span style="font-size:9px;font-weight:400">12m</span></div>
         </div>
       </div>
@@ -2183,7 +2203,7 @@ function renderPlayersTable() {
     <button class="admin-filter-btn${role === 'regular'   ? ' active' : ''}" onclick="setPlayersRole('regular')">Regular</button>`;
 
   const arrow = f => sortBy === f
-    ? `<span class="sort-arrow">${sortDir === 'asc' ? '↑' : '↓'}</span>`
+    ? `<span class="sort-arrow">${sortDir === 'asc' ? '▲' : '▼'}</span>`
     : `<span class="sort-arrow muted">↕</span>`;
 
   document.getElementById('players-list').innerHTML = players.length
