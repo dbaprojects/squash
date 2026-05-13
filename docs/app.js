@@ -7,8 +7,8 @@ const APP_VERSION = '4.9';
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
     localStorage.setItem('_app_ver', APP_VERSION);
-    // Only reload if we're not already on a cache-busted URL to avoid loops
-    if (!location.search.includes('_cb=')) {
+    // Guard against reload loop: only skip if URL already has THIS exact version
+    if (!location.search.includes('_cb=' + APP_VERSION)) {
       location.replace(location.pathname + '?_cb=' + APP_VERSION);
     }
   }
