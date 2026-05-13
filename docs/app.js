@@ -1165,33 +1165,32 @@ function renderHof() {
 
   let html = '';
 
-  // Leaderboards side by side
+  // Leaderboards — single panel, two columns
   if (topWinners.length || topRunnerUp.length) {
-    html += `<div class="hof-lb-row">`;
+    html += `<div class="hof-leaders-dual">`;
     if (topWinners.length) {
-      html += `<div class="hof-leaders">
+      html += `<div class="hof-leaders-col">
         <div class="hof-leaders-title">🏆 Most Titles</div>
-        <div class="hof-leaders-chips">
-          ${topWinners.map(([name, count], i) =>
-            `<div class="hof-leader-chip ${i === 0 ? 'hof-leader-first' : ''}">
-              <span class="hof-leader-name">${esc(name)}</span>
-              <span class="hof-leader-count">${count}</span>
-            </div>`
-          ).join('')}
-        </div>
+        ${topWinners.map(([name, count], i) =>
+          `<div class="hof-leader-chip ${i === 0 ? 'hof-leader-first' : ''}">
+            <span class="hof-leader-name">${esc(name)}</span>
+            <span class="hof-leader-count">${count}</span>
+          </div>`
+        ).join('')}
       </div>`;
     }
+    if (topWinners.length && topRunnerUp.length) {
+      html += `<div class="hof-leaders-divider"></div>`;
+    }
     if (topRunnerUp.length) {
-      html += `<div class="hof-leaders hof-leaders-ru">
+      html += `<div class="hof-leaders-col">
         <div class="hof-leaders-title">🥈 Most #2's</div>
-        <div class="hof-leaders-chips">
-          ${topRunnerUp.map(([name, count], i) =>
-            `<div class="hof-leader-chip ${i === 0 ? 'hof-leader-ru-first' : ''}">
-              <span class="hof-leader-name">${esc(name)}</span>
-              <span class="hof-leader-count">${count}</span>
-            </div>`
-          ).join('')}
-        </div>
+        ${topRunnerUp.map(([name, count], i) =>
+          `<div class="hof-leader-chip ${i === 0 ? 'hof-leader-ru-first' : ''}">
+            <span class="hof-leader-name">${esc(name)}</span>
+            <span class="hof-leader-count">${count}</span>
+          </div>`
+        ).join('')}
       </div>`;
     }
     html += `</div>`;

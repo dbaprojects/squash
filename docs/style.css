@@ -1075,27 +1075,29 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 }
 .hof-ac-item:hover { background: var(--bc-navy-lt); }
 
-.hof-lb-row { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
-.hof-lb-row .hof-leaders { flex: 1; min-width: 200px; margin-bottom: 0; }
-.hof-leaders-chips { display: flex; flex-direction: column; gap: 6px; }
-.hof-leaders-ru { background: #2a3a6b; }
-.hof-leader-ru-first { background: rgba(196,147,42,.35); }
-
-.hof-leaders {
+.hof-leaders-dual {
+  display: flex;
+  gap: 0;
   background: var(--bc-navy);
   border-radius: 10px;
   padding: 14px 16px;
   margin-bottom: 20px;
   color: #fff;
 }
-.hof-leaders-title { font-size: 12px; font-weight: 700; color: rgba(255,255,255,.6);
-  text-transform: uppercase; letter-spacing: .05em; margin-bottom: 10px; }
+.hof-leaders-col        { flex: 1; min-width: 0; }
+.hof-leaders-divider    { width: 1px; background: rgba(255,255,255,.18); margin: 0 14px; flex-shrink: 0; }
+.hof-leaders-chips { display: flex; flex-direction: column; gap: 6px; }
+.hof-leaders-ru { background: #2a3a6b; }
+.hof-leader-ru-first { background: rgba(196,147,42,.35); }
+
+.hof-leaders-title { font-size: 11px; font-weight: 700; color: rgba(255,255,255,.6);
+  text-transform: uppercase; letter-spacing: .05em; margin-bottom: 8px; }
 .hof-leaders-row   { display: flex; flex-wrap: wrap; gap: 8px; }
-.hof-leader-chip   { display: flex; align-items: center; justify-content: space-between; gap: 6px; background: rgba(255,255,255,.12);
-  border-radius: 20px; padding: 4px 12px 4px 10px; font-size: 13px; }
+.hof-leader-chip   { display: flex; align-items: center; justify-content: space-between; gap: 4px; background: rgba(255,255,255,.10);
+  border-radius: 6px; padding: 4px 8px 4px 8px; font-size: 12px; margin-bottom: 4px; }
 .hof-leader-first  { background: rgba(196,147,42,.35); }
-.hof-leader-name   { font-weight: 500; }
-.hof-leader-count  { background: rgba(255,255,255,.2); border-radius: 10px;
+.hof-leader-name   { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hof-leader-count  { background: rgba(255,255,255,.2); border-radius: 10px; flex-shrink: 0;
   padding: 1px 7px; font-size: 11px; font-weight: 700; }
 
 .hof-year-section  { margin-bottom: 24px; }
@@ -1372,7 +1374,6 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
   /* Reports */
   .reports-grid { grid-template-columns: 1fr; }
   .stat-num { font-size: 22px; }
-  .hof-lb-row { flex-direction: column; }
   .hof-filter-bar { flex-direction: column; align-items: stretch; }
 
   /* Modals — centred, near top on mobile */
