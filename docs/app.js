@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.10';
+const APP_VERSION = '4.11';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -1804,8 +1804,7 @@ function renderSchedule() {
   }
   el.innerHTML = dates.map(d => {
     const dObj = new Date(d + 'T12:00:00');
-    const hdr  = dObj.toLocaleDateString('en-GB', { weekday: 'short' }).toUpperCase()
-               + ', ' + dObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }).toUpperCase();
+    const hdr  = dObj.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     return `<div class="schedule-day-group">
       <div class="schedule-day-header">${hdr}</div>
       <div class="schedule-day-row">${groupMap[d].map(ev => eventCard(ev)).join('')}</div>
@@ -1824,7 +1823,6 @@ function eventCard(ev) {
   const enrolled  = !!mySignup;
 
   const d        = new Date(ev.event_date + 'T12:00:00');
-  const dayStr   = d.toLocaleDateString('en-GB', { weekday: 'short' });
   const timeStr  = ev.start_time.slice(0, 5) + '–' + ev.end_time.slice(0, 5);
   const countLabel = ev.max_signups ? `${count}/${ev.max_signups}` : String(count);
 
@@ -1865,7 +1863,7 @@ function eventCard(ev) {
   return `<div class="event-card${enrolled ? ' event-card--enrolled' : ''}" id="ev-card-${ev.id}">
     <div class="ev-body">
       <div class="ev-head-row">
-        <div class="ev-title">${dayStr} · ${esc(ev.title)}</div>
+        <div class="ev-title">${esc(ev.title)}</div>
         ${topRight}
       </div>
       <div class="ev-meta">${timeStr}</div>
