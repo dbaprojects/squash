@@ -1354,8 +1354,7 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 .dial-code-btn {
   display: flex;
   align-items: center;
-  align-self: stretch;
-  padding: 0 10px;
+  padding: 8px 10px;
   background: #f8f9fd;
   border: 1.5px solid var(--bc-border);
   border-radius: 6px;
