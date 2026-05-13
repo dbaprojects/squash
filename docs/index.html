@@ -7,7 +7,7 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>BC Squash Section</title>
-  <link rel="stylesheet" href="style.css?v=4.4">
+  <link rel="stylesheet" href="style.css?v=4.5">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#1B2A6B">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -32,7 +32,7 @@
     </div>
     <div id="login-phone-error" class="error-msg" style="margin-bottom:8px"></div>
     <button class="btn-google-full" onclick="submitLoginPhone()">Sign In</button>
-    <p class="login-version">v4.4</p>
+    <p class="login-version">v4.5</p>
   </div>
 </div>
 
@@ -97,9 +97,10 @@
       <img src="bcss-transparent.png" class="header-logo" alt="BC">
       <div class="header-title">
         <span class="logo">British Club</span>
-        <span class="logo-sub">Squash Section <span class="version">v4.4</span></span>
+        <span class="logo-sub">Squash Section <span class="version">v4.5</span></span>
       </div>
     </div>
+    <div id="header-page-title" class="header-page-title"></div>
     <div class="header-actions">
       <button id="btn-back-home" class="btn-back-home hidden" onclick="goHome()">← Home</button>
     </div>
@@ -122,26 +123,17 @@
 
   <!-- ── Hall of Fame view ──────────────────────────────────────────────────── -->
   <main id="view-hof" class="section hidden">
-    <div class="section-header">
-      <h2>Hall of Fame</h2>
-      <p class="hof-subtitle">Monthly Round Robin Championship</p>
-    </div>
+    <p class="hof-subtitle">Monthly Round Robin Championship</p>
     <div id="hof-wrap"></div>
   </main>
 
   <!-- ── Players / Ladder view ───────────────────────────────────────────── -->
   <main id="view-ladder" class="section hidden">
-    <div class="section-header">
-      <h2>Handicaps</h2>
-    </div>
     <div id="ladder-wrap"></div>
   </main>
 
   <!-- ── Schedule view ────────────────────────────────────────────────────── -->
   <main id="view-schedule" class="section">
-    <div class="section-header">
-      <h2>Upcoming Sessions</h2>
-    </div>
     <div id="event-list" class="card-grid"></div>
   </main>
 
@@ -242,6 +234,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
-<script src="app.js?v=4.4"></script>
+<script src="app.js?v=4.5"></script>
 </body>
 </html>

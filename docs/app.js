@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.4';
+const APP_VERSION = '4.5';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -415,6 +415,12 @@ function showSection(id) {
   });
   document.getElementById(id).classList.remove('hidden');
   document.getElementById('btn-back-home').classList.toggle('hidden', id === 'view-home');
+  const titles = {
+    'view-home': '', 'view-schedule': 'Sign-Up', 'view-ladder': 'Handicaps',
+    'view-hof': 'Hall of Fame', 'view-admin': 'Admin', 'view-event': 'Session'
+  };
+  const titleEl = document.getElementById('header-page-title');
+  if (titleEl) titleEl.textContent = titles[id] ?? '';
 }
 
 function setNavActive(name) { /* no-op: nav tabs removed */ }
@@ -901,12 +907,12 @@ function renderMoversView(el) {
     ${topNBar}
     <div class="movers-grid">
       ${improved.length ? `<div class="hc-lb-section">
-        <div class="hc-lb-title">Most improved (${ladderMonths[0]} → ${ladderMonths[ladderMonths.length - 1]})</div>
+        <div class="hc-lb-title">Improved</div>
         ${improved.map(moverRow).join('')}
         ${allImproved.length > improved.length ? `<div class="movers-more">… ${allImproved.length - improved.length} more</div>` : ''}
       </div>` : ''}
       ${worsened.length ? `<div class="hc-lb-section">
-        <div class="hc-lb-title">Most worsened</div>
+        <div class="hc-lb-title">Worsened</div>
         ${worsened.map(moverRow).join('')}
         ${allWorsened.length > worsened.length ? `<div class="movers-more">… ${allWorsened.length - worsened.length} more</div>` : ''}
       </div>` : ''}
