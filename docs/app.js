@@ -843,8 +843,8 @@ function renderMoversView(el) {
     return { p, delta: (s != null && e != null) ? e - s : null };
   }).filter(x => x.delta !== null);
 
-  const improved  = withDelta.filter(x => x.delta < 0).sort((a, b) => a.delta - b.delta).slice(0, 10);
-  const worsened  = withDelta.filter(x => x.delta > 0).sort((a, b) => b.delta - a.delta).slice(0, 10);
+  const improved  = withDelta.filter(x => x.delta < 0).sort((a, b) => a.delta - b.delta);
+  const worsened  = withDelta.filter(x => x.delta > 0).sort((a, b) => b.delta - a.delta);
   const unchanged = withDelta.filter(x => x.delta === 0).length;
 
   function moverRow({ p, delta }) {
