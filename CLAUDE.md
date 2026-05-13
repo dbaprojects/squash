@@ -5,7 +5,7 @@
 - **Owner:** David Barkess — personal project, unrelated to SAP/DealSensAI work
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `C:\Users\I061437\OneDrive\Projects\Squash`
-- **Current version:** v4.24
+- **Current version:** v4.25
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -294,3 +294,4 @@ SUPABASE_SERVICE_ROLE_KEY=... node db/reseed.js
 | v4.22 | HoF home card: winner image enlarged to 70px |
 | v4.23 | HoF home card: champ name 12px, month 11px |
 | v4.24 | Switch user restricted to super_admin; switcher wrap re-hidden on every loginSuccess |
+| v4.25 | Mobile font size pass: body 14→15px; ev-title 14→15px, ev-meta 11→12px, day-header 11→13px, count-btn 12→13px, hc-lb-name/delta 13→14px, hof-table 12→13px, player-name 13→14px, form labels 12→13px |
