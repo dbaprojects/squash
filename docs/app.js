@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.6';
+const APP_VERSION = '4.7';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -2446,6 +2446,7 @@ async function openHandicapModal(playerId, playerName) {
     .order('changed_at', { ascending: false });
   const p = allPlayers.find(x => x.id === playerId);
 
+  const todayStr = new Date().toISOString().slice(0, 10);
   document.getElementById('modal-body').innerHTML = `
     <div style="margin-bottom:16px">
       <strong>Current handicap:</strong> <span class="hcap-badge">${p?.current_handicap ?? '–'}</span>
@@ -2455,6 +2456,10 @@ async function openHandicapModal(playerId, playerName) {
       <div class="form-group">
         <label>New handicap value</label>
         <input type="number" id="hc-value" min="-35" max="10" step="0.5" value="${p?.current_handicap ?? ''}">
+      </div>
+      <div class="form-group">
+        <label>Date</label>
+        <input type="date" id="hc-date" value="${todayStr}" max="${todayStr}">
       </div>
       <div class="form-group">
         <label>Notes (optional)</label>
@@ -2481,10 +2486,12 @@ async function openHandicapModal(playerId, playerName) {
 async function submitHandicap(playerId) {
   const value = parseFloat(document.getElementById('hc-value').value);
   if (isNaN(value)) { alert('Enter a valid handicap value'); return; }
-  const notes = document.getElementById('hc-notes').value.trim();
+  const dateVal   = document.getElementById('hc-date').value || new Date().toISOString().slice(0, 10);
+  const changedAt = new Date(dateVal + 'T12:00:00').toISOString();
+  const notes     = document.getElementById('hc-notes').value.trim();
   const { error: hErr } = await sb.from('handicap_history').insert({
     player_id: playerId, handicap_value: value,
-    changed_by: ST.player.id, notes: notes || null
+    changed_at: changedAt, changed_by: ST.player.id, notes: notes || null
   });
   if (hErr) { alert(hErr.message); return; }
   const { error: pErr } = await sb.from('players').update({ current_handicap: value }).eq('id', playerId);
