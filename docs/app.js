@@ -1687,7 +1687,7 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
   const ladderCard = `
     <div class="home-card home-card-ladder" onclick="navTo('ladder')">
       <div class="home-card-label">Handicaps</div>
-      <div class="home-card-sublabel">12 Months · Active Players</div>
+      <div class="home-card-sublabel">Last 12 Months · Active Players</div>
       <div class="home-hc-grid">
         <div class="home-hc-stat">
           <div class="home-hc-val">${sectionStats.players}</div>
