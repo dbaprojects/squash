@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.11';
+const APP_VERSION = '4.12';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -94,6 +94,16 @@ const ST = {
 
 // ── Init ──────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
+  // Remote version check — detects when PWA is serving a stale cached app.js
+  try {
+    const res = await fetch('version.json?_t=' + Date.now(), { cache: 'no-store' });
+    const { version } = await res.json();
+    if (version && version !== APP_VERSION) {
+      location.replace(location.pathname + '?_cb=' + version);
+      return;
+    }
+  } catch (e) { /* offline or fetch failed — continue normally */ }
+
   setupNav();
   setupModalClose();
   setupUserSwitcher();
