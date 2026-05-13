@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.8';
+const APP_VERSION = '4.9';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -1810,45 +1810,74 @@ function renderSchedule() {
 function eventCard(ev) {
   const signups   = ev.signups || [];
   const confirmed = signups.filter(s => !s.is_reserve);
+  const reserves  = signups.filter(s =>  s.is_reserve);
   const count     = confirmed.length;
   const full      = ev.max_signups && count >= ev.max_signups;
   const mySignup  = signups.find(s => s.player_id === ST.player.id);
   const isAdmin   = ST.player?.is_admin || ST.player?.is_super_admin;
+  const enrolled  = !!mySignup;
 
-  const actionBtns = mySignup
-    ? `<button class="btn-leave" onclick="leaveEvent(event,'${mySignup.id}','${ev.id}')">Cancel</button>`
-    : `<button class="btn-join" onclick="joinEvent(event,'${ev.id}')">Join</button>`;
-
-  const chips = signups.map(s => {
-    const name = s.player_first
-      ? esc(shortName(s.player_first, s.player_last))
-      : esc(s.guest_name || 'Guest');
-    const cls = !s.player_id ? 'chip-guest' : s.is_reserve ? 'chip-reserve' : 'chip-confirmed';
-    const del = isAdmin
-      ? `<button class="chip-del" onclick="event.stopPropagation();removeSignupChip('${s.id}','${ev.id}')" title="Remove">×</button>`
-      : '';
-    return `<span class="attendee-chip ${cls}">${name}${del}</span>`;
-  }).join('');
+  const actionBtn = mySignup
+    ? `<button class="btn-leave btn-leave--sm" onclick="leaveEvent(event,'${mySignup.id}','${ev.id}')">Cancel</button>`
+    : `<button class="btn-join btn-join--sm" onclick="joinEvent(event,'${ev.id}')">Join</button>`;
 
   const d       = new Date(ev.event_date + 'T12:00:00');
   const dayStr  = d.toLocaleDateString('en-GB', { weekday: 'short' });
   const dateStr = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-  const timeStr = ev.start_time.slice(0, 5) + ' – ' + ev.end_time.slice(0, 5);
+  const timeStr = ev.start_time.slice(0, 5) + '–' + ev.end_time.slice(0, 5);
+  const countLabel = ev.max_signups ? `${count}/${ev.max_signups}` : String(count);
 
-  return `<div class="event-card" id="ev-card-${ev.id}">
-    <div class="ev-card-top">
-      <div class="ev-info">
-        <div class="ev-title">${dayStr}: ${esc(ev.title)}</div>
-        <div class="ev-date">${dateStr}</div>
-        <div class="ev-time">${timeStr}</div>
+  const enrolledBadge = enrolled
+    ? `<span class="ev-enrolled-badge">&#10003; Enrolled</span>`
+    : '';
+
+  const confirmedNames = confirmed.map(s => {
+    const name = s.player_first ? esc(shortName(s.player_first, s.player_last)) : esc(s.guest_name || 'Guest');
+    const del  = isAdmin
+      ? `<button class="chip-del" onclick="event.stopPropagation();removeSignupChip('${s.id}','${ev.id}')" title="Remove">×</button>`
+      : '';
+    return `<span class="ev-name-item">${name}${del}</span>`;
+  }).join('');
+
+  const reserveNames = reserves.length ? reserves.map(s => {
+    const name = s.player_first ? esc(shortName(s.player_first, s.player_last)) : esc(s.guest_name || 'Guest');
+    const del  = isAdmin
+      ? `<button class="chip-del" onclick="event.stopPropagation();removeSignupChip('${s.id}','${ev.id}')" title="Remove">×</button>`
+      : '';
+    return `<span class="ev-name-item ev-name-reserve">${name}${del}</span>`;
+  }).join('') : '';
+
+  const namesPanel = `
+    <div class="ev-names-panel" id="ev-names-${ev.id}" hidden>
+      <div class="ev-names-group">
+        ${confirmed.length ? confirmedNames : '<span class="ev-no-signups">No signups yet</span>'}
       </div>
-      <div class="ev-actions">${actionBtns}</div>
+      ${reserveNames ? `<div class="ev-names-reserves">Reserve: ${reserveNames}</div>` : ''}
+    </div>`;
+
+  return `<div class="event-card${enrolled ? ' event-card--enrolled' : ''}" id="ev-card-${ev.id}">
+    <div class="ev-body">
+      <div class="ev-title">${dayStr}: ${esc(ev.title)}</div>
+      <div class="ev-meta">${dateStr} &nbsp;·&nbsp; ${timeStr}</div>
+      ${enrolledBadge}
     </div>
-    <div class="ev-attendees">
-      <span class="ev-count${full ? ' full' : ''}">${ev.max_signups ? `${count}/${ev.max_signups}` : count}</span>
-      ${chips || '<span class="ev-no-signups">No signups yet</span>'}
+    <div class="ev-foot">
+      <button class="ev-count-btn${full ? ' full' : ''}" onclick="toggleAttendees('${ev.id}')">
+        ${countLabel} <span class="ev-chevron">&#9660;</span>
+      </button>
+      ${actionBtn}
     </div>
+    ${namesPanel}
   </div>`;
+}
+
+function toggleAttendees(eventId) {
+  const panel = document.getElementById('ev-names-' + eventId);
+  const btn   = panel?.previousElementSibling?.querySelector('.ev-count-btn');
+  if (!panel) return;
+  const open = !panel.hidden;
+  panel.hidden = open;
+  if (btn) btn.classList.toggle('open', !open);
 }
 
 function refreshCard(eventId, signups) {

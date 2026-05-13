@@ -5,7 +5,7 @@
 - **Owner:** David Barkess — personal project, unrelated to SAP/DealSensAI work
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `C:\Users\I061437\OneDrive\Projects\Squash`
-- **Current version:** v4.8
+- **Current version:** v4.9
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -278,3 +278,4 @@ SUPABASE_SERVICE_ROLE_KEY=... node db/reseed.js
 | v4.6 | HoF redesign: removed subtitle; leaderboard moved to top (all-time, status filter only, unaffected by name/year); filter bar below leaderboard with name input + year dropdown (default All) + status buttons; results filtered by name+year+status; compact table (12px font, table-layout:fixed, 5px padding, ellipsis on name cols) |
 | v4.7 | HC edit form: date field defaults to today, allows backdating; `changed_at` passed explicitly to Supabase insert |
 | v4.8 | HoF: status buttons moved inside leaders card (All / Active Players Only); filter bar simplified to single row (name + Year label + year dropdown); month column shows short month only; Movers: left-justified columns (flex:0 auto); Ladder: removed Inactive button (Active / All only) |
+| v4.9 | Sign-Up redesign: compact 2-per-row cards; enrolled state = pale green tint + ✓ Enrolled badge; names hidden by default, expand inline via count button (6/12 ▾); day-grouped horizontal layout; `btn-join--sm` / `btn-leave--sm` compact button variants |
