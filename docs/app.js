@@ -1610,7 +1610,10 @@ async function loadHome() {
     if (e < s) improved++; else if (e > s) worsened++;
   }
 
-  renderHome(eventsRes.data || [], hcTrend, { players: allPlayers.length, improved, worsened }, hofRes.data, pendingCount, myAttendance12m);
+  const validHcs = allPlayers.map(p => p.current_handicap).filter(v => v != null);
+  const avgHc = validHcs.length ? (validHcs.reduce((a, b) => a + b, 0) / validHcs.length).toFixed(1) : '–';
+
+  renderHome(eventsRes.data || [], hcTrend, { players: allPlayers.length, improved, worsened, avg: avgHc }, hofRes.data, pendingCount, myAttendance12m);
 }
 
 function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCount, myAttendance12m) {
@@ -1678,21 +1681,25 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
   const ladderCard = `
     <div class="home-card home-card-ladder" onclick="navTo('ladder')">
       <div class="home-card-label">Handicaps</div>
-      <div class="sec-stat-row" style="margin-top:8px">
-        <div class="sec-stat">
-          <div class="sec-stat-val">${sectionStats.players}</div>
-          <div class="sec-stat-lbl">Players</div>
+      <div class="home-hc-grid">
+        <div class="home-hc-stat">
+          <div class="home-hc-val">${sectionStats.players}</div>
+          <div class="home-hc-lbl">Players</div>
         </div>
-        <div class="sec-stat">
-          <div class="sec-stat-val sec-improved">▲${sectionStats.improved}</div>
-          <div class="sec-stat-lbl">Improved<br><span style="font-size:9px;font-weight:400">12m</span></div>
+        <div class="home-hc-stat">
+          <div class="home-hc-val">${sectionStats.avg}</div>
+          <div class="home-hc-lbl">Avg HC</div>
         </div>
-        <div class="sec-stat">
-          <div class="sec-stat-val sec-worsened">▼${sectionStats.worsened}</div>
-          <div class="sec-stat-lbl">Worsened<br><span style="font-size:9px;font-weight:400">12m</span></div>
+        <div class="home-hc-stat">
+          <div class="home-hc-val sec-improved">▲${sectionStats.improved}</div>
+          <div class="home-hc-lbl">Improved<br><span style="font-size:9px;font-weight:400">12m</span></div>
+        </div>
+        <div class="home-hc-stat">
+          <div class="home-hc-val sec-worsened">▼${sectionStats.worsened}</div>
+          <div class="home-hc-lbl">Worsened<br><span style="font-size:9px;font-weight:400">12m</span></div>
         </div>
       </div>
-      <div class="home-card-link" style="margin-top:8px">View all handicaps →</div>
+      <div class="home-card-link">View all handicaps →</div>
     </div>`;
 
   // ── Card 4: HoF ──────────────────────────────────────────────────────────
