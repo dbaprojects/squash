@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.18';
+const APP_VERSION = '4.19';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -1753,7 +1753,7 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
        </div>`;
   const hofCard = `
     <div class="home-card home-card-hof${hofFullClass}" onclick="navTo('hof')">
-      <div class="home-card-label">Current HCCR Champ</div>
+      <div class="home-card-label">Current HCRR Champ</div>
       ${hofInner}
       <div class="home-card-link">Hall of Fame →</div>
     </div>`;

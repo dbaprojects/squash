@@ -5,7 +5,7 @@
 - **Owner:** David Barkess — personal project, unrelated to SAP/DealSensAI work
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `C:\Users\I061437\OneDrive\Projects\Squash`
-- **Current version:** v4.18
+- **Current version:** v4.19
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -288,3 +288,4 @@ SUPABASE_SERVICE_ROLE_KEY=... node db/reseed.js
 | v4.16 | Login: dial-code-btn padding matches phone input (8px 10px) so heights align |
 | v4.17 | Login: dial-code-btn and phone-local both explicit height:44px to force equal sizing |
 | v4.18 | Me card: "Handicap:" → "HC:", "Attendance:" → "Attended", both lines font-size 13px |
+| v4.19 | Rename HCCR → HCRR in HoF home card label |
