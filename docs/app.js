@@ -498,8 +498,7 @@ function effectiveHcAtOrFirst(playerId, targetMonth) {
   }
   return result ?? hist[0].value;
 }
-  return result;
-}
+
 
 function hasActualEntry(playerId, month) {
   return (playerHistoryArr[playerId] || []).some(e => e.month === month);
