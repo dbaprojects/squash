@@ -2535,7 +2535,15 @@ async function submitHandicap(playerId) {
     changed_at: changedAt, changed_by: ST.player.id, notes: notes || null
   });
   if (hErr) { alert(hErr.message); return; }
-  const { error: pErr } = await sb.from('players').update({ current_handicap: value }).eq('id', playerId);
+  // Use the most recent entry by changed_at as current_handicap (handles backdated inserts)
+  const { data: latest } = await sb.from('handicap_history')
+    .select('handicap_value')
+    .eq('player_id', playerId)
+    .order('changed_at', { ascending: false })
+    .limit(1)
+    .single();
+  const currentValue = latest?.handicap_value ?? value;
+  const { error: pErr } = await sb.from('players').update({ current_handicap: currentValue }).eq('id', playerId);
   if (pErr) { alert(pErr.message); return; }
   const p = allPlayers.find(x => x.id === playerId);
   await renderPlayersTab();
