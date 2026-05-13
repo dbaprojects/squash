@@ -5,7 +5,7 @@
 - **Owner:** David Barkess — personal project, unrelated to SAP/DealSensAI work
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `C:\Users\I061437\OneDrive\Projects\Squash`
-- **Current version:** v4.19
+- **Current version:** v4.20
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -289,3 +289,4 @@ SUPABASE_SERVICE_ROLE_KEY=... node db/reseed.js
 | v4.17 | Login: dial-code-btn and phone-local both explicit height:44px to force equal sizing |
 | v4.18 | Me card: "Handicap:" → "HC:", "Attendance:" → "Attended", both lines font-size 13px |
 | v4.19 | Rename HCCR → HCRR in HoF home card label |
+| v4.20 | HoF home card: winner01-small.png replaces trophy emoji, sized 52×52px |
