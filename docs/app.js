@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.23';
+const APP_VERSION = '4.24';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -366,6 +366,7 @@ function loginSuccess(player) {
   showView('app');
   showSection('view-home');
   loadHome();
+  document.getElementById('home-user-switcher-wrap').classList.add('hidden');
   if (player.is_super_admin) loadUserSwitcher();
   showInstallBanner();
 }
