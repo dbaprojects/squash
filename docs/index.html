@@ -7,7 +7,7 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>BC Squash Section</title>
-  <link rel="stylesheet" href="style.css?v=4.14">
+  <link rel="stylesheet" href="style.css?v=4.15">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#1B2A6B">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -20,9 +20,7 @@
 <!-- ── Login ─────────────────────────────────────────────────────────────── -->
 <div id="view-login" class="view hidden">
   <div class="login-box">
-    <img src="bcss-transparent.png" class="login-logo" alt="The British Club Singapore">
-    <h1>British Club</h1>
-    <p class="login-section">Squash Section</p>
+    <img src="bcss.png" class="login-logo" alt="BC Squash Section">
     <p>Enter your phone number to sign in.</p>
     <div class="phone-input-row" style="margin-bottom:10px">
       <button type="button" class="dial-code-btn" id="login-dialcode-btn" onclick="openCountryPicker('login-dialcode')">+65 Singapore</button>
@@ -32,16 +30,14 @@
     </div>
     <div id="login-phone-error" class="error-msg" style="margin-bottom:8px"></div>
     <button class="btn-google-full" onclick="submitLoginPhone()">Sign In</button>
-    <p class="login-version">v4.14</p>
+    <p class="login-version">v4.15</p>
   </div>
 </div>
 
 <!-- ── Onboarding (post-auth, pre-app) ──────────────────────────────────── -->
 <div id="view-onboard" class="view hidden">
   <div class="login-box">
-    <img src="bcss-transparent.png" class="login-logo" alt="The British Club Singapore">
-    <h1>British Club</h1>
-    <p class="login-section">Squash Section</p>
+    <img src="bcss.png" class="login-logo" alt="BC Squash Section">
 
     <!-- Step: confirm match -->
     <div id="onboard-confirm" class="hidden">
@@ -97,7 +93,7 @@
       <img src="bcss-transparent.png" class="header-logo" alt="BC">
       <div class="header-title">
         <span class="logo">British Club</span>
-        <span class="logo-sub">Squash Section <span class="version">v4.14</span></span>
+        <span class="logo-sub">Squash Section <span class="version">v4.15</span></span>
       </div>
     </div>
     <div id="header-page-title" class="header-page-title"></div>
@@ -233,6 +229,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
-<script src="app.js?v=4.14"></script>
+<script src="app.js?v=4.15"></script>
 </body>
 </html>

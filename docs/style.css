@@ -49,11 +49,10 @@ body {
 }
 
 .login-logo {
-  width: 120px;
-  height: 120px;
+  width: 200px;
+  height: 200px;
   object-fit: contain;
-  margin-bottom: 16px;
-  mix-blend-mode: multiply;
+  margin-bottom: 20px;
 }
 
 .login-box h1 { font-size: 22px; font-weight: 700; color: var(--bc-navy); margin-bottom: 2px; }

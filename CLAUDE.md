@@ -5,7 +5,7 @@
 - **Owner:** David Barkess — personal project, unrelated to SAP/DealSensAI work
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `C:\Users\I061437\OneDrive\Projects\Squash`
-- **Current version:** v4.14
+- **Current version:** v4.15
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -284,3 +284,4 @@ SUPABASE_SERVICE_ROLE_KEY=... node db/reseed.js
 | v4.12 | PWA stale-cache fix: remote version.json fetched with cache:'no-store' on startup; version guard checks `_cb=VERSION` exactly (not just `_cb=`) |
 | v4.13 | Responsive scaling: tablet (768px+) and desktop (1100px+) breakpoints; larger fonts, wider max-width, more padding at larger sizes; home grid 3-col at tablet+ |
 | v4.14 | Responsive: tablet max-width reduced to 760px |
+| v4.15 | Login/onboard: bcss.png logo (200px), removed redundant "British Club / Squash Section" text |
