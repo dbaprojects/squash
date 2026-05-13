@@ -18,7 +18,7 @@
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  font-size: 15px;
+  font-size: 16px;
   color: var(--bc-text);
   min-height: 100vh;
 }
@@ -340,7 +340,7 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 
 .schedule-day-group  { margin-bottom: 18px; }
 .schedule-day-header {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.07em;
   color: var(--bc-text-dim);
@@ -371,11 +371,11 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
   gap: 8px;
   margin-bottom: 4px;
 }
-.ev-body .ev-title { font-weight: 700; font-size: 15px; color: var(--bc-navy); }
-.ev-body .ev-meta  { font-size: 12px; color: var(--bc-text-dim); margin-top: 2px; }
+.ev-body .ev-title { font-weight: 700; font-size: 16px; color: var(--bc-navy); }
+.ev-body .ev-meta  { font-size: 13px; color: var(--bc-text-dim); margin-top: 2px; }
 .ev-enrolled-badge {
   flex-shrink: 0;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: #15803d;
   background: #dcfce7;
@@ -415,7 +415,7 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
   border: none;
   border-radius: 8px;
   padding: 5px 10px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   cursor: pointer;
   display: flex;
@@ -425,7 +425,7 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 }
 .ev-count-btn.full { background: #fde8e8; color: var(--bc-red); }
 .ev-count-btn:hover { opacity: 0.8; }
-.ev-chevron { font-size: 10px; transition: transform 0.15s; display: inline-block; }
+.ev-chevron { font-size: 11px; transition: transform 0.15s; display: inline-block; }
 .ev-count-btn.open .ev-chevron { transform: rotate(180deg); }
 
 /* Leave button in footer — matches count chip scale */
@@ -435,7 +435,7 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
   color: #6b7280;
   border-radius: 8px;
   padding: 4px 10px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
@@ -446,7 +446,7 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 .ev-names-panel {
   padding: 8px 12px 10px;
   border-top: 1px solid var(--bc-border);
-  font-size: 13px;
+  font-size: 14px;
 }
 .ev-names-group { display: flex; flex-wrap: wrap; gap: 4px; }
 .ev-names-reserves { margin-top: 5px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
@@ -615,7 +615,7 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 .signup-form h3 { margin-bottom: 12px; font-size: 15px; color: var(--bc-navy); }
 
 .form-group { margin-bottom: 12px; }
-.form-group label { display: block; font-size: 13px; color: var(--bc-text-dim); margin-bottom: 4px; font-weight: 500; }
+.form-group label { display: block; font-size: 14px; color: var(--bc-text-dim); margin-bottom: 4px; font-weight: 500; }
 .form-group select,
 .form-group input[type="text"],
 .form-group input[type="email"],
@@ -822,13 +822,13 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 .hc-lb-row     { display: flex; align-items: center; gap: 6px; padding: 4px 0;
                  border-bottom: 1px solid #f5f5f5; }
 .ladder-me-lb  { background: var(--bc-gold-lt); border-radius: 6px; padding: 4px 6px; margin: 2px -6px; }
-.hc-lb-delta   { min-width: 30px; text-align: right; font-weight: 700; font-size: 14px; flex-shrink: 0; }
+.hc-lb-delta   { min-width: 30px; text-align: right; font-weight: 700; font-size: 15px; flex-shrink: 0; }
 .lb-improved   { color: #27ae60; }
 .lb-worsened   { color: var(--bc-red); }
 .lb-flat       { color: #aaa; }
-.hc-lb-name    { cursor: pointer; font-size: 14px; }
+.hc-lb-name    { cursor: pointer; font-size: 15px; }
 .hc-lb-name:hover { color: var(--bc-gold); text-decoration: underline; }
-.hc-lb-hc      { font-size: 12px; color: #888; flex-shrink: 0; }
+.hc-lb-hc      { font-size: 13px; color: #888; flex-shrink: 0; }
 
 /* Player history modal */
 .ph-signup-stat { font-size: 13px; color: #555; background: var(--bc-navy-lt);
@@ -1017,7 +1017,7 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 .home-card:hover { box-shadow: 0 3px 12px rgba(27,42,107,.12); border-color: var(--bc-navy); }
 
 .home-card-label {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.07em;
@@ -1025,7 +1025,7 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
   margin-bottom: 2px;
 }
 .home-card-main { font-size: 20px; font-weight: 800; color: var(--bc-navy); line-height: 1.2; }
-.home-card-sub  { font-size: 14px; color: #555; }
+.home-card-sub  { font-size: 15px; color: #555; }
 .home-card-link {
   font-size: 12px;
   color: var(--bc-navy);
@@ -1258,7 +1258,7 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 .hof-year-hdr      { font-size: 13px; font-weight: 700; color: var(--bc-navy);
   border-bottom: 2px solid var(--bc-navy); padding-bottom: 3px; margin-bottom: 6px; margin-top: 4px; }
 
-.hof-table         { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
+.hof-table         { width: 100%; border-collapse: collapse; font-size: 14px; table-layout: fixed; }
 .hof-table th      { background: var(--bc-navy); color: #fff; padding: 4px 5px;
   font-weight: 600; text-align: left; font-size: 11px; }
 .hof-table td      { padding: 4px 5px; border-bottom: 1px solid #f0f0f0; }
@@ -1305,7 +1305,7 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 /* Condensed players table */
 .players-table td { padding: 6px 10px; }
 .players-table th { padding: 7px 10px; font-size: 11px; }
-.player-name  { font-weight: 600; font-size: 14px; }
+.player-name  { font-weight: 600; font-size: 15px; }
 
 /* Sortable column headers */
 .th-sort { cursor: pointer; user-select: none; }
