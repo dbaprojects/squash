@@ -1553,14 +1553,15 @@ async function loadHome() {
     else                hcTrend = { dir: 'flat' };
   }
 
-  // Section stats: improved / worsened over 12 months
+  // Section stats: improved / worsened — same 12-month window as ladder (current month - 11)
   const histMap = {};
   for (const h of (histRes.data || [])) {
     const mk = monthKey(new Date(h.changed_at));
     if (!histMap[h.player_id]) histMap[h.player_id] = [];
     histMap[h.player_id].push({ mk, v: h.handicap_value });
   }
-  const startM = monthKey(new Date(twelveMonthsAgo.getFullYear(), twelveMonthsAgo.getMonth(), 1));
+  const sectionStart = new Date(); sectionStart.setDate(1); sectionStart.setMonth(sectionStart.getMonth() - 11);
+  const startM = monthKey(sectionStart);
   function homeHcAt(pid, mk) {
     const arr = histMap[pid]; if (!arr) return null;
     for (let i = arr.length - 1; i >= 0; i--) { if (arr[i].mk <= mk) return arr[i].v; }
