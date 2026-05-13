@@ -5,7 +5,7 @@
 - **Owner:** David Barkess — personal project, unrelated to SAP/DealSensAI work
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `C:\Users\I061437\OneDrive\Projects\Squash`
-- **Current version:** v4.10
+- **Current version:** v4.13
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -279,3 +279,7 @@ SUPABASE_SERVICE_ROLE_KEY=... node db/reseed.js
 | v4.7 | HC edit form: date field defaults to today, allows backdating; `changed_at` passed explicitly to Supabase insert |
 | v4.8 | HoF: status buttons moved inside leaders card (All / Active Players Only); filter bar simplified to single row (name + Year label + year dropdown); month column shows short month only; Movers: left-justified columns (flex:0 auto); Ladder: removed Inactive button (Active / All only) |
 | v4.9 | Sign-Up redesign: compact 2-per-row cards; enrolled state = pale green tint + ✓ Enrolled badge; names hidden by default, expand inline via count button (6/12 ▾); day-grouped horizontal layout; `btn-join--sm` / `btn-leave--sm` compact button variants |
+| v4.10 | Sequential minor versioning (not reset at 9); version bumped on every push; 5 files to update: app.js, index.html (×4), version.json |
+| v4.11 | Sign-Up: full date dividers "Monday, 13 May 2026"; day prefix removed from card title |
+| v4.12 | PWA stale-cache fix: remote version.json fetched with cache:'no-store' on startup; version guard checks `_cb=VERSION` exactly (not just `_cb=`) |
+| v4.13 | Responsive scaling: tablet (768px+) and desktop (1100px+) breakpoints; larger fonts, wider max-width, more padding at larger sizes; home grid 3-col at tablet+ |
