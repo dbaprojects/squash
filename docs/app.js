@@ -915,6 +915,7 @@ async function openPlayerHcModal(playerId, playerName) {
     sb.from('signups')
       .select('id', { count: 'exact', head: true })
       .eq('player_id', playerId)
+      .eq('is_reserve', false)
       .gte('signed_up_at', cutoff12m.toISOString())
   ]);
 
@@ -1494,18 +1495,13 @@ async function loadHome() {
   twelveMonthsAgo.setDate(1);
   twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
 
-  // 14-month history window for section stats
-  const fourteenMonthsAgo = new Date();
-  fourteenMonthsAgo.setDate(1);
-  fourteenMonthsAgo.setMonth(fourteenMonthsAgo.getMonth() - 14);
-
   const fetches = [
-    // Upcoming events with signups (limit 5)
+    // Upcoming events with signups (limit 15)
     sb.from('events')
       .select('id, title, event_date, start_time, end_time, max_signups, signups(id, player_id, is_reserve)')
       .gte('event_date', today)
       .order('event_date').order('start_time')
-      .limit(5),
+      .limit(15),
     // My HC just before 12-month window (for trend)
     sb.from('handicap_history')
       .select('handicap_value')
@@ -1519,10 +1515,9 @@ async function loadHome() {
       .eq('active', true)
       .not('current_handicap', 'is', null)
       .order('current_handicap'),
-    // All players' HC history last 14 months (for improved/worsened)
+    // All players' HC history (full, for accurate improved/worsened carry-forward)
     sb.from('handicap_history')
       .select('player_id, handicap_value, changed_at')
-      .gte('changed_at', fourteenMonthsAgo.toISOString())
       .order('changed_at', { ascending: true }),
     // Latest HoF winner
     sb.from('hof_results')
@@ -1594,29 +1589,32 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
     else if (hcTrend.dir === 'worsened') commentHtml = `<span class="myhc-trend worsened">↓ +${hcTrend.delta} over 12m</span>`;
     else                                 commentHtml = `<span class="myhc-trend flat">— Unchanged 12m</span>`;
   }
+  const fullName = `${esc(me.first_name)} ${esc(me.last_name)}`;
+  const nameLen = (me.first_name + ' ' + me.last_name).length;
+  const nameFontSize = nameLen <= 10 ? 22 : nameLen <= 15 ? 18 : nameLen <= 20 ? 15 : 13;
   const meCard = `
     <div class="home-card home-card-me"
         onclick="openPlayerHcModal('${me.id}','${esc(me.first_name + ' ' + me.last_name)}')">
-      <div class="home-card-label">Me</div>
       <div class="myhc-header">
-        <div>
-          <div class="myhc-name">${esc(me.first_name)} ${esc(me.last_name)}</div>
+        <div style="flex:1;min-width:0">
+          <div class="myhc-name" style="font-size:${nameFontSize}px;white-space:normal;word-break:break-word">${fullName}</div>
         </div>
-        <div style="text-align:right">
+        <div style="text-align:right;flex-shrink:0">
           <div class="myhc-big">${hc ?? '–'}</div>
           <div style="font-size:10px;color:rgba(255,255,255,.45)">handicap</div>
         </div>
       </div>
-      ${commentHtml ? `<div style="margin-top:4px">${commentHtml}</div>` : ''}
-      <div style="font-size:12px;color:rgba(255,255,255,.55);margin-top:4px">${myAttendance12m} sessions (12m)</div>
+      ${commentHtml ? `<div style="margin-top:6px;font-size:12px"><span style="color:rgba(255,255,255,.45);font-size:11px">Handicap: </span>${commentHtml}</div>` : ''}
+      <div style="font-size:12px;color:rgba(255,255,255,.55);margin-top:2px"><span style="color:rgba(255,255,255,.45)">Attendance: </span>${myAttendance12m} sessions (12m)</div>
       <div class="home-card-link">View full history →</div>
     </div>`;
 
   // ── Card 2: Sign-Up ──────────────────────────────────────────────────────
   const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const SHOW_SESSIONS = 5;
   let sessRows = '';
   if (upcomingEvents.length) {
-    sessRows = upcomingEvents.slice(0, 4).map(ev => {
+    sessRows = upcomingEvents.slice(0, SHOW_SESSIONS).map(ev => {
       const confirmed = (ev.signups || []).filter(s => !s.is_reserve);
       const mySignup  = (ev.signups || []).find(s => s.player_id === me.id);
       const countStr  = ev.max_signups ? `${confirmed.length}/${ev.max_signups}` : `${confirmed.length}`;
@@ -1628,14 +1626,17 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
         <span class="home-sess-right">${countStr}${statusEl}</span>
       </div>`;
     }).join('');
+    const remaining = upcomingEvents.length - SHOW_SESSIONS;
+    if (remaining > 0) {
+      sessRows += `<div class="home-sess-more">+ ${remaining} more session${remaining > 1 ? 's' : ''}</div>`;
+    }
   } else {
     sessRows = '<div class="home-sess-empty">No upcoming sessions</div>';
   }
   const signupCard = `
     <div class="home-card home-card-signup" onclick="navTo('schedule')">
-      <div class="home-card-label">Sign-Up</div>
+      <div class="home-card-label" style="text-transform:none">Click to Sign-up</div>
       <div class="home-sess-list">${sessRows}</div>
-      <div class="home-card-link">View all sessions →</div>
     </div>`;
 
   // ── Card 3: Handicaps ────────────────────────────────────────────────────

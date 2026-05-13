@@ -5,7 +5,7 @@
 - **Owner:** David Barkess — personal project, unrelated to SAP/DealSensAI work
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `C:\Users\I061437\OneDrive\Projects\Squash`
-- **Current version:** v4.3
+- **Current version:** v4.4
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -272,3 +272,4 @@ SUPABASE_SERVICE_ROLE_KEY=... node db/reseed.js
 | v4.1 | HoF: name/status filters, Most #2's leaderboard, condensed HC-in-brackets layout, edit form fixed (showFormModal), name matching warning, super-admin-only CRUD; chip × delete for admin; player modal signup count (12m); Reports: period filter + Most Frequent Players attendance table |
 | v4.2 | HoF autocomplete + HC auto-fill in edit form; RLS fix for anon-key DML (`db/fix-rls-anon.sql`); home dashboard first pass |
 | v4.3 | Home dashboard redesign: nav tabs + hamburger removed; logo navigates home; `← Home` back button; 5 cards (Me/navy/HC trend, Sign-Up/session list, Handicaps/section stats, HoF/trophy, Admin/pending); sign-out + user-switch in home footer |
+| v4.4 | Me card: name-only header (no "ME" label), dynamic font scaling, "Handicap:"/"Attendance:" prefixes; Sign-Up card: "Click to Sign-up" label, 5 rows + "+ N more" indicator, no "View all" link; data consistency: full HC history fetch, is_reserve=false filter in modal signup count; reseed script generates current+next week events with light signups |
