@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.29';
+const APP_VERSION = '4.30';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -1825,7 +1825,6 @@ function renderSchedule() {
           <span class="sched-day-abbr">${abbr}</span>
           <span class="sched-day-num">${num}</span>
         </div>
-        <div class="sched-vline"></div>
       </div>
       <div class="sched-main">
         <div class="sched-day-label">${label}</div>

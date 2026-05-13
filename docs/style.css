@@ -351,8 +351,23 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
   align-items: center;
   flex-shrink: 0;
   width: 54px;
+  position: relative;
 }
 
+/* Navy line from below circle through gap to next group */
+.sched-aside::after {
+  content: '';
+  position: absolute;
+  left: 26px; /* center of 54px aside minus 1px */
+  top: 48px;
+  bottom: -28px; /* bridges the margin-bottom gap to the next group */
+  width: 2px;
+  background: var(--bc-navy);
+}
+/* Last group: line ends at bottom of sessions, doesn't dangle */
+.schedule-day-group:last-child .sched-aside::after {
+  bottom: 0;
+}
 .sched-day-circle {
   width: 48px;
   height: 48px;
@@ -365,6 +380,8 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
   justify-content: center;
   line-height: 1;
   flex-shrink: 0;
+  position: relative;
+  z-index: 1;
 }
 
 .sched-day-abbr {
@@ -378,14 +395,6 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
   font-size: 21px;
   font-weight: 800;
   margin-top: 1px;
-}
-
-.sched-vline {
-  flex: 1;
-  width: 2px;
-  background: var(--bc-border);
-  margin-top: 8px;
-  min-height: 20px;
 }
 
 .sched-main { flex: 1; min-width: 0; }
@@ -411,7 +420,7 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
   user-select: none;
 }
 
-.ev-row--enrolled { border-color: #bbf7d0; background: #f0fdf4; }
+.ev-row--enrolled { }
 
 .ev-row-main {
   display: flex;
@@ -423,7 +432,6 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 }
 
 .ev-row-main:active { background: rgba(0,0,0,0.04); }
-.ev-row--enrolled .ev-row-main:active { background: #dcfce7; }
 
 .ev-time-col {
   display: flex;
@@ -490,22 +498,22 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
   background: var(--bc-gold);
   color: #fff;
   border-radius: 10px;
-  padding: 10px 10px 10px 16px;
-  font-size: 14px;
+  padding: 9px 9px 9px 14px;
+  font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
   pointer-events: none;
 }
 
 .ev-btn-arrow {
-  width: 26px;
-  height: 26px;
+  width: 24px;
+  height: 24px;
   background: rgba(0,0,0,0.2);
   border-radius: 50%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
+  font-size: 13px;
   flex-shrink: 0;
 }
 
@@ -517,13 +525,12 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
   color: #15803d;
   border: 1.5px solid #bbf7d0;
   border-radius: 10px;
-  padding: 10px 14px;
-  font-size: 14px;
+  padding: 9px 12px;
+  font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
   cursor: pointer;
 }
-.ev-btn-enrolled:hover { background: #fde8e8; color: var(--bc-red); border-color: #fca5a5; }
 
 /* Names panel */
 .ev-names-panel { padding: 10px 14px 12px; border-top: 1px solid var(--bc-border); font-size: 14px; }
