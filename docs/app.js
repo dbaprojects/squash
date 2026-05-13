@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.7';
+const APP_VERSION = '4.8';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -599,9 +599,8 @@ function renderFilterBar() {
       <input type="text" id="ladder-search" class="players-search"
         placeholder="Search players…" autocomplete="off" value="${esc(ladderSearch)}">
       <div class="players-role-btns">
-        <button class="role-btn${ladderStatusFilter === 'active'   ? ' active' : ''}" onclick="setLadderStatus('active')">Active</button>
-        <button class="role-btn${ladderStatusFilter === 'inactive' ? ' active' : ''}" onclick="setLadderStatus('inactive')">Inactive</button>
-        <button class="role-btn${ladderStatusFilter === 'all'      ? ' active' : ''}" onclick="setLadderStatus('all')">All</button>
+        <button class="role-btn${ladderStatusFilter === 'active' ? ' active' : ''}" onclick="setLadderStatus('active')">Active</button>
+        <button class="role-btn${ladderStatusFilter === 'all'    ? ' active' : ''}" onclick="setLadderStatus('all')">All</button>
       </div>
     </div>`;
   document.getElementById('ladder-search').addEventListener('input', e => {
@@ -612,9 +611,7 @@ function renderFilterBar() {
 
 function setLadderStatus(status) {
   ladderStatusFilter = status;
-  document.querySelectorAll('#ladder-filter-bar .role-btn').forEach(b => {
-    b.classList.toggle('active', b.textContent.trim().toLowerCase() === status);
-  });
+  renderFilterBar();
   renderSectionHistory();
 }
 
@@ -1136,7 +1133,12 @@ async function loadHof() {
   renderHof();
 }
 
-function fmtHofMonth(dateStr) {
+function fmtHofMonthShort(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00');
+  return d.toLocaleDateString('en-GB', { month: 'short' });
+}
+
+
   const d = new Date(dateStr + 'T12:00:00');
   return d.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
 }
@@ -1215,7 +1217,10 @@ function renderHof() {
           </div>`).join('')}
       </div>`;
     }
-    leadersHtml += `</div>`;
+    leadersHtml += `<div class="hof-leaders-status">
+      <button class="hof-lstatus-btn${hofStatusFilter==='all'?' active':''}" onclick="hofStatusFilter='all';renderHof()">All</button>
+      <button class="hof-lstatus-btn${hofStatusFilter==='active'?' active':''}" onclick="hofStatusFilter='active';renderHof()">Active Players Only</button>
+    </div></div>`;
   }
   leadersDiv.innerHTML = leadersHtml;
 
@@ -1223,20 +1228,13 @@ function renderHof() {
   const allYears = [...new Set(hofResults.map(r => r.event_month.slice(0,4)))].sort((a,b) => b-a);
   const wasFocused = document.activeElement?.id === 'hof-name-input';
   filterBar.innerHTML = `
-    <div class="hof-filter-row">
-      <input type="text" id="hof-name-input" class="hof-name-filter" placeholder="Filter by name…"
-        value="${esc(hofNameFilter)}" oninput="hofNameFilter=this.value;renderHof()">
-      <select id="hof-year-sel" class="hof-year-sel" onchange="hofYearFilter=this.value;renderHof()">
-        <option value="all"${hofYearFilter==='all'?' selected':''}>All</option>
-        ${allYears.map(y => `<option value="${y}"${hofYearFilter===y?' selected':''}>${y}</option>`).join('')}
-      </select>
-    </div>
-    <div class="hof-status-btns">
-      ${['all','active','inactive'].map(s =>
-        `<button class="hof-status-btn${hofStatusFilter===s?' active':''}"
-          onclick="hofStatusFilter='${s}';renderHof()">${s.charAt(0).toUpperCase()+s.slice(1)}</button>`
-      ).join('')}
-    </div>`;
+    <input type="text" id="hof-name-input" class="hof-name-filter" placeholder="Filter by name…"
+      value="${esc(hofNameFilter)}" oninput="hofNameFilter=this.value;renderHof()">
+    <span class="hof-year-label">Year</span>
+    <select id="hof-year-sel" class="hof-year-sel" onchange="hofYearFilter=this.value;renderHof()">
+      <option value="all"${hofYearFilter==='all'?' selected':''}>All</option>
+      ${allYears.map(y => `<option value="${y}"${hofYearFilter===y?' selected':''}>${y}</option>`).join('')}
+    </select>`;
   if (wasFocused) {
     const inp = document.getElementById('hof-name-input');
     if (inp) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
@@ -1274,7 +1272,7 @@ function renderHof() {
         ${byYear[yr].map(r => {
           if (r.not_played) {
             return `<tr class="hof-not-played">
-              <td>${fmtHofMonth(r.event_month)}</td>
+              <td>${fmtHofMonthShort(r.event_month)}</td>
               <td colspan="3" style="color:#bbb;font-style:italic">Not played</td>
             </tr>`;
           }
@@ -1282,7 +1280,7 @@ function renderHof() {
           const wHc = r.winner_hc    != null ? ` <span class="hof-hc-inline">(${r.winner_hc})</span>`    : '';
           const rHc = r.runner_up_hc != null ? ` <span class="hof-hc-inline">(${r.runner_up_hc})</span>` : '';
           return `<tr>
-            <td class="hof-month">${fmtHofMonth(r.event_month)}</td>
+            <td class="hof-month">${fmtHofMonthShort(r.event_month)}</td>
             <td class="hof-winner">${esc(r.winner_name || '–')}${wHc}</td>
             <td class="hof-runnerup">${esc(r.runner_up_name || '–')}${rHc}</td>
             <td class="hof-col-score hof-score">${score}</td>
@@ -1797,7 +1795,16 @@ async function loadSchedule() {
 function renderSchedule() {
   const el = document.getElementById('event-list');
   if (!ST.events.length) { el.innerHTML = '<p style="color:#666">No upcoming sessions.</p>'; return; }
-  el.innerHTML = ST.events.map(ev => eventCard(ev)).join('');
+  // Group events by date (already ordered by event_date, start_time)
+  const groupMap = {};
+  const dates = [];
+  for (const ev of ST.events) {
+    if (!groupMap[ev.event_date]) { groupMap[ev.event_date] = []; dates.push(ev.event_date); }
+    groupMap[ev.event_date].push(ev);
+  }
+  el.innerHTML = dates.map(d =>
+    `<div class="schedule-day-group"><div class="schedule-day-row">${groupMap[d].map(ev => eventCard(ev)).join('')}</div></div>`
+  ).join('');
 }
 
 function eventCard(ev) {
@@ -1823,12 +1830,17 @@ function eventCard(ev) {
     return `<span class="attendee-chip ${cls}">${name}${del}</span>`;
   }).join('');
 
+  const d       = new Date(ev.event_date + 'T12:00:00');
+  const dayStr  = d.toLocaleDateString('en-GB', { weekday: 'short' });
+  const dateStr = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  const timeStr = ev.start_time.slice(0, 5) + ' – ' + ev.end_time.slice(0, 5);
+
   return `<div class="event-card" id="ev-card-${ev.id}">
     <div class="ev-card-top">
       <div class="ev-info">
-        <div class="ev-title">${esc(ev.title)}</div>
-        <div class="ev-date">${fmtDate(ev.event_date)}</div>
-        <div class="ev-time">${ev.start_time} – ${ev.end_time}</div>
+        <div class="ev-title">${dayStr}: ${esc(ev.title)}</div>
+        <div class="ev-date">${dateStr}</div>
+        <div class="ev-time">${timeStr}</div>
       </div>
       <div class="ev-actions">${actionBtns}</div>
     </div>

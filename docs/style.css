@@ -340,7 +340,12 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 /* ── Event cards ───────────────────────────────────────────────────────── */
 .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
 
+.schedule-day-group { margin-bottom: 14px; }
+.schedule-day-row   { display: flex; flex-wrap: wrap; gap: 12px; }
+
 .event-card {
+  flex: 1 1 220px;
+  min-width: 200px;
   background: var(--bc-surface);
   border-radius: 10px;
   border: 1px solid var(--bc-border);
@@ -732,7 +737,7 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 .lb-improved   { color: #27ae60; }
 .lb-worsened   { color: var(--bc-red); }
 .lb-flat       { color: #aaa; }
-.hc-lb-name    { flex: 1; cursor: pointer; font-size: 14px; }
+.hc-lb-name    { cursor: pointer; font-size: 14px; }
 .hc-lb-name:hover { color: var(--bc-gold); text-decoration: underline; }
 .hc-lb-hc      { font-size: 11px; color: #888; flex-shrink: 0; }
 
@@ -758,8 +763,8 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 .ladder-filter-row .players-search { flex: 1; min-width: 140px; }
 
 /* Movers two-column layout */
-.movers-grid { display: flex; gap: 16px; flex-wrap: wrap; }
-.movers-grid .hc-lb-section { flex: 1; min-width: 180px; }
+.movers-grid { display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start; }
+.movers-grid .hc-lb-section { flex: 0 auto; min-width: 160px; }
 .movers-topn-bar { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #888; margin-bottom: 8px; }
 .movers-topn-btn { font-size: 11px; padding: 2px 8px; border-radius: 12px; border: 1px solid var(--bc-border);
   background: #fff; color: #555; cursor: pointer; }
@@ -1048,37 +1053,58 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 /* ── Hall of Fame ───────────────────────────────────────────────────────── */
 .hof-filter-bar {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 12px;
-}
-.hof-filter-row {
-  display: flex;
   align-items: center;
   gap: 6px;
+  margin-bottom: 10px;
+  margin-top: 8px;
 }
 
 .hof-name-filter {
   flex: 1;
   min-width: 0;
-  padding: 5px 8px;
+  padding: 4px 8px;
   border: 1.5px solid var(--bc-border);
   border-radius: 6px;
-  font-size: 12px;
+  font-size: 11px;
 }
 .hof-name-filter:focus { outline: none; border-color: var(--bc-navy); }
 .hof-year-sel {
   padding: 4px 6px;
   border: 1.5px solid var(--bc-border);
   border-radius: 6px;
-  font-size: 12px;
+  font-size: 11px;
   color: var(--bc-navy);
   background: #fff;
   cursor: pointer;
   flex-shrink: 0;
 }
 .hof-year-sel:focus { outline: none; border-color: var(--bc-navy); }
-.hof-status-btns { display: flex; gap: 4px; }
+.hof-year-label { font-size: 11px; color: var(--bc-text-dim); flex-shrink: 0; }
+
+/* Status buttons inside navy leaders card */
+.hof-leaders-status {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255,255,255,0.15);
+}
+.hof-lstatus-btn {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.3);
+  color: rgba(255,255,255,0.7);
+  border-radius: 14px;
+  padding: 3px 12px;
+  font-size: 11px;
+  cursor: pointer;
+}
+.hof-lstatus-btn.active {
+  background: rgba(255,255,255,0.9);
+  color: var(--bc-navy);
+  border-color: transparent;
+  font-weight: 600;
+}
 .hof-status-btn {
   padding: 5px 10px;
   border: 1.5px solid var(--bc-border);
@@ -1142,22 +1168,22 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
   border-bottom: 2px solid var(--bc-navy); padding-bottom: 3px; margin-bottom: 6px; margin-top: 4px; }
 
 .hof-table         { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
-.hof-table th      { background: var(--bc-navy); color: #fff; padding: 5px 8px;
+.hof-table th      { background: var(--bc-navy); color: #fff; padding: 4px 5px;
   font-weight: 600; text-align: left; font-size: 11px; }
-.hof-table td      { padding: 5px 8px; border-bottom: 1px solid #f0f0f0; }
+.hof-table td      { padding: 4px 5px; border-bottom: 1px solid #f0f0f0; }
 .hof-table tr:last-child td { border-bottom: none; }
 .hof-table tr:hover td { background: var(--bc-navy-lt); }
-.hof-col-month     { width: 60px; }
-.hof-col-score     { width: 48px; text-align: center; }
+.hof-col-month     { width: 34px; }
+.hof-col-score     { width: 50px; text-align: center; white-space: nowrap; }
 .hof-hc-col        { text-align: center; width: 40px; }
-.hof-score-col     { text-align: center; width: 48px; }
+.hof-score-col     { text-align: center; width: 50px; white-space: nowrap; }
 .hof-hc            { font-size: 11px; color: #888; }
 .hof-hc-inline     { font-size: 10px; color: #888; font-weight: 400; }
 .hof-winner        { font-weight: 600; color: var(--bc-navy);
                      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hof-runnerup      { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hof-month         { color: #666; }
-.hof-score         { font-weight: 700; color: var(--bc-navy); }
+.hof-score         { font-weight: 700; color: var(--bc-navy); white-space: nowrap; }
 .hof-not-played td { color: #ccc; }
 
 .hof-admin-table td { padding: 6px 10px; }
