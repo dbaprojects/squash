@@ -5,7 +5,7 @@
 - **Owner:** David Barkess — personal project, unrelated to SAP/DealSensAI work
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `C:\Users\I061437\OneDrive\Projects\Squash`
-- **Current version:** v4.28
+- **Current version:** v4.29
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -298,3 +298,4 @@ SUPABASE_SERVICE_ROLE_KEY=... node db/reseed.js
 | v4.26 | Font size +1px across the board: body 16px, ev-title 16px, day-header 14px, hc-lb 15px, hof-table 14px |
 | v4.27 | Sign-up screen redesign: 2-column card grid → single-column tap-to-join row list; `.ev-row` replaces `.event-card`; tap row to join/view; Leave is underlined text link; enrolled state = green left border + #f0fdf4 tint |
 | v4.28 | Sign-up timeline redesign: navy day-circle (abbr + num) + vertical line; 3-col session row (time | title+progress | JOIN/ENROLLED button); 12h time display; progress bar; names panel on player-count tap |
+| v4.29 | Sign-up: remove fill progress bar; fix timeline vline (align-items:stretch); ENROLLED button disenrolls on click; ▾ chevron on player count row rotates when names open |

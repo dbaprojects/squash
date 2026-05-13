@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.28';
+const APP_VERSION = '4.29';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -1850,7 +1850,6 @@ function eventCard(ev) {
   const h12  = h === 0 ? 12 : h > 12 ? h - 12 : h;
   const timeH = `${h12}:${mm.toString().padStart(2, '0')}`;
 
-  const fillPct    = ev.max_signups ? Math.min(100, Math.round(count / ev.max_signups * 100)) : 0;
   const countLabel = ev.max_signups ? `${count} / ${ev.max_signups} players` : `${count} players`;
 
   const rowClick = enrolled
@@ -1858,12 +1857,8 @@ function eventCard(ev) {
     : `onclick="joinEvent(event,'${ev.id}')"`;
 
   const actionBtn = enrolled
-    ? `<span class="ev-btn-enrolled">&#10003; ENROLLED</span>`
+    ? `<button class="ev-btn-enrolled" onclick="leaveEvent(event,'${mySignup.id}','${ev.id}')">&#10003; ENROLLED</button>`
     : `<span class="ev-btn-join">JOIN <span class="ev-btn-arrow">&#8594;</span></span>`;
-
-  const leaveBtn = enrolled
-    ? `<button class="btn-leave--row" onclick="event.stopPropagation();leaveEvent(event,'${mySignup.id}','${ev.id}')">Leave session</button>`
-    : '';
 
   const confirmedNames = confirmed.map(s => {
     const name = s.player_first ? esc(shortName(s.player_first, s.player_last)) : esc(s.guest_name || 'Guest');
@@ -1887,7 +1882,6 @@ function eventCard(ev) {
         ${confirmed.length ? confirmedNames : '<span style="color:#bbb;font-style:italic">No signups yet</span>'}
       </div>
       ${reserveNames ? `<div class="ev-names-reserves">${reserveNames}</div>` : ''}
-      ${leaveBtn ? `<div style="margin-top:10px">${leaveBtn}</div>` : ''}
     </div>`;
 
   return `
@@ -1902,7 +1896,7 @@ function eventCard(ev) {
           <div class="ev-meta-row" onclick="event.stopPropagation();toggleAttendees('${ev.id}')">
             <span class="ev-players-icon">&#128101;</span>
             <span class="ev-players-text">${countLabel}</span>
-            ${ev.max_signups ? `<div class="ev-progress"><div class="ev-progress-fill${full ? ' full' : ''}" style="width:${fillPct}%"></div></div>` : ''}
+            <span class="ev-chevron-hint">&#9660;</span>
           </div>
         </div>
         <div class="ev-action-col">${actionBtn}</div>
@@ -1915,6 +1909,7 @@ function toggleAttendees(eventId) {
   const panel = document.getElementById('ev-names-' + eventId);
   if (!panel) return;
   panel.hidden = !panel.hidden;
+  document.getElementById('ev-card-' + eventId)?.classList.toggle('ev-names-open', !panel.hidden);
 }
 
 function refreshCard(eventId, signups) {
