@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.17';
+const APP_VERSION = '4.18';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -1676,8 +1676,8 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
           <div style="font-size:10px;color:rgba(255,255,255,.45)">handicap</div>
         </div>
       </div>
-      ${commentHtml ? `<div style="margin-top:6px;font-size:12px"><span style="color:rgba(255,255,255,.45);font-size:11px">Handicap: </span>${commentHtml}</div>` : ''}
-      <div style="font-size:12px;color:rgba(255,255,255,.55);margin-top:2px"><span style="color:rgba(255,255,255,.45)">Attendance: </span>${myAttendance12m} sessions (12m)</div>
+      ${commentHtml ? `<div style="margin-top:6px;font-size:13px"><span style="color:rgba(255,255,255,.45);font-size:13px">HC: </span>${commentHtml}</div>` : ''}
+      <div style="font-size:13px;color:rgba(255,255,255,.55);margin-top:2px">Attended ${myAttendance12m} sessions (12m)</div>
       <div class="home-card-link">View full history →</div>
     </div>`;
 
