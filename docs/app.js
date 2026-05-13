@@ -631,13 +631,10 @@ function renderMyHcCard() {
     }
   }
 
-  const nameLen = (me.first_name + ' ' + me.last_name).length;
-  const nameFontSize = nameLen <= 10 ? 22 : nameLen <= 15 ? 18 : nameLen <= 20 ? 15 : 13;
-
   el.innerHTML = `
     <div class="myhc-header" style="cursor:pointer" onclick="openPlayerHcModal('${me.id}','${esc(me.first_name + ' ' + me.last_name)}')">
       <div style="flex:1;min-width:0">
-        <div class="myhc-name" style="font-size:${nameFontSize}px;white-space:normal;word-break:break-word">${esc(me.first_name)} ${esc(me.last_name)}</div>
+        <div class="myhc-name">${esc(me.first_name)} ${esc(me.last_name)}</div>
         <div class="myhc-rank">#${myIdx + 1} of ${activePlayers.length}</div>
       </div>
       <div style="text-align:right;flex-shrink:0">
@@ -1639,14 +1636,12 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
     else                                 commentHtml = `<span class="myhc-trend flat">— Unchanged 12m</span>`;
   }
   const fullName = `${esc(me.first_name)} ${esc(me.last_name)}`;
-  const nameLen = (me.first_name + ' ' + me.last_name).length;
-  const nameFontSize = nameLen <= 10 ? 22 : nameLen <= 15 ? 18 : nameLen <= 20 ? 15 : 13;
   const meCard = `
     <div class="home-card home-card-me"
         onclick="openPlayerHcModal('${me.id}','${esc(me.first_name + ' ' + me.last_name)}')">
       <div class="myhc-header">
         <div style="flex:1;min-width:0">
-          <div class="myhc-name" style="font-size:${nameFontSize}px;white-space:normal;word-break:break-word">${fullName}</div>
+          <div class="myhc-name">${fullName}</div>
         </div>
         <div style="text-align:right;flex-shrink:0">
           <div class="myhc-big">${hc ?? '–'}</div>
