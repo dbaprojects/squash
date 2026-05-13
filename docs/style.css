@@ -826,14 +826,14 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 .hc-lb-title   { font-size: 11px; font-weight: 700; color: #888; text-transform: uppercase;
                  letter-spacing: .05em; margin-bottom: 4px; padding-bottom: 4px;
                  border-bottom: 1px solid var(--bc-border); }
-.hc-lb-row     { display: flex; align-items: center; gap: 10px; padding: 6px 0;
+.hc-lb-row     { display: flex; align-items: center; gap: 6px; padding: 4px 0;
                  border-bottom: 1px solid #f5f5f5; }
-.ladder-me-lb  { background: var(--bc-gold-lt); border-radius: 6px; padding: 6px 8px; margin: 2px -8px; }
-.hc-lb-delta   { width: 52px; text-align: right; font-weight: 700; font-size: 13px; flex-shrink: 0; }
+.ladder-me-lb  { background: var(--bc-gold-lt); border-radius: 6px; padding: 4px 6px; margin: 2px -6px; }
+.hc-lb-delta   { min-width: 30px; text-align: right; font-weight: 700; font-size: 13px; flex-shrink: 0; }
 .lb-improved   { color: #27ae60; }
 .lb-worsened   { color: var(--bc-red); }
 .lb-flat       { color: #aaa; }
-.hc-lb-name    { cursor: pointer; font-size: 14px; }
+.hc-lb-name    { cursor: pointer; font-size: 13px; }
 .hc-lb-name:hover { color: var(--bc-gold); text-decoration: underline; }
 .hc-lb-hc      { font-size: 11px; color: #888; flex-shrink: 0; }
 
