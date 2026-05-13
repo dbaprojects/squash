@@ -560,11 +560,13 @@ function renderLadder() {
       <div id="ladder-my-card" class="hc-top-card"></div>
       <div id="ladder-section-card" class="hc-top-card"></div>
     </div>
+    <div id="ladder-view-toggle"></div>
     <div id="ladder-filter-bar"></div>
     <div id="ladder-section-history"></div>`;
 
   renderMyHcCard();
   renderSectionCard();
+  renderViewToggle();
   renderFilterBar();
   renderSectionHistory();
 }
@@ -614,8 +616,8 @@ function renderMyHcCard() {
   let commentHtml = '';
   if (hcAgo12 !== null && currentHc !== null) {
     const delta = currentHc - hcAgo12;
-    if      (delta < 0) commentHtml = `<span class="myhc-trend improved">▲ ${Math.abs(delta)} over 12 months</span>`;
-    else if (delta > 0) commentHtml = `<span class="myhc-trend worsened">▼ +${delta} over 12 months</span>`;
+    if      (delta < 0) commentHtml = `<span class="myhc-trend improved"><span class="hc-tri">▲</span> ${Math.abs(delta)} over 12 months</span>`;
+    else if (delta > 0) commentHtml = `<span class="myhc-trend worsened"><span class="hc-tri">▼</span> +${delta} over 12 months</span>`;
     else                commentHtml = `<span class="myhc-trend flat">— Unchanged over 12 months</span>`;
   } else {
     // Fallback: 3-month commentary if not enough 12-month data
@@ -623,8 +625,8 @@ function renderMyHcCard() {
     const hcAgo3 = effectiveHcAt(me.id, monthKey(ago3));
     if (hcAgo3 !== null && currentHc !== null) {
       const delta = currentHc - hcAgo3;
-      if      (delta < 0) commentHtml = `<span class="myhc-trend improved">▲ ${Math.abs(delta)} over 3 months</span>`;
-      else if (delta > 0) commentHtml = `<span class="myhc-trend worsened">▼ +${delta} over 3 months</span>`;
+      if      (delta < 0) commentHtml = `<span class="myhc-trend improved"><span class="hc-tri">▲</span> ${Math.abs(delta)} over 3 months</span>`;
+      else if (delta > 0) commentHtml = `<span class="myhc-trend worsened"><span class="hc-tri">▼</span> +${delta} over 3 months</span>`;
       else                commentHtml = `<span class="myhc-trend flat">— Unchanged over 3 months</span>`;
     }
   }
@@ -674,25 +676,34 @@ function renderSectionCard() {
 
   el.innerHTML = `
     <div class="sec-card-title">Section Summary</div>
-    <div class="sec-stat-row">
-      <div class="sec-stat"><div class="sec-stat-val">${fp.length}</div><div class="sec-stat-lbl">Players</div></div>
-      <div class="sec-stat"><div class="sec-stat-val">${avgHc}</div><div class="sec-stat-lbl">Avg HC</div></div>
-      <div class="sec-stat"><div class="sec-stat-val sec-improved">▲${improved}</div><div class="sec-stat-lbl">Improved<br><span style="font-size:9px;font-weight:400">12 months</span></div></div>
-      <div class="sec-stat"><div class="sec-stat-val sec-worsened">▼${worsened}</div><div class="sec-stat-lbl">Worsened<br><span style="font-size:9px;font-weight:400">12 months</span></div></div>
-    </div>
-    <div class="hc-view-toggle">
-      ${views.map(({ v, label }) =>
-        `<button class="hc-toggle-btn${ladderSectionView === v ? ' active' : ''}"
-          data-view="${v}" onclick="setLadderView('${v}')">${label}</button>`
-      ).join('')}
+    <div class="home-hc-grid">
+      <div class="home-hc-stat"><div class="home-hc-val">${fp.length}</div><div class="home-hc-lbl">Players</div></div>
+      <div class="home-hc-stat"><div class="home-hc-val">${avgHc}</div><div class="home-hc-lbl">Avg HC</div></div>
+      <div class="home-hc-stat"><div class="home-hc-val sec-improved"><span class="hc-tri">▲</span>${improved}</div><div class="home-hc-lbl">Improved</div></div>
+      <div class="home-hc-stat"><div class="home-hc-val sec-worsened"><span class="hc-tri">▼</span>${worsened}</div><div class="home-hc-lbl">Worsened</div></div>
     </div>`;
+}
+
+function renderViewToggle() {
+  const el = document.getElementById('ladder-view-toggle');
+  if (!el) return;
+  const views = [
+    { v: 'list',         label: 'Player List'  },
+    { v: 'grid',         label: 'Grid'         },
+    { v: 'movers',       label: 'Movers'       },
+    { v: 'distribution', label: 'Distribution' },
+  ];
+  el.innerHTML = `<div class="hc-view-toggle">
+    ${views.map(({ v, label }) =>
+      `<button class="hc-toggle-btn${ladderSectionView === v ? ' active' : ''}"
+        data-view="${v}" onclick="setLadderView('${v}')">${label}</button>`
+    ).join('')}
+  </div>`;
 }
 
 function setLadderView(v) {
   ladderSectionView = v;
-  document.querySelectorAll('.hc-toggle-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.view === v);
-  });
+  renderViewToggle();
   renderSectionHistory();
 }
 
@@ -866,7 +877,7 @@ function renderMoversView(el) {
 
   function moverRow({ p, delta }) {
     const isMe = p.id === ST.player.id;
-    const sign = delta < 0 ? `▲ ${Math.abs(delta)}` : `▼ +${delta}`;
+    const sign = delta < 0 ? `<span class="hc-tri">▲</span> ${Math.abs(delta)}` : `<span class="hc-tri">▼</span> +${delta}`;
     const cls  = delta < 0 ? 'lb-improved' : 'lb-worsened';
     return `<div class="hc-lb-row${isMe ? ' ladder-me-lb' : ''}">
       <span class="hc-lb-delta ${cls}">${sign}</span>
@@ -1623,8 +1634,8 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
   // ── Card 1: Me ───────────────────────────────────────────────────────────
   let commentHtml = '';
   if (hcTrend) {
-    if      (hcTrend.dir === 'improved') commentHtml = `<span class="myhc-trend improved">▲ ${hcTrend.delta} over 12m</span>`;
-    else if (hcTrend.dir === 'worsened') commentHtml = `<span class="myhc-trend worsened">▼ +${hcTrend.delta} over 12m</span>`;
+    if      (hcTrend.dir === 'improved') commentHtml = `<span class="myhc-trend improved"><span class="hc-tri">▲</span> ${hcTrend.delta} over 12m</span>`;
+    else if (hcTrend.dir === 'worsened') commentHtml = `<span class="myhc-trend worsened"><span class="hc-tri">▼</span> +${hcTrend.delta} over 12m</span>`;
     else                                 commentHtml = `<span class="myhc-trend flat">— Unchanged 12m</span>`;
   }
   const fullName = `${esc(me.first_name)} ${esc(me.last_name)}`;
@@ -1681,6 +1692,7 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
   const ladderCard = `
     <div class="home-card home-card-ladder" onclick="navTo('ladder')">
       <div class="home-card-label">Handicaps</div>
+      <div class="home-card-sublabel">12 Months · Active Players</div>
       <div class="home-hc-grid">
         <div class="home-hc-stat">
           <div class="home-hc-val">${sectionStats.players}</div>
@@ -1691,12 +1703,12 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
           <div class="home-hc-lbl">Avg HC</div>
         </div>
         <div class="home-hc-stat">
-          <div class="home-hc-val sec-improved">▲${sectionStats.improved}</div>
-          <div class="home-hc-lbl">Improved<br><span style="font-size:9px;font-weight:400">12m</span></div>
+          <div class="home-hc-val sec-improved"><span class="hc-tri">▲</span>${sectionStats.improved}</div>
+          <div class="home-hc-lbl">Improved</div>
         </div>
         <div class="home-hc-stat">
-          <div class="home-hc-val sec-worsened">▼${sectionStats.worsened}</div>
-          <div class="home-hc-lbl">Worsened<br><span style="font-size:9px;font-weight:400">12m</span></div>
+          <div class="home-hc-val sec-worsened"><span class="hc-tri">▼</span>${sectionStats.worsened}</div>
+          <div class="home-hc-lbl">Worsened</div>
         </div>
       </div>
       <div class="home-card-link">View all handicaps →</div>

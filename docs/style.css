@@ -689,7 +689,7 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 .sec-worsened   { color: var(--bc-red) !important; }
 
 /* Grid / Leaderboard toggle */
-.hc-view-toggle  { display: flex; gap: 6px; margin-top: 12px; }
+.hc-view-toggle  { display: flex; gap: 6px; margin: 12px 0 4px; }
 .hc-toggle-btn   { flex: 1; padding: 6px; border: 1px solid var(--bc-border); border-radius: 6px;
                    background: #fff; color: #555; font-size: 12px; cursor: pointer; }
 .hc-toggle-btn.active { background: var(--bc-navy); color: #fff; border-color: var(--bc-navy); }
@@ -966,16 +966,18 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 
 /* Handicaps card */
 .home-card-ladder { border-top: 3px solid #2a9d8f; }
+.home-card-sublabel { font-size: 9px; color: var(--bc-text-dim); margin-bottom: 4px; }
 .home-hc-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 6px 4px;
-  margin-top: 6px;
+  margin-top: 4px;
   flex: 1;
 }
 .home-hc-stat { text-align: center; }
 .home-hc-val  { font-size: 17px; font-weight: 700; color: var(--bc-navy); line-height: 1.2; }
 .home-hc-lbl  { font-size: 10px; color: #888; margin-top: 1px; text-transform: uppercase; letter-spacing: .03em; }
+.hc-tri       { font-size: .72em; vertical-align: middle; }
 
 /* HoF card */
 .home-card-hof     { border-top: 3px solid #c4932a; }
@@ -1205,7 +1207,8 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 .dial-code-btn {
   display: flex;
   align-items: center;
-  padding: 8px 10px;
+  align-self: stretch;
+  padding: 0 10px;
   background: #f8f9fd;
   border: 1.5px solid var(--bc-border);
   border-radius: 6px;
