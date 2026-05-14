@@ -846,6 +846,22 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 .admin-event-row .ev-info { font-weight: 600; }
 .admin-event-row .ev-sub  { font-size: 12px; color: var(--bc-text-dim); margin-top: 2px; }
 
+.ae-main        { flex: 1; min-width: 0; }
+.ae-count-btn   { color: var(--bc-navy); cursor: pointer; text-decoration: underline; font-size: 12px; }
+.ae-signup-list { padding: 0 16px 10px; display: flex; flex-wrap: wrap; gap: 4px; margin-top: -4px; }
+.ae-signup-list.hidden { display: none; }
+.ae-sup-chip    { font-size: 12px; background: var(--bc-navy-lt); color: var(--bc-navy); padding: 2px 8px; border-radius: 10px; }
+.ae-sup-reserve { background: #f0f0f0; color: #888; }
+
+/* ── HoF admin cards ──────────────────────────────────────────────────────── */
+.hof-admin-card   { background: var(--bc-surface); border: 1px solid var(--bc-border); border-radius: 8px; padding: 10px 14px; margin-bottom: 8px; }
+.hof-ac-row1      { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.hof-ac-month     { font-weight: 600; font-size: 13px; color: var(--bc-navy); }
+.hof-ac-row2      { font-size: 13px; color: var(--bc-text); display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.hof-ac-sep       { color: var(--bc-text-dim); }
+.hof-ac-notplayed { color: #bbb; font-style: italic; }
+.hof-ac-score     { color: var(--bc-text-dim); }
+
 .tag-admin       { font-size: 11px; background: var(--bc-navy-lt); color: var(--bc-navy); padding: 2px 7px; border-radius: 10px; font-weight: 600; }
 .tag-superadmin  { font-size: 11px; background: #ede9f8; color: #5b2d9e; padding: 2px 7px; border-radius: 10px; font-weight: 600; }
 .tag-active      { font-size: 11px; background: #e6f4ea; color: #1e6b3c; padding: 2px 7px; border-radius: 10px; }
@@ -1138,7 +1154,7 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 .home-card-me .home-card-link  { color: rgba(255,255,255,.6); padding-top: 0; opacity: 1; font-size: 11px; }
 
 /* Sign-Up card */
-.home-card-signup { border-top: 3px solid var(--bc-gold); }
+.home-card-signup { border-top: 3px solid var(--bc-gold); overflow: hidden; }
 .home-card-signup .home-card-link { text-align: center; }
 .home-sess-list   { margin: 6px 0; display: flex; flex-direction: column; gap: 0; }
 .home-sess-row {
@@ -1164,10 +1180,10 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 12px 0 6px;
-  gap: 10px;
+  padding: 0 0 6px;
+  gap: 6px;
 }
-.home-racket-big  { width: 72px; height: 72px; object-fit: contain; opacity: 0.9; }
+.home-racket-big  { width: 160px; height: 160px; object-fit: contain; opacity: 0.9; margin: -20px 0 -12px; }
 .home-racket-quip { font-size: 16px; font-weight: 700; color: var(--bc-navy); text-align: center; }
 
 /* Booked state — small racket + count */
@@ -1706,8 +1722,8 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
   .btn-hc-mobile { display: none; }
 
   /* Admin event rows — stack info and buttons */
-  .admin-event-row { flex-direction: column; align-items: flex-start; gap: 8px; }
-  .admin-event-row .btn-row { flex-wrap: wrap; gap: 4px; }
+  .admin-event-row { flex-direction: row; align-items: center; padding: 8px 12px; gap: 6px; }
+  .admin-event-row .btn-row { flex-wrap: wrap; gap: 4px; flex-shrink: 0; }
 
   /* Players toolbar — stack search and filter buttons */
   .players-toolbar { flex-direction: column; align-items: stretch; }

@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.50';
+const APP_VERSION = '4.51';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -1319,42 +1319,40 @@ async function loadAdminHof() {
 }
 
 function renderAdminHof() {
-  const wrap    = document.getElementById('hof-admin-list');
-  const isSU    = ST.player?.is_super_admin;
+  const wrap = document.getElementById('hof-admin-list');
+  const isSU = ST.player?.is_super_admin;
   if (!hofResults.length) { wrap.innerHTML = '<p style="color:#888">No records yet.</p>'; return; }
 
-  // Show/hide the Add button based on super-admin status
   const addBtn = document.getElementById('btn-add-hof');
   if (addBtn) addBtn.style.display = isSU ? '' : 'none';
 
-  const rows = hofResults.map(r => {
-    const actionsTd = isSU
-      ? `<td class="btn-actions">
+  wrap.innerHTML = hofResults.map(r => {
+    const actBtns = isSU
+      ? `<div class="btn-actions">
           <button class="btn-icon-sm" onclick="editHofResult('${r.id}')">Edit</button>
           <button class="btn-icon-sm btn-danger" onclick="deleteHofResult('${r.id}')">Del</button>
-        </td>`
-      : `<td></td>`;
+        </div>`
+      : '';
+    const monthStr = fmtHofMonth(r.event_month);
     if (r.not_played) {
-      return `<tr class="hof-not-played">
-        <td>${fmtHofMonth(r.event_month)}</td>
-        <td colspan="4" style="color:#bbb;font-style:italic">Not played</td>
-        ${actionsTd}
-      </tr>`;
+      return `<div class="hof-admin-card">
+        <div class="hof-ac-row1"><span class="hof-ac-month">${monthStr}</span>${actBtns}</div>
+        <div class="hof-ac-row2 hof-ac-notplayed">Not played</div>
+      </div>`;
     }
-    const score = fmtScore(r.winner_score, r.runner_up_score);
-    return `<tr>
-      <td>${fmtHofMonth(r.event_month)}</td>
-      <td>${esc(r.winner_name || '–')} ${r.winner_hc != null ? `<span class="hcap-badge">${r.winner_hc}</span>` : ''}</td>
-      <td>${esc(r.runner_up_name || '–')} ${r.runner_up_hc != null ? `<span class="hcap-badge">${r.runner_up_hc}</span>` : ''}</td>
-      <td>${score}</td>
-      ${actionsTd}
-    </tr>`;
+    const winHc  = r.winner_hc    != null ? ` <span class="hcap-badge">${r.winner_hc}</span>`    : '';
+    const ruHc   = r.runner_up_hc != null ? ` <span class="hcap-badge">${r.runner_up_hc}</span>` : '';
+    const score  = fmtScore(r.winner_score, r.runner_up_score);
+    return `<div class="hof-admin-card">
+      <div class="hof-ac-row1"><span class="hof-ac-month">${monthStr}</span>${actBtns}</div>
+      <div class="hof-ac-row2">
+        <span class="hof-ac-winner">🏆 ${esc(r.winner_name || '–')}${winHc}</span>
+        <span class="hof-ac-sep">·</span>
+        <span class="hof-ac-runner">🥈 ${esc(r.runner_up_name || '–')}${ruHc}</span>
+        ${score ? `<span class="hof-ac-sep">·</span><span class="hof-ac-score">${score}</span>` : ''}
+      </div>
+    </div>`;
   }).join('');
-
-  wrap.innerHTML = `<table class="data-table hof-admin-table">
-    <thead><tr><th>Month</th><th>Champion</th><th>Runner-Up</th><th>Score</th><th></th></tr></thead>
-    <tbody>${rows}</tbody>
-  </table>`;
 }
 
 function openHofForm(record = null) {
@@ -2341,17 +2339,15 @@ function renderPlayersTable() {
             ? ' <span class="tag-pending">Pending</span>'
             : !p.active ? ' <span class="tag-inactive">Inactive</span>' : '';
           return `<div class="player-card" onclick="openEditPlayerForm('${p.id}')" style="cursor:pointer">
-            <div class="pc-row1">
+            <div class="pc-row1" style="margin-bottom:0">
               <div class="pc-name">${esc(p.first_name)} ${esc(p.last_name)}${statusTag}${roleLabel}</div>
+              <span class="pc-phone">${esc(p.phone || '')}</span>
               <span class="hcap-badge">${p.current_handicap ?? '–'}</span>
             </div>
-            <div class="pc-row2">
-              <span class="pc-phone">${esc(p.phone || '')}</span>
-              ${pending ? `<div class="btn-actions">
-                <button class="btn-icon-sm" onclick="event.stopPropagation();approvePlayer('${p.id}')">Approve</button>
-                <button class="btn-icon-sm btn-icon-danger" onclick="event.stopPropagation();rejectPlayer('${p.id}')">Reject</button>
-              </div>` : ''}
-            </div>
+            ${pending ? `<div class="pc-row2"><div class="btn-actions">
+              <button class="btn-icon-sm" onclick="event.stopPropagation();approvePlayer('${p.id}')">Approve</button>
+              <button class="btn-icon-sm btn-icon-danger" onclick="event.stopPropagation();rejectPlayer('${p.id}')">Reject</button>
+            </div></div>` : ''}
           </div>`;
         }).join('')}
       </div>`
@@ -2656,6 +2652,19 @@ async function renderAdminEvents() {
   const { data: events } = await query;
   const el = document.getElementById('admin-event-list');
 
+  // Fetch signups for all visible events
+  const eventIds = (events || []).map(e => e.id);
+  let signupMap = {};
+  if (eventIds.length) {
+    const { data: sups } = await sb.from('signups')
+      .select('event_id, is_reserve, guest_name, players(first_name, last_name)')
+      .in('event_id', eventIds);
+    for (const s of (sups || [])) {
+      if (!signupMap[s.event_id]) signupMap[s.event_id] = [];
+      signupMap[s.event_id].push(s);
+    }
+  }
+
   const rangeInputs = mode === 'range' ? `
     <span class="admin-range-span">
       <input type="date" id="admin-from" value="${from}">
@@ -2670,23 +2679,41 @@ async function renderAdminEvents() {
     <button class="admin-filter-btn${mode==='range'?' active':''}" onclick="setAdminFilter('range')">Date Range</button>
     ${rangeInputs}
   </div>` + ((events||[]).length
-    ? (events||[]).map(ev => `
+    ? (events||[]).map(ev => {
+        const sups      = signupMap[ev.id] || [];
+        const confirmed = sups.filter(s => !s.is_reserve);
+        const reserves  = sups.filter(s =>  s.is_reserve);
+        const countStr  = ev.max_signups ? `${confirmed.length}/${ev.max_signups}` : `${confirmed.length}`;
+        const chips = [...confirmed, ...reserves].map(s => {
+          const name = s.players
+            ? `${s.players.first_name} ${s.players.last_name}`
+            : (s.guest_name || 'Guest');
+          return `<span class="ae-sup-chip${s.is_reserve ? ' ae-sup-reserve' : ''}">${esc(name)}</span>`;
+        }).join('');
+        return `
       <div class="admin-event-row">
-        <div>
+        <div class="ae-main">
           <div class="ev-info">${esc(ev.title)}</div>
           <div class="ev-sub">${fmtDate(ev.event_date)} · ${ev.start_time}–${ev.end_time}
-            ${ev.max_signups ? ` · max ${ev.max_signups}` : ''}</div>
+            · <span class="ae-count-btn" onclick="toggleAeSignups('${ev.id}')">${countStr} registered ▾</span></div>
         </div>
         <div class="btn-row">
           <button class="btn-secondary" style="font-size:12px;padding:4px 8px"
             onclick="openEditEventForm('${ev.id}')">Edit</button>
-          <button class="btn-danger" onclick="deleteEvent('${ev.id}')">Delete</button>
+          <button class="btn-danger" onclick="deleteEvent('${ev.id}')">Del</button>
         </div>
-      </div>`).join('')
+      </div>
+      <div id="ae-sups-${ev.id}" class="ae-signup-list hidden">${chips || '<span style="color:#aaa;font-size:12px">No signups yet</span>'}</div>`;
+      }).join('')
     : '<p style="color:#666;margin-top:8px">No events in this period.</p>');
 
   document.getElementById('btn-generate-week').onclick = generateWeek;
   document.getElementById('btn-add-event').onclick = openAddEventForm;
+}
+
+function toggleAeSignups(id) {
+  const el = document.getElementById('ae-sups-' + id);
+  if (el) el.classList.toggle('hidden');
 }
 
 async function generateWeek() {
@@ -2788,7 +2815,12 @@ async function submitEditEvent(id) {
 }
 
 async function deleteEvent(id) {
-  if (!confirm('Delete this event and all its signups?')) return;
+  const { data: sups } = await sb.from('signups').select('id').eq('event_id', id);
+  const count = (sups || []).length;
+  const msg = count > 0
+    ? `This event has ${count} signup${count !== 1 ? 's' : ''}. Delete it and all its signups?`
+    : 'Delete this event?';
+  if (!confirm(msg)) return;
   const { error } = await sb.from('events').delete().eq('id', id);
   if (error) { alert(error.message); return; }
   await renderAdminEvents();

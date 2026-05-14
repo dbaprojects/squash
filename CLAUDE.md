@@ -5,7 +5,7 @@
 - **Owner:** David Barkess — personal project, unrelated to SAP/DealSensAI work
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `C:\Users\I061437\OneDrive\Projects\Squash`
-- **Current version:** v4.50
+- **Current version:** v4.51
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -320,3 +320,4 @@ SUPABASE_SERVICE_ROLE_KEY=... node db/reseed.js
 | v4.48 | Sign-Up tile: "N sessions available" shows unenrolled count only; hidden if zero |
 | v4.49 | Admin players: replace table with two-row cards (name+HC / phone+actions); works on mobile and desktop |
 | v4.50 | Admin players: click card to edit; Deact/Restore/Delete moved into edit form with status badge and HC row; removed card buttons |
+| v4.51 | Admin events: signup count + expandable list per event; delete warns if signups exist; tighter mobile row padding. Admin templates: tighter mobile. HoF admin: table replaced with two-line cards. CSS: ae-* and hof-admin-card classes added |
