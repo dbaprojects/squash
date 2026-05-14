@@ -5,7 +5,7 @@
 - **Owner:** David Barkess — personal project, unrelated to SAP/DealSensAI work
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `C:\Users\I061437\OneDrive\Projects\Squash`
-- **Current version:** v4.56
+- **Current version:** v4.57
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -326,3 +326,4 @@ SUPABASE_SERVICE_ROLE_KEY=... node db/reseed.js
 | v4.54 | Player view: Me-card banner at top (full width, navy, name+HC+rank+trend+sessions); no player name in header title; buildPlayerBannerHtml() reuses home-card-me styles + player-banner-card modifier |
 | v4.55 | Fix player banner trend: monthKey() format is YYYY.MM (dots) not YYYY-MM — cutoff12m was using dashes so string compare always failed, pastVal always null |
 | v4.56 | Fix openPlayerView crash on names with apostrophes (e.g. Sa'ed) — remove playerName from onclick entirely; look up name from ladderPlayers/ST.player by ID inside openPlayerView |
+| v4.57 | HC trend shows actual data period: "in N months" not hardcoded "over 12 months". New helpers: monthsDiff, computeHcTrendFromArr, hcTrendHtml. Used in home Me card, ladder My HC card, player banner. Removed redundant myHcRes DB query from loadHome. |

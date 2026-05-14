@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.56';
+const APP_VERSION = '4.57';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -535,6 +535,39 @@ function effectiveHcAtOrFirst(playerId, targetMonth) {
 }
 
 
+// Returns number of calendar months between two YYYY.MM keys
+function monthsDiff(fromKey, toKey) {
+  const [fy, fm] = fromKey.split('.').map(Number);
+  const [ty, tm] = toKey.split('.').map(Number);
+  return (ty - fy) * 12 + (tm - fm);
+}
+
+// Compute HC trend from hist=[{month,value}] sorted asc (playerHistoryArr format)
+// Returns {delta, months} using 12m if available, else oldest entry; null if no data
+function computeHcTrendFromArr(currentHc, hist) {
+  if (currentHc == null || !hist?.length) return null;
+  const nowKey  = monthKey(new Date());
+  const ago12   = new Date(); ago12.setDate(1); ago12.setMonth(ago12.getMonth() - 12);
+  const cut12   = monthKey(ago12);
+  let pastHc = null;
+  for (const e of hist) {
+    if (e.month <= cut12) pastHc = e.value;
+    else break;
+  }
+  if (pastHc !== null) return { delta: currentHc - pastHc, months: 12 };
+  const months = monthsDiff(hist[0].month, nowKey);
+  if (months < 1) return null;
+  return { delta: currentHc - hist[0].value, months };
+}
+
+// Render HC trend span from {delta, months}
+function hcTrendHtml(delta, months) {
+  const lbl = `${months} month${months !== 1 ? 's' : ''}`;
+  if (delta < 0) return `<span class="myhc-trend improved">Handicap has improved ${Math.abs(delta)} in ${lbl}</span>`;
+  if (delta > 0) return `<span class="myhc-trend worsened">Handicap has worsened ${delta} in ${lbl}</span>`;
+  return `<span class="myhc-trend flat">Handicap unchanged in ${lbl}</span>`;
+}
+
 function hasActualEntry(playerId, month) {
   return (playerHistoryArr[playerId] || []).some(e => e.month === month);
 }
@@ -641,26 +674,8 @@ function renderMyHcCard() {
 
   const currentHc = me.current_handicap;
 
-  // 12-month commentary
-  const ago12 = new Date(); ago12.setDate(1); ago12.setMonth(ago12.getMonth() - 12);
-  const hcAgo12 = effectiveHcAt(me.id, monthKey(ago12));
-  let commentHtml = '';
-  if (hcAgo12 !== null && currentHc !== null) {
-    const delta = currentHc - hcAgo12;
-    if      (delta < 0) commentHtml = `<span class="myhc-trend improved">Handicap has improved ${Math.abs(delta)} over 12 months</span>`;
-    else if (delta > 0) commentHtml = `<span class="myhc-trend worsened">Handicap has worsened ${delta} over 12 months</span>`;
-    else                commentHtml = `<span class="myhc-trend flat">Handicap unchanged over 12 months</span>`;
-  } else {
-    // Fallback: 3-month commentary if not enough 12-month data
-    const ago3 = new Date(); ago3.setDate(1); ago3.setMonth(ago3.getMonth() - 3);
-    const hcAgo3 = effectiveHcAt(me.id, monthKey(ago3));
-    if (hcAgo3 !== null && currentHc !== null) {
-      const delta = currentHc - hcAgo3;
-      if      (delta < 0) commentHtml = `<span class="myhc-trend improved">Handicap has improved ${Math.abs(delta)} over 3 months</span>`;
-      else if (delta > 0) commentHtml = `<span class="myhc-trend worsened">Handicap has worsened ${delta} over 3 months</span>`;
-      else                commentHtml = `<span class="myhc-trend flat">Handicap unchanged over 3 months</span>`;
-    }
-  }
+  const _trend = computeHcTrendFromArr(currentHc, playerHistoryArr[me.id]);
+  const commentHtml = _trend ? hcTrendHtml(_trend.delta, _trend.months) : '';
 
   el.innerHTML = `
     <div class="myhc-header" style="cursor:pointer" onclick="openPlayerView('${me.id}','view-home')">
@@ -1029,17 +1044,13 @@ function buildPlayerBannerHtml() {
   const rankStr = rank >= 0 ? `#${rank + 1} of ${activeSorted.length}` : '';
 
   let commentHtml = '';
-  if (_playerHcSeries.length) {
-    const ago12 = new Date(); ago12.setDate(1); ago12.setMonth(ago12.getMonth() - 12);
-    const cutoff12m = monthKey(ago12);
-    const currentVal = _playerHcSeries[_playerHcSeries.length - 1]?.value ?? null;
-    const pastVal = (_playerHcSeries.slice().reverse().find(s => s.month <= cutoff12m))?.value ?? null;
-    if (pastVal !== null && currentVal !== null) {
-      const delta = currentVal - pastVal;
-      if      (delta < 0) commentHtml = `<span class="myhc-trend improved">Handicap has improved ${Math.abs(delta)} over 12m</span>`;
-      else if (delta > 0) commentHtml = `<span class="myhc-trend worsened">Handicap has worsened ${delta} over 12m</span>`;
-      else                commentHtml = `<span class="myhc-trend flat">Handicap unchanged over 12m</span>`;
-    }
+  {
+    // Use playerHistoryArr if loaded (from ladder), else derive from _playerHcSeries
+    const hist = playerHistoryArr[_playerModalId]?.length
+      ? playerHistoryArr[_playerModalId]
+      : _playerHcSeries.filter(s => s.isActual).map(s => ({ month: s.month, value: s.value }));
+    const _trend = computeHcTrendFromArr(hc, hist);
+    if (_trend) commentHtml = hcTrendHtml(_trend.delta, _trend.months);
   }
 
   return `
@@ -1692,13 +1703,6 @@ async function loadHome() {
       .gte('event_date', today)
       .order('event_date').order('start_time')
       .limit(15),
-    // My HC just before 12-month window (for trend)
-    sb.from('handicap_history')
-      .select('handicap_value')
-      .eq('player_id', me.id)
-      .lt('changed_at', twelveMonthsAgo.toISOString())
-      .order('changed_at', { ascending: false })
-      .limit(1),
     // All active players with current HC (for section stats)
     sb.from('players')
       .select('id, current_handicap')
@@ -1730,19 +1734,17 @@ async function loadHome() {
   }
 
   const results = await Promise.all(fetches);
-  const [eventsRes, myHcRes, playersRes, histRes, hofRes, signupCountRes] = results;
+  const [eventsRes, playersRes, histRes, hofRes, signupCountRes] = results;
   const myAttendance12m = signupCountRes?.count || 0;
-  const pendingCount = me.is_admin ? (results[6]?.count || 0) : 0;
+  const pendingCount = me.is_admin ? (results[5]?.count || 0) : 0;
 
-  // HC trend
+  // HC trend — use full history from histRes (already fetched) for accurate months
   const currentHc = me.current_handicap;
-  let hcTrend = null;
-  if (myHcRes.data?.length && currentHc != null) {
-    const delta = currentHc - myHcRes.data[0].handicap_value;
-    if      (delta < 0) hcTrend = { dir: 'improved', delta: Math.abs(delta) };
-    else if (delta > 0) hcTrend = { dir: 'worsened', delta };
-    else                hcTrend = { dir: 'flat' };
-  }
+  const myHistForTrend = (histRes.data || [])
+    .filter(h => h.player_id === me.id)
+    .map(h => ({ month: monthKey(new Date(h.changed_at)), value: h.handicap_value }))
+    .sort((a, b) => a.month < b.month ? -1 : 1);
+  const hcTrend = computeHcTrendFromArr(currentHc, myHistForTrend);
 
   // Section stats: improved / worsened — same 12-month window as ladder (current month - 11)
   const histMap = {};
@@ -1779,12 +1781,7 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
   const hc = me.current_handicap;
 
   // ── Card 1: Me ───────────────────────────────────────────────────────────
-  let commentHtml = '';
-  if (hcTrend) {
-    if      (hcTrend.dir === 'improved') commentHtml = `<span class="myhc-trend improved">Handicap has improved ${hcTrend.delta} over 12m</span>`;
-    else if (hcTrend.dir === 'worsened') commentHtml = `<span class="myhc-trend worsened">Handicap has worsened ${hcTrend.delta} over 12m</span>`;
-    else                                 commentHtml = `<span class="myhc-trend flat">Handicap unchanged over 12m</span>`;
-  }
+  const commentHtml = hcTrend ? hcTrendHtml(hcTrend.delta, hcTrend.months) : '';
   const fullName = `${esc(me.first_name)} ${esc(me.last_name)}`;
   const meCard = `
     <div class="home-card home-card-me"
