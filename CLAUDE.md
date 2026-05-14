@@ -5,7 +5,7 @@
 - **Owner:** David Barkess — personal project, unrelated to SAP/DealSensAI work
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `C:\Users\I061437\OneDrive\Projects\Squash`
-- **Current version:** v4.35
+- **Current version:** v4.36
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -305,3 +305,4 @@ SUPABASE_SERVICE_ROLE_KEY=... node db/reseed.js
 | v4.33 | HoF results redesigned as timeline: year circles + connecting line + per-month cards (🏆 winner / 🥈 runner-up / score); replaces table layout |
 | v4.34 | Admin players filter: also searches phone number (digits stripped for partial match) |
 | v4.35 | Fix admin player filter: v4.34 had bug where empty qDigits made phone.includes("") always true, breaking name search; guard with qDigits.length check |
+| v4.36 | Header banner: `banner01.png` dark squash court photo as header background with dark overlay; header padding increased (20px/16px mobile, 20px/24px tablet, 22px/32px desktop); logo 44px; taller visual presence |
