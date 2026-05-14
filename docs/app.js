@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.57';
+const APP_VERSION = '4.58';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -1870,7 +1870,6 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
     </div>`;
 
   // ── Card 4: HoF ──────────────────────────────────────────────────────────
-  const hofFullClass = me.is_admin ? '' : ' home-card-hof-full';
   const hofInner = latestHof
     ? `<div class="home-hof-row">
          <img src="winner02-small.png" class="home-hof-trophy-img" alt="">
@@ -1884,7 +1883,7 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
          <div class="home-hof-info" style="color:#aaa;font-size:13px">No records yet</div>
        </div>`;
   const hofCard = `
-    <div class="home-card home-card-hof${hofFullClass}" onclick="navTo('hof')">
+    <div class="home-card home-card-hof" onclick="navTo('hof')">
       <div class="home-card-label">Current HCRR Champ</div>
       ${hofInner}
       <div class="home-card-link">Hall of Fame →</div>
@@ -1892,7 +1891,7 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
 
   // ── Card 5: Admin (admin only) ────────────────────────────────────────────
   const adminCard = me.is_admin ? `
-    <div class="home-card home-card-admin" onclick="goToAdmin()">
+    <div class="home-card home-card-admin" style="grid-column:1/-1" onclick="goToAdmin()">
       <div class="home-card-label">Admin</div>
       <div id="home-admin-pending" class="home-admin-badge${pendingCount > 0 ? '' : ' clear'}">
         ${pendingCount > 0 ? `${pendingCount} pending` : 'All clear'}
