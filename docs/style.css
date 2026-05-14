@@ -860,7 +860,7 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 .myhc-name      { font-weight: 600; font-size: 22px; line-height: 1.25; word-break: break-word; }
 .myhc-rank      { font-size: 12px; color: rgba(255,255,255,.55); margin-top: 2px; }
 .myhc-big       { font-size: 38px; font-weight: 800; color: var(--bc-gold); line-height: 1; }
-.myhc-trend     { font-size: 12px; font-weight: 600; }
+.myhc-trend     { font-size: 13px; font-weight: 700; }
 .myhc-trend.improved { color: #6ee594; }
 .myhc-trend.worsened { color: #ff8080; }
 .myhc-trend.flat     { color: rgba(255,255,255,.45); }
