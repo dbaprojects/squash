@@ -5,7 +5,7 @@
 - **Owner:** David Barkess — personal project, unrelated to SAP/DealSensAI work
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `C:\Users\I061437\OneDrive\Projects\Squash`
-- **Current version:** v4.38
+- **Current version:** v4.39
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -308,3 +308,4 @@ SUPABASE_SERVICE_ROLE_KEY=... node db/reseed.js
 | v4.36 | Header banner: `banner01.png` dark squash court photo as header background with dark overlay; header padding increased (20px/16px mobile, 20px/24px tablet, 22px/32px desktop); logo 44px; taller visual presence |
 | v4.37 | Me card: name font 18→22px; HC line "Handicap has improved/worsened X over 12m" full phrase (no triangle); sessions "Played N sessions (12m)"; both lines 15px |
 | v4.38 | Me card: HC and sessions lines 14px bold |
+| v4.39 | Header: more height — padding 36px/30px mobile+tablet, 40px/34px desktop |
