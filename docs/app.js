@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.45';
+const APP_VERSION = '4.46';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -1752,14 +1752,14 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
   const hofFullClass = me.is_admin ? '' : ' home-card-hof-full';
   const hofInner = latestHof
     ? `<div class="home-hof-row">
-         <img src="winner01-small.png" class="home-hof-trophy-img" alt="">
+         <img src="winner02-small.png" class="home-hof-trophy-img" alt="">
          <div class="home-hof-info">
            <div class="home-card-main" style="font-size:12px">${esc(latestHof.winner_name || '–')}</div>
            <div class="home-card-sub" style="font-size:11px">${fmtHofMonth(latestHof.event_month)}</div>
          </div>
        </div>`
     : `<div class="home-hof-row">
-         <img src="winner01-small.png" class="home-hof-trophy-img" alt="">
+         <img src="winner02-small.png" class="home-hof-trophy-img" alt="">
          <div class="home-hof-info" style="color:#aaa;font-size:13px">No records yet</div>
        </div>`;
   const hofCard = `
