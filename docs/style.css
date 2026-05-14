@@ -938,6 +938,12 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 .hc-lb-name:hover { color: var(--bc-gold); text-decoration: underline; }
 .hc-lb-hc      { font-size: 13px; color: #888; flex-shrink: 0; }
 
+/* Player modal — tabs */
+.pm-tabs        { display: flex; gap: 4px; margin-bottom: 14px; }
+.pm-tab-btn     { flex: 1; padding: 7px 0; border: 1px solid var(--bc-border); border-radius: 6px;
+                  background: var(--bc-surface); font-size: 14px; font-weight: 500; cursor: pointer; }
+.pm-tab-btn.active { background: var(--bc-navy); color: #fff; border-color: var(--bc-navy); }
+
 /* Player history modal */
 .ph-signup-stat { font-size: 13px; color: #555; background: var(--bc-navy-lt);
   border-radius: 6px; padding: 6px 12px; margin-bottom: 10px; }
@@ -954,6 +960,14 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 .ph-carryforward td { color: #bbb; font-size: 12px; }
 .ph-row-improved td { background: #e8f7ed; }
 .ph-row-worsened td { background: #fff3e6; }
+
+/* Player attendance tab */
+.pa-stats-row   { display: flex; gap: 10px; margin-bottom: 16px; }
+.pa-stat        { flex: 1; background: var(--bc-navy-lt); border-radius: 8px; padding: 10px 8px; text-align: center; }
+.pa-num         { font-size: 22px; font-weight: 700; color: var(--bc-navy); line-height: 1.1; }
+.pa-lbl         { font-size: 12px; color: #666; margin-top: 2px; }
+.pa-year-table  { margin-top: 0; }
+.pa-row-current td { font-weight: 600; color: var(--bc-navy); }
 
 /* Ladder filter bar */
 .ladder-filter-row { display: flex; align-items: center; gap: 6px; margin: 8px 0; flex-wrap: wrap; }

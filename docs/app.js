@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.51';
+const APP_VERSION = '4.52';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -931,6 +931,8 @@ function renderMoversView(el) {
 
 let _playerHcSeries = [];  // filled monthly series: [{month, value, isActual, notes}]
 let _playerHcPeriod = 'all';
+let _playerModalTab  = 'hc';   // 'hc' | 'attendance'
+let _playerAttendanceData = null;
 let _playerSignupCount12m = 0;
 
 // Build complete monthly series from first entry to now, carrying forward unchanged values
@@ -970,50 +972,112 @@ function filterSeriesByPeriod(series, period) {
 
 async function openPlayerHcModal(playerId, playerName) {
   _playerHcPeriod = 'all';
+  _playerModalTab  = 'hc';
   document.getElementById('modal-title').textContent = playerName;
   document.getElementById('modal-body').innerHTML = '<p style="color:#888;padding:12px 0">Loading…</p>';
   openModal();
 
-  const cutoff12m = new Date();
-  cutoff12m.setFullYear(cutoff12m.getFullYear() - 1);
-  const [{ data: history }, { count: signupCount12m }] = await Promise.all([
+  const [{ data: history }, { data: attendanceSups }] = await Promise.all([
     sb.from('handicap_history')
       .select('handicap_value, changed_at, notes')
       .eq('player_id', playerId)
       .order('changed_at', { ascending: true }),
     sb.from('signups')
-      .select('id', { count: 'exact', head: true })
+      .select('events(event_date)')
       .eq('player_id', playerId)
       .eq('is_reserve', false)
-      .gte('signed_up_at', cutoff12m.toISOString())
   ]);
 
-  _playerSignupCount12m = signupCount12m || 0;
-
-  if (!history?.length) {
-    document.getElementById('modal-body').innerHTML =
-      `<div class="ph-signup-stat">Signups (12m): <strong>${_playerSignupCount12m}</strong></div>
-       <p style="color:#888;padding:12px 0">No handicap history recorded.</p>`;
-    return;
+  _playerHcSeries = history?.length ? buildFilledSeries(history) : [];
+  _playerAttendanceData = attendanceSups || [];
+  _playerSignupCount12m = 0;
+  if (_playerAttendanceData.length) {
+    const cutoff = new Date(); cutoff.setFullYear(cutoff.getFullYear() - 1);
+    const cutoffStr = cutoff.toISOString().slice(0, 10);
+    _playerSignupCount12m = _playerAttendanceData
+      .filter(s => s.events?.event_date >= cutoffStr).length;
   }
 
-  _playerHcSeries = buildFilledSeries(history);
-  renderPlayerHcModal();
+  renderPlayerModal();
 }
 
-function renderPlayerHcModal() {
+function renderPlayerModal() {
+  const tabs = [['hc','Handicap'],['attendance','Attendance']];
+  const tabBtns = tabs.map(([t, lbl]) =>
+    `<button class="pm-tab-btn${_playerModalTab === t ? ' active' : ''}" data-tab="${t}"
+      onclick="switchPlayerTab('${t}')">${lbl}</button>`
+  ).join('');
+  document.getElementById('modal-body').innerHTML = `
+    <div class="pm-tabs">${tabBtns}</div>
+    <div id="pm-tab-content"></div>`;
+  renderPlayerTabContent();
+}
+
+function switchPlayerTab(tab) {
+  _playerModalTab = tab;
+  document.querySelectorAll('.pm-tab-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.tab === tab));
+  renderPlayerTabContent();
+}
+
+function renderPlayerTabContent() {
+  if (_playerModalTab === 'hc') renderPlayerHcContent();
+  else renderPlayerAttendanceTab();
+}
+
+function renderPlayerHcContent() {
+  const wrap = document.getElementById('pm-tab-content');
+  if (!wrap) return;
+  if (!_playerHcSeries.length) {
+    wrap.innerHTML = '<p style="color:#888;padding:12px 0">No handicap history recorded.</p>';
+    return;
+  }
   const periodBtns = ['1yr', '2yr', '3yr', 'all'].map(p =>
     `<button class="ph-period-btn${_playerHcPeriod === p ? ' active' : ''}"
       data-period="${p}" onclick="setPlayerHcPeriod('${p}')">${p === 'all' ? 'All' : p}</button>`
   ).join('');
-
-  document.getElementById('modal-body').innerHTML = `
-    <div class="ph-signup-stat">Signups (last 12m): <strong>${_playerSignupCount12m}</strong></div>
+  wrap.innerHTML = `
     <div class="ph-period-row">${periodBtns}</div>
     <div class="ph-chart-wrap"><canvas id="ph-chart"></canvas></div>
     <div id="ph-table-wrap"></div>`;
-
   setTimeout(() => { renderPlayerHcChart(); renderPlayerHcTable(); }, 0);
+}
+
+function renderPlayerAttendanceTab() {
+  const wrap = document.getElementById('pm-tab-content');
+  if (!wrap) return;
+  const sups = _playerAttendanceData || [];
+  const evDates = sups.map(s => s.events?.event_date).filter(Boolean).sort();
+  const total = evDates.length;
+
+  const thisYear = new Date().getFullYear().toString();
+  const cutoff = new Date(); cutoff.setFullYear(cutoff.getFullYear() - 1);
+  const cutoffStr = cutoff.toISOString().slice(0, 10);
+  let count12m = 0;
+  const byYear = {};
+  for (const d of evDates) {
+    const yr = d.slice(0, 4);
+    byYear[yr] = (byYear[yr] || 0) + 1;
+    if (d >= cutoffStr) count12m++;
+  }
+
+  const years = Object.keys(byYear).sort().reverse();
+  const tableRows = years.map(yr =>
+    `<tr${yr === thisYear ? ' class="pa-row-current"' : ''}>
+      <td>${yr}</td><td>${byYear[yr]}</td>
+    </tr>`
+  ).join('');
+
+  wrap.innerHTML = `
+    <div class="pa-stats-row">
+      <div class="pa-stat"><div class="pa-num">${total}</div><div class="pa-lbl">All time</div></div>
+      <div class="pa-stat"><div class="pa-num">${count12m}</div><div class="pa-lbl">Last 12m</div></div>
+      <div class="pa-stat"><div class="pa-num">${byYear[thisYear] || 0}</div><div class="pa-lbl">${thisYear}</div></div>
+    </div>
+    ${years.length ? `<table class="ph-table pa-year-table">
+      <thead><tr><th>Year</th><th>Sessions</th></tr></thead>
+      <tbody>${tableRows}</tbody>
+    </table>` : '<p style="color:#888;padding:12px 0">No sessions attended yet.</p>'}`;
 }
 
 function setPlayerHcPeriod(period) {
