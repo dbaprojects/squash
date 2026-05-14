@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.55';
+const APP_VERSION = '4.56';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -663,7 +663,7 @@ function renderMyHcCard() {
   }
 
   el.innerHTML = `
-    <div class="myhc-header" style="cursor:pointer" onclick="openPlayerView('${me.id}','${esc(me.first_name + ' ' + me.last_name)}','view-home')">
+    <div class="myhc-header" style="cursor:pointer" onclick="openPlayerView('${me.id}','view-home')">
       <div style="flex:1;min-width:0">
         <div class="myhc-name">${esc(me.first_name)} ${esc(me.last_name)}</div>
         <div class="myhc-rank">#${myIdx + 1} of ${activePlayers.length}</div>
@@ -674,7 +674,7 @@ function renderMyHcCard() {
       </div>
     </div>
     ${commentHtml ? `<div style="margin-top:6px;font-size:13px;font-weight:700">${commentHtml}</div>` : ''}
-    <div class="home-card-link" style="padding-top:8px" onclick="openPlayerView('${me.id}','${esc(me.first_name + ' ' + me.last_name)}','view-home')">View full history →</div>`;
+    <div class="home-card-link" style="padding-top:8px" onclick="openPlayerView('${me.id}','view-home')">View full history →</div>`;
 }
 
 // ── Section summary card ──────────────────────────────────────────────────
@@ -811,7 +811,7 @@ function renderSectionGrid(el) {
     const nm = `${esc(p.first_name)} ${esc(p.last_name)}`;
     return `<tr${isMe ? ' class="ladder-me"' : ''}>
       <td class="hcg-name${isMe ? ' hcg-name-me' : ''}"
-        onclick="openPlayerView('${p.id}','${nm}','view-ladder')">${nm}</td>${cells}</tr>`;
+        onclick="openPlayerView('${p.id}','view-ladder')">${nm}</td>${cells}</tr>`;
   }).join('');
   el.innerHTML = `${ladderNavBar()}
     <div class="hc-grid-wrap">
@@ -834,7 +834,7 @@ function renderPlayerListView(el) {
           const rank = activeSorted.indexOf(p) + 1;
           const isMe = p.id === ST.player.id;
           return `<tr${isMe ? ' class="ladder-me"' : ''} style="cursor:pointer"
-            onclick="openPlayerView('${p.id}','${esc(p.first_name)} ${esc(p.last_name)}','view-ladder')">
+            onclick="openPlayerView('${p.id}','view-ladder')">
             <td style="color:#888;width:36px">${rank || '–'}</td>
             <td>${esc(p.first_name)} ${esc(p.last_name)}${!p.active ? ' <span style="font-size:10px;color:#aaa">(inactive)</span>' : ''}</td>
             <td><span class="hcap-badge">${p.current_handicap ?? '–'}</span></td>
@@ -910,7 +910,7 @@ function renderMoversView(el) {
     const cls  = delta < 0 ? 'lb-improved' : 'lb-worsened';
     return `<div class="hc-lb-row${isMe ? ' ladder-me-lb' : ''}">
       <span class="hc-lb-delta ${cls}">${sign}</span>
-      <span class="hc-lb-name" onclick="openPlayerView('${p.id}','${esc(p.first_name)} ${esc(p.last_name)}','view-ladder')">${esc(p.first_name)} ${esc(p.last_name)}</span>
+      <span class="hc-lb-name" onclick="openPlayerView('${p.id}','view-ladder')">${esc(p.first_name)} ${esc(p.last_name)}</span>
       <span class="hc-lb-hc">${p.current_handicap ?? '–'}</span>
     </div>`;
   }
@@ -977,12 +977,14 @@ function filterSeriesByPeriod(series, period) {
   return series.filter(s => s.month >= cutoffK);
 }
 
-async function openPlayerView(playerId, playerName, returnView = 'view-home') {
+async function openPlayerView(playerId, returnView = 'view-home') {
   _playerHcPeriod = 'all';
   _playerModalTab  = 'hc';
   _playerReturnView = returnView;
   _playerModalId   = playerId;
-  _playerModalName = playerName;
+  const _p = (ladderPlayers || []).find(p => p.id === playerId)
+    || (ST.player?.id === playerId ? ST.player : null);
+  _playerModalName = _p ? `${_p.first_name} ${_p.last_name}` : '';
   showSection('view-player');
   const backBtn = document.getElementById('btn-back-home');
   if (backBtn) { backBtn.textContent = '← Back'; backBtn.onclick = goBackFromPlayerView; }
@@ -1786,7 +1788,7 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
   const fullName = `${esc(me.first_name)} ${esc(me.last_name)}`;
   const meCard = `
     <div class="home-card home-card-me"
-        onclick="openPlayerView('${me.id}','${esc(me.first_name + ' ' + me.last_name)}','view-home')">
+        onclick="openPlayerView('${me.id}','view-home')">
       <div class="myhc-header">
         <div style="flex:1;min-width:0">
           <div class="myhc-name">${fullName}</div>

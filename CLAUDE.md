@@ -5,7 +5,7 @@
 - **Owner:** David Barkess — personal project, unrelated to SAP/DealSensAI work
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `C:\Users\I061437\OneDrive\Projects\Squash`
-- **Current version:** v4.55
+- **Current version:** v4.56
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -325,3 +325,4 @@ SUPABASE_SERVICE_ROLE_KEY=... node db/reseed.js
 | v4.53 | Player info replaced modal with full in-app view (view-player section); header/banner stays visible; ← Back button returns to calling view (home or ladder); openPlayerView(id, name, returnView) replaces openPlayerHcModal |
 | v4.54 | Player view: Me-card banner at top (full width, navy, name+HC+rank+trend+sessions); no player name in header title; buildPlayerBannerHtml() reuses home-card-me styles + player-banner-card modifier |
 | v4.55 | Fix player banner trend: monthKey() format is YYYY.MM (dots) not YYYY-MM — cutoff12m was using dashes so string compare always failed, pastVal always null |
+| v4.56 | Fix openPlayerView crash on names with apostrophes (e.g. Sa'ed) — remove playerName from onclick entirely; look up name from ladderPlayers/ST.player by ID inside openPlayerView |
