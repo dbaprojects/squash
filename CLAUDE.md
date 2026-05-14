@@ -5,7 +5,7 @@
 - **Owner:** David Barkess — personal project, unrelated to SAP/DealSensAI work
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `C:\Users\I061437\OneDrive\Projects\Squash`
-- **Current version:** v4.34
+- **Current version:** v4.35
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -304,3 +304,4 @@ SUPABASE_SERVICE_ROLE_KEY=... node db/reseed.js
 | v4.32 | Admin players table: phone column always visible on mobile (col-role still hidden on mobile) |
 | v4.33 | HoF results redesigned as timeline: year circles + connecting line + per-month cards (🏆 winner / 🥈 runner-up / score); replaces table layout |
 | v4.34 | Admin players filter: also searches phone number (digits stripped for partial match) |
+| v4.35 | Fix admin player filter: v4.34 had bug where empty qDigits made phone.includes("") always true, breaking name search; guard with qDigits.length check |
