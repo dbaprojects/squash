@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.42';
+const APP_VERSION = '4.43';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -1697,7 +1697,6 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
     const quip = QUIPS[Math.floor(Math.random() * QUIPS.length)];
     signupInner = `
       <div class="home-signup-empty">
-        <img src="racket01.png" class="home-racket-big" alt="">
         <div class="home-racket-quip">${quip}</div>
       </div>`;
   } else {
@@ -1711,7 +1710,6 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
     const avail = upcomingEvents.length;
     signupInner = `
       <div class="home-signup-booked-hdr">
-        <img src="racket01.png" class="home-racket-sm" alt="">
         <span class="home-racket-avail">${avail} session${avail !== 1 ? 's' : ''} available!</span>
       </div>
       <div class="home-sess-list">${rows}</div>`;
@@ -1719,6 +1717,7 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
   const signupCard = `
     <div class="home-card home-card-signup" onclick="navTo('schedule')">
       ${signupInner}
+      <div class="home-card-link">Click to sign-up →</div>
     </div>`;
 
   // ── Card 3: Handicaps ────────────────────────────────────────────────────
