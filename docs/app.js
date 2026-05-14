@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.54';
+const APP_VERSION = '4.55';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -1029,7 +1029,7 @@ function buildPlayerBannerHtml() {
   let commentHtml = '';
   if (_playerHcSeries.length) {
     const ago12 = new Date(); ago12.setDate(1); ago12.setMonth(ago12.getMonth() - 12);
-    const cutoff12m = `${ago12.getFullYear()}-${String(ago12.getMonth()+1).padStart(2,'0')}`;
+    const cutoff12m = monthKey(ago12);
     const currentVal = _playerHcSeries[_playerHcSeries.length - 1]?.value ?? null;
     const pastVal = (_playerHcSeries.slice().reverse().find(s => s.month <= cutoff12m))?.value ?? null;
     if (pastVal !== null && currentVal !== null) {
