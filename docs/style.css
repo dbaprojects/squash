@@ -1167,6 +1167,10 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 .home-card-me:hover { box-shadow: 0 3px 12px rgba(27,42,107,.3); border-color: transparent; }
 .home-card-me .home-card-link  { color: rgba(255,255,255,.6); padding-top: 0; opacity: 1; font-size: 11px; }
 
+/* Player view banner — full-width Me card without hover/pointer */
+.player-banner-card { cursor: default; border-radius: 10px; margin-bottom: 16px; }
+.player-banner-card:hover { box-shadow: none; transform: none; }
+
 /* Sign-Up card */
 .home-card-signup { border-top: 3px solid var(--bc-gold); overflow: hidden; }
 .home-card-signup .home-card-link { text-align: center; }

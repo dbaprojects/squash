@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.53';
+const APP_VERSION = '4.54';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -938,6 +938,8 @@ let _playerHcPeriod = 'all';
 let _playerModalTab  = 'hc';   // 'hc' | 'attendance'
 let _playerAttendanceData = null;
 let _playerReturnView = 'view-home';
+let _playerModalId   = null;
+let _playerModalName = '';
 let _playerSignupCount12m = 0;
 
 // Build complete monthly series from first entry to now, carrying forward unchanged values
@@ -979,9 +981,9 @@ async function openPlayerView(playerId, playerName, returnView = 'view-home') {
   _playerHcPeriod = 'all';
   _playerModalTab  = 'hc';
   _playerReturnView = returnView;
+  _playerModalId   = playerId;
+  _playerModalName = playerName;
   showSection('view-player');
-  const titleEl = document.getElementById('header-page-title');
-  if (titleEl) titleEl.textContent = playerName;
   const backBtn = document.getElementById('btn-back-home');
   if (backBtn) { backBtn.textContent = '← Back'; backBtn.onclick = goBackFromPlayerView; }
 
@@ -1016,6 +1018,45 @@ function goBackFromPlayerView() {
   showSection(_playerReturnView || 'view-home');
 }
 
+function buildPlayerBannerHtml() {
+  const player = (ladderPlayers || []).find(p => p.id === _playerModalId) || ST.player;
+  const hc = player?.current_handicap;
+  const activeSorted = (ladderPlayers || []).filter(p => p.active)
+    .sort((a, b) => (a.current_handicap ?? 99) - (b.current_handicap ?? 99));
+  const rank = activeSorted.findIndex(p => p.id === _playerModalId);
+  const rankStr = rank >= 0 ? `#${rank + 1} of ${activeSorted.length}` : '';
+
+  let commentHtml = '';
+  if (_playerHcSeries.length) {
+    const ago12 = new Date(); ago12.setDate(1); ago12.setMonth(ago12.getMonth() - 12);
+    const cutoff12m = `${ago12.getFullYear()}-${String(ago12.getMonth()+1).padStart(2,'0')}`;
+    const currentVal = _playerHcSeries[_playerHcSeries.length - 1]?.value ?? null;
+    const pastVal = (_playerHcSeries.slice().reverse().find(s => s.month <= cutoff12m))?.value ?? null;
+    if (pastVal !== null && currentVal !== null) {
+      const delta = currentVal - pastVal;
+      if      (delta < 0) commentHtml = `<span class="myhc-trend improved">Handicap has improved ${Math.abs(delta)} over 12m</span>`;
+      else if (delta > 0) commentHtml = `<span class="myhc-trend worsened">Handicap has worsened ${delta} over 12m</span>`;
+      else                commentHtml = `<span class="myhc-trend flat">Handicap unchanged over 12m</span>`;
+    }
+  }
+
+  return `
+    <div class="home-card home-card-me player-banner-card">
+      <div class="myhc-header">
+        <div style="flex:1;min-width:0">
+          <div class="myhc-name">${esc(_playerModalName)}</div>
+          ${rankStr ? `<div class="myhc-rank">${rankStr}</div>` : ''}
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div class="myhc-big">${hc ?? '\u2013'}</div>
+          <div style="font-size:10px;color:rgba(255,255,255,.45)">handicap</div>
+        </div>
+      </div>
+      ${commentHtml ? `<div style="margin-top:6px;font-size:13px;font-weight:700">${commentHtml}</div>` : ''}
+      <div style="font-size:13px;font-weight:700;color:rgba(255,255,255,.55);margin-top:2px">Played ${_playerSignupCount12m} sessions (12m)</div>
+    </div>`;
+}
+
 function renderPlayerModal() {
   const tabs = [['hc','Handicap'],['attendance','Attendance']];
   const tabBtns = tabs.map(([t, lbl]) =>
@@ -1023,6 +1064,7 @@ function renderPlayerModal() {
       onclick="switchPlayerTab('${t}')">${lbl}</button>`
   ).join('');
   document.getElementById('player-view-wrap').innerHTML = `
+    ${buildPlayerBannerHtml()}
     <div class="pm-tabs">${tabBtns}</div>
     <div id="pm-tab-content"></div>`;
   renderPlayerTabContent();
