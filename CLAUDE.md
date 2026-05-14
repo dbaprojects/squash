@@ -5,7 +5,7 @@
 - **Owner:** David Barkess — personal project, unrelated to SAP/DealSensAI work
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `C:\Users\I061437\OneDrive\Projects\Squash`
-- **Current version:** v4.41
+- **Current version:** v4.42
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -311,3 +311,4 @@ SUPABASE_SERVICE_ROLE_KEY=... node db/reseed.js
 | v4.39 | Header: more height — padding 36px/30px mobile+tablet, 40px/34px desktop |
 | v4.40 | Me card: HC and sessions lines 13px bold |
 | v4.41 | Fix .myhc-trend CSS class overriding inline font-size — set to 13px 700 |
+| v4.42 | Sign-Up home card: empty state shows racket01.png + random quip; booked state shows small racket + "N sessions available!" + enrolled sessions only |

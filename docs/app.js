@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.41';
+const APP_VERSION = '4.42';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -1684,32 +1684,41 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
 
   // ── Card 2: Sign-Up ──────────────────────────────────────────────────────
   const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  const SHOW_SESSIONS = 5;
-  let sessRows = '';
-  if (upcomingEvents.length) {
-    sessRows = upcomingEvents.slice(0, SHOW_SESSIONS).map(ev => {
-      const confirmed = (ev.signups || []).filter(s => !s.is_reserve);
-      const mySignup  = (ev.signups || []).find(s => s.player_id === me.id);
-      const countStr  = ev.max_signups ? `${confirmed.length}/${ev.max_signups}` : `${confirmed.length}`;
-      const statusEl  = mySignup ? ' <span class="home-sess-in">✓</span>' : '';
-      const dayName   = days[new Date(ev.event_date + 'T12:00:00').getDay()];
+  const QUIPS = ['Grab a game!','Get on court!','Get matched up!','Book your slot!',
+    'Play this week!','Racket ready?','See you on court!','Claim a court!',
+    'Time for a hit!','Ready to rally?'];
+
+  const myBookings = upcomingEvents.filter(ev =>
+    (ev.signups || []).some(s => s.player_id === me.id && !s.is_reserve)
+  );
+
+  let signupInner = '';
+  if (myBookings.length === 0) {
+    const quip = QUIPS[Math.floor(Math.random() * QUIPS.length)];
+    signupInner = `
+      <div class="home-signup-empty">
+        <img src="racket01.png" class="home-racket-big" alt="">
+        <div class="home-racket-quip">${quip}</div>
+      </div>`;
+  } else {
+    const rows = myBookings.map(ev => {
+      const dayName = days[new Date(ev.event_date + 'T12:00:00').getDay()];
       return `<div class="home-sess-row">
         <span class="home-sess-date">${dayName}</span>
         <span class="home-sess-title">${esc(ev.title)}</span>
-        <span class="home-sess-right">${countStr}${statusEl}</span>
       </div>`;
     }).join('');
-    const remaining = upcomingEvents.length - SHOW_SESSIONS;
-    if (remaining > 0) {
-      sessRows += `<div class="home-sess-more">+ ${remaining} more session${remaining > 1 ? 's' : ''}</div>`;
-    }
-  } else {
-    sessRows = '<div class="home-sess-empty">No upcoming sessions</div>';
+    const avail = upcomingEvents.length;
+    signupInner = `
+      <div class="home-signup-booked-hdr">
+        <img src="racket01.png" class="home-racket-sm" alt="">
+        <span class="home-racket-avail">${avail} session${avail !== 1 ? 's' : ''} available!</span>
+      </div>
+      <div class="home-sess-list">${rows}</div>`;
   }
   const signupCard = `
     <div class="home-card home-card-signup" onclick="navTo('schedule')">
-      <div class="home-card-label" style="text-transform:none">Click to Sign-up</div>
-      <div class="home-sess-list">${sessRows}</div>
+      ${signupInner}
     </div>`;
 
   // ── Card 3: Handicaps ────────────────────────────────────────────────────

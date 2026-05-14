@@ -1157,6 +1157,28 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 .home-sess-empty { color: #aaa; font-size: 13px; padding: 8px 0; }
 .home-sess-more  { font-size: 11px; color: #aaa; padding: 4px 0 2px; font-style: italic; }
 
+/* Empty state — racket + quip */
+.home-signup-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 0 6px;
+  gap: 10px;
+}
+.home-racket-big  { width: 72px; height: 72px; object-fit: contain; opacity: 0.9; }
+.home-racket-quip { font-size: 16px; font-weight: 700; color: var(--bc-navy); text-align: center; }
+
+/* Booked state — small racket + count */
+.home-signup-booked-hdr {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.home-racket-sm   { width: 32px; height: 32px; object-fit: contain; opacity: 0.85; flex-shrink: 0; }
+.home-racket-avail { font-size: 13px; font-weight: 700; color: var(--bc-navy); }
+
 /* Handicaps card */
 .home-card-ladder { border-top: 3px solid #2a9d8f; }
 .home-card-sublabel { font-size: 9px; color: var(--bc-text-dim); margin-bottom: 4px; }
