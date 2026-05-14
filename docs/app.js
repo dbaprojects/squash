@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.37';
+const APP_VERSION = '4.38';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -669,7 +669,7 @@ function renderMyHcCard() {
         <div style="font-size:11px;color:rgba(255,255,255,.55)">handicap</div>
       </div>
     </div>
-    ${commentHtml ? `<div style="margin-top:6px;font-size:15px">${commentHtml}</div>` : ''}
+    ${commentHtml ? `<div style="margin-top:6px;font-size:14px;font-weight:700">${commentHtml}</div>` : ''}
     <div class="home-card-link" style="padding-top:8px" onclick="openPlayerHcModal('${me.id}','${esc(me.first_name + ' ' + me.last_name)}')">View full history →</div>`;
 }
 
@@ -1677,8 +1677,8 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
           <div style="font-size:10px;color:rgba(255,255,255,.45)">handicap</div>
         </div>
       </div>
-      ${commentHtml ? `<div style="margin-top:6px;font-size:15px">${commentHtml}</div>` : ''}
-      <div style="font-size:15px;color:rgba(255,255,255,.55);margin-top:2px">Played ${myAttendance12m} sessions (12m)</div>
+      ${commentHtml ? `<div style="margin-top:6px;font-size:14px;font-weight:700">${commentHtml}</div>` : ''}
+      <div style="font-size:14px;font-weight:700;color:rgba(255,255,255,.55);margin-top:2px">Played ${myAttendance12m} sessions (12m)</div>
       <div class="home-card-link">View full history →</div>
     </div>`;
 
