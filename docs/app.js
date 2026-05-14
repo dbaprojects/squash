@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.46';
+const APP_VERSION = '4.47';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -1702,10 +1702,13 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
       </div>`;
   } else {
     const rows = myBookings.map(ev => {
+      const confirmed = (ev.signups || []).filter(s => !s.is_reserve);
+      const countStr  = ev.max_signups ? `${confirmed.length}/${ev.max_signups}` : `${confirmed.length}`;
       const dayName = days[new Date(ev.event_date + 'T12:00:00').getDay()];
       return `<div class="home-sess-row">
         <span class="home-sess-date">${dayName}</span>
         <span class="home-sess-title">${esc(ev.title)}</span>
+        <span class="home-sess-right">${countStr}</span>
       </div>`;
     }).join('');
     const avail = upcomingEvents.length;
