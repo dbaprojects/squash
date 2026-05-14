@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.48';
+const APP_VERSION = '4.49';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -2327,46 +2327,43 @@ function renderPlayersTable() {
     : `<span class="sort-arrow muted">↕</span>`;
 
   document.getElementById('players-list').innerHTML = players.length
-    ? `<table class="data-table players-table">
-      <thead><tr>
-        <th class="th-sort" onclick="setPlayersSort('name')">Name ${arrow('name')}</th>
-        <th class="col-phone">Phone</th>
-        <th class="th-sort" onclick="setPlayersSort('hc')">HC ${arrow('hc')}</th>
-        <th class="col-role">Role</th>
-        <th></th>
-      </tr></thead>
-      <tbody>
-      ${players.map(p => {
-        const pending = isPending(p);
-        const roleLabel = p.is_super_admin
-          ? '<span class="tag-superadmin">SuperAdmin</span>'
-          : p.is_admin ? '<span class="tag-admin">Admin</span>' : '';
-        return `<tr>
-        <td>
-          <div class="player-name">${esc(p.first_name)} ${esc(p.last_name)}${pending ? ' <span class="tag-pending">Pending</span>' : !p.active ? ' <span class="tag-inactive">Inactive</span>' : ''}</div>
-        </td>
-        <td class="col-phone">${esc(p.phone || '')}</td>
-        <td><span class="hcap-badge">${p.current_handicap ?? '–'}</span></td>
-        <td class="col-role">${roleLabel}</td>
-        <td>
-          <div class="btn-actions">
-          ${pending
-            ? `<button class="btn-icon-sm" onclick="approvePlayer('${p.id}')">Approve</button>
-               <button class="btn-icon-sm btn-icon-danger" onclick="rejectPlayer('${p.id}')">Reject</button>`
-            : `<button class="btn-icon-sm btn-hc-mobile" onclick="openHandicapModal('${p.id}','${esc(p.first_name)} ${esc(p.last_name)}')">HC</button>
-               <button class="btn-icon-sm" onclick="openEditPlayerForm('${p.id}')">Edit</button>
-               ${p.active
-                 ? `<button class="btn-icon-sm btn-icon-danger" onclick="deactivatePlayer('${p.id}')">Deact.</button>
-                    <span class="btn-placeholder"></span>`
-                 : `<button class="btn-icon-sm" onclick="reactivatePlayer('${p.id}')">Restore</button>
-                    ${ST.player.is_super_admin
-                      ? `<button class="btn-icon-sm btn-icon-danger" onclick="deletePlayer('${p.id}','${esc(p.first_name)} ${esc(p.last_name)}')">Delete</button>`
-                      : '<span class="btn-placeholder"></span>'}`}`}
-          </div>
-        </td>
-      </tr>`;
-      }).join('')}
-      </tbody></table>`
+    ? `<div class="player-cards">
+        <div class="pc-sort-hdr">
+          <span class="th-sort" onclick="setPlayersSort('name')">Name ${arrow('name')}</span>
+          <span class="th-sort" onclick="setPlayersSort('hc')">HC ${arrow('hc')}</span>
+        </div>
+        ${players.map(p => {
+          const pending = isPending(p);
+          const roleLabel = p.is_super_admin
+            ? ' <span class="tag-superadmin">SA</span>'
+            : p.is_admin ? ' <span class="tag-admin">Admin</span>' : '';
+          const statusTag = pending
+            ? ' <span class="tag-pending">Pending</span>'
+            : !p.active ? ' <span class="tag-inactive">Inactive</span>' : '';
+          return `<div class="player-card">
+            <div class="pc-row1">
+              <div class="pc-name">${esc(p.first_name)} ${esc(p.last_name)}${statusTag}${roleLabel}</div>
+              <span class="hcap-badge">${p.current_handicap ?? '–'}</span>
+            </div>
+            <div class="pc-row2">
+              <span class="pc-phone">${esc(p.phone || '')}</span>
+              <div class="btn-actions">
+                ${pending
+                  ? `<button class="btn-icon-sm" onclick="approvePlayer('${p.id}')">Approve</button>
+                     <button class="btn-icon-sm btn-icon-danger" onclick="rejectPlayer('${p.id}')">Reject</button>`
+                  : `<button class="btn-icon-sm" onclick="openHandicapModal('${p.id}','${esc(p.first_name)} ${esc(p.last_name)}')">HC</button>
+                     <button class="btn-icon-sm" onclick="openEditPlayerForm('${p.id}')">Edit</button>
+                     ${p.active
+                       ? `<button class="btn-icon-sm btn-icon-danger" onclick="deactivatePlayer('${p.id}')">Deact.</button>`
+                       : `<button class="btn-icon-sm" onclick="reactivatePlayer('${p.id}')">Restore</button>
+                          ${ST.player.is_super_admin
+                            ? `<button class="btn-icon-sm btn-icon-danger" onclick="deletePlayer('${p.id}','${esc(p.first_name)} ${esc(p.last_name)}')">Delete</button>`
+                            : ''}`}`}
+              </div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`
     : '<p style="color:#888;padding:12px 0">No players match.</p>';
 }
 

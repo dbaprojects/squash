@@ -5,7 +5,7 @@
 - **Owner:** David Barkess — personal project, unrelated to SAP/DealSensAI work
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `C:\Users\I061437\OneDrive\Projects\Squash`
-- **Current version:** v4.48
+- **Current version:** v4.49
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -318,3 +318,4 @@ SUPABASE_SERVICE_ROLE_KEY=... node db/reseed.js
 | v4.46 | HoF home card: switch winner01-small.png → winner02-small.png; add untracked winner02-small.png to git |
 | v4.47 | Sign-Up home card booked state: show signup count (e.g. 6/12) on each enrolled session row |
 | v4.48 | Sign-Up tile: "N sessions available" shows unenrolled count only; hidden if zero |
+| v4.49 | Admin players: replace table with two-row cards (name+HC / phone+actions); works on mobile and desktop |
