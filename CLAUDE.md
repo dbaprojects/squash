@@ -5,7 +5,7 @@
 - **Owner:** David Barkess — personal project, unrelated to SAP/DealSensAI work
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `C:\Users\I061437\OneDrive\Projects\Squash`
-- **Current version:** v4.52
+- **Current version:** v4.53
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -322,3 +322,4 @@ SUPABASE_SERVICE_ROLE_KEY=... node db/reseed.js
 | v4.50 | Admin players: click card to edit; Deact/Restore/Delete moved into edit form with status badge and HC row; removed card buttons |
 | v4.51 | Admin events: signup count + expandable list per event; delete warns if signups exist; tighter mobile row padding. Admin templates: tighter mobile. HoF admin: table replaced with two-line cards. CSS: ae-* and hof-admin-card classes added |
 | v4.52 | Player modal: two tabs — Handicap (default, existing chart+table) and Attendance (3 stat boxes: all-time/12m/this year + per-year table); fetches all confirmed signups with event_date on open |
+| v4.53 | Player info replaced modal with full in-app view (view-player section); header/banner stays visible; ← Back button returns to calling view (home or ladder); openPlayerView(id, name, returnView) replaces openPlayerHcModal |

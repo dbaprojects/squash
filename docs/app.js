@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.52';
+const APP_VERSION = '4.53';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -421,17 +421,21 @@ function showView(name) {
 }
 
 function showSection(id) {
-  ['view-home','view-schedule','view-event','view-ladder','view-hof','view-admin'].forEach(s => {
-    document.getElementById(s).classList.add('hidden');
+  ['view-home','view-schedule','view-event','view-ladder','view-hof','view-admin','view-player'].forEach(s => {
+    document.getElementById(s)?.classList.add('hidden');
   });
   document.getElementById(id).classList.remove('hidden');
   document.getElementById('btn-back-home').classList.toggle('hidden', id === 'view-home');
   const titles = {
     'view-home': '', 'view-schedule': 'Sign-Up', 'view-ladder': 'Handicaps',
-    'view-hof': 'Hall of Fame', 'view-admin': 'Admin', 'view-event': 'Session'
+    'view-hof': 'Hall of Fame', 'view-admin': 'Admin', 'view-event': 'Session',
+    'view-player': ''
   };
   const titleEl = document.getElementById('header-page-title');
   if (titleEl) titleEl.textContent = titles[id] ?? '';
+  // Reset back button to Home
+  const backBtn = document.getElementById('btn-back-home');
+  if (backBtn) { backBtn.textContent = '← Home'; backBtn.onclick = goHome; }
 }
 
 function setNavActive(name) { /* no-op: nav tabs removed */ }
@@ -659,7 +663,7 @@ function renderMyHcCard() {
   }
 
   el.innerHTML = `
-    <div class="myhc-header" style="cursor:pointer" onclick="openPlayerHcModal('${me.id}','${esc(me.first_name + ' ' + me.last_name)}')">
+    <div class="myhc-header" style="cursor:pointer" onclick="openPlayerView('${me.id}','${esc(me.first_name + ' ' + me.last_name)}','view-home')">
       <div style="flex:1;min-width:0">
         <div class="myhc-name">${esc(me.first_name)} ${esc(me.last_name)}</div>
         <div class="myhc-rank">#${myIdx + 1} of ${activePlayers.length}</div>
@@ -670,7 +674,7 @@ function renderMyHcCard() {
       </div>
     </div>
     ${commentHtml ? `<div style="margin-top:6px;font-size:13px;font-weight:700">${commentHtml}</div>` : ''}
-    <div class="home-card-link" style="padding-top:8px" onclick="openPlayerHcModal('${me.id}','${esc(me.first_name + ' ' + me.last_name)}')">View full history →</div>`;
+    <div class="home-card-link" style="padding-top:8px" onclick="openPlayerView('${me.id}','${esc(me.first_name + ' ' + me.last_name)}','view-home')">View full history →</div>`;
 }
 
 // ── Section summary card ──────────────────────────────────────────────────
@@ -807,7 +811,7 @@ function renderSectionGrid(el) {
     const nm = `${esc(p.first_name)} ${esc(p.last_name)}`;
     return `<tr${isMe ? ' class="ladder-me"' : ''}>
       <td class="hcg-name${isMe ? ' hcg-name-me' : ''}"
-        onclick="openPlayerHcModal('${p.id}','${nm}')">${nm}</td>${cells}</tr>`;
+        onclick="openPlayerView('${p.id}','${nm}','view-ladder')">${nm}</td>${cells}</tr>`;
   }).join('');
   el.innerHTML = `${ladderNavBar()}
     <div class="hc-grid-wrap">
@@ -830,7 +834,7 @@ function renderPlayerListView(el) {
           const rank = activeSorted.indexOf(p) + 1;
           const isMe = p.id === ST.player.id;
           return `<tr${isMe ? ' class="ladder-me"' : ''} style="cursor:pointer"
-            onclick="openPlayerHcModal('${p.id}','${esc(p.first_name)} ${esc(p.last_name)}')">
+            onclick="openPlayerView('${p.id}','${esc(p.first_name)} ${esc(p.last_name)}','view-ladder')">
             <td style="color:#888;width:36px">${rank || '–'}</td>
             <td>${esc(p.first_name)} ${esc(p.last_name)}${!p.active ? ' <span style="font-size:10px;color:#aaa">(inactive)</span>' : ''}</td>
             <td><span class="hcap-badge">${p.current_handicap ?? '–'}</span></td>
@@ -906,7 +910,7 @@ function renderMoversView(el) {
     const cls  = delta < 0 ? 'lb-improved' : 'lb-worsened';
     return `<div class="hc-lb-row${isMe ? ' ladder-me-lb' : ''}">
       <span class="hc-lb-delta ${cls}">${sign}</span>
-      <span class="hc-lb-name" onclick="openPlayerHcModal('${p.id}','${esc(p.first_name)} ${esc(p.last_name)}')">${esc(p.first_name)} ${esc(p.last_name)}</span>
+      <span class="hc-lb-name" onclick="openPlayerView('${p.id}','${esc(p.first_name)} ${esc(p.last_name)}','view-ladder')">${esc(p.first_name)} ${esc(p.last_name)}</span>
       <span class="hc-lb-hc">${p.current_handicap ?? '–'}</span>
     </div>`;
   }
@@ -933,6 +937,7 @@ let _playerHcSeries = [];  // filled monthly series: [{month, value, isActual, n
 let _playerHcPeriod = 'all';
 let _playerModalTab  = 'hc';   // 'hc' | 'attendance'
 let _playerAttendanceData = null;
+let _playerReturnView = 'view-home';
 let _playerSignupCount12m = 0;
 
 // Build complete monthly series from first entry to now, carrying forward unchanged values
@@ -970,12 +975,18 @@ function filterSeriesByPeriod(series, period) {
   return series.filter(s => s.month >= cutoffK);
 }
 
-async function openPlayerHcModal(playerId, playerName) {
+async function openPlayerView(playerId, playerName, returnView = 'view-home') {
   _playerHcPeriod = 'all';
   _playerModalTab  = 'hc';
-  document.getElementById('modal-title').textContent = playerName;
-  document.getElementById('modal-body').innerHTML = '<p style="color:#888;padding:12px 0">Loading…</p>';
-  openModal();
+  _playerReturnView = returnView;
+  showSection('view-player');
+  const titleEl = document.getElementById('header-page-title');
+  if (titleEl) titleEl.textContent = playerName;
+  const backBtn = document.getElementById('btn-back-home');
+  if (backBtn) { backBtn.textContent = '← Back'; backBtn.onclick = goBackFromPlayerView; }
+
+  document.getElementById('player-view-wrap').innerHTML =
+    '<p style="color:#888;padding:16px 0">Loading…</p>';
 
   const [{ data: history }, { data: attendanceSups }] = await Promise.all([
     sb.from('handicap_history')
@@ -1001,13 +1012,17 @@ async function openPlayerHcModal(playerId, playerName) {
   renderPlayerModal();
 }
 
+function goBackFromPlayerView() {
+  showSection(_playerReturnView || 'view-home');
+}
+
 function renderPlayerModal() {
   const tabs = [['hc','Handicap'],['attendance','Attendance']];
   const tabBtns = tabs.map(([t, lbl]) =>
     `<button class="pm-tab-btn${_playerModalTab === t ? ' active' : ''}" data-tab="${t}"
       onclick="switchPlayerTab('${t}')">${lbl}</button>`
   ).join('');
-  document.getElementById('modal-body').innerHTML = `
+  document.getElementById('player-view-wrap').innerHTML = `
     <div class="pm-tabs">${tabBtns}</div>
     <div id="pm-tab-content"></div>`;
   renderPlayerTabContent();
@@ -1729,7 +1744,7 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
   const fullName = `${esc(me.first_name)} ${esc(me.last_name)}`;
   const meCard = `
     <div class="home-card home-card-me"
-        onclick="openPlayerHcModal('${me.id}','${esc(me.first_name + ' ' + me.last_name)}')">
+        onclick="openPlayerView('${me.id}','${esc(me.first_name + ' ' + me.last_name)}','view-home')">
       <div class="myhc-header">
         <div style="flex:1;min-width:0">
           <div class="myhc-name">${fullName}</div>
