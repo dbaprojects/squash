@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.33';
+const APP_VERSION = '4.34';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -2257,7 +2257,8 @@ function renderPlayersTable() {
     if (role === 'regular'    && p.is_admin) return false;
     if (q) {
       const name = `${p.first_name} ${p.last_name}`.toLowerCase();
-      if (!name.includes(q)) return false;
+      const phone = (p.phone || '').replace(/\D/g, '');
+      if (!name.includes(q) && !phone.includes(q.replace(/\D/g, ''))) return false;
     }
     return true;
   });
