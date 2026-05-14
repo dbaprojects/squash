@@ -1605,7 +1605,7 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
   .btn-join, .btn-leave { padding: 10px 12px; font-size: 13px; min-height: 44px; }
 
   /* Admin players table — hide less critical columns, tighten actions */
-  .col-phone, .col-role { display: none; }
+  .col-role { display: none; }
   .btn-icon-sm { padding: 4px 6px; font-size: 11px; margin-right: 1px; }
 
   /* Hide HC button on mobile — saves space, HC is in handicaps tab */
