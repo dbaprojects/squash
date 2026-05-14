@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.36';
+const APP_VERSION = '4.37';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -643,18 +643,18 @@ function renderMyHcCard() {
   let commentHtml = '';
   if (hcAgo12 !== null && currentHc !== null) {
     const delta = currentHc - hcAgo12;
-    if      (delta < 0) commentHtml = `<span class="myhc-trend improved"><span class="hc-tri">▲</span> ${Math.abs(delta)} over 12 months</span>`;
-    else if (delta > 0) commentHtml = `<span class="myhc-trend worsened"><span class="hc-tri">▼</span> +${delta} over 12 months</span>`;
-    else                commentHtml = `<span class="myhc-trend flat">— Unchanged over 12 months</span>`;
+    if      (delta < 0) commentHtml = `<span class="myhc-trend improved">Handicap has improved ${Math.abs(delta)} over 12 months</span>`;
+    else if (delta > 0) commentHtml = `<span class="myhc-trend worsened">Handicap has worsened ${delta} over 12 months</span>`;
+    else                commentHtml = `<span class="myhc-trend flat">Handicap unchanged over 12 months</span>`;
   } else {
     // Fallback: 3-month commentary if not enough 12-month data
     const ago3 = new Date(); ago3.setDate(1); ago3.setMonth(ago3.getMonth() - 3);
     const hcAgo3 = effectiveHcAt(me.id, monthKey(ago3));
     if (hcAgo3 !== null && currentHc !== null) {
       const delta = currentHc - hcAgo3;
-      if      (delta < 0) commentHtml = `<span class="myhc-trend improved"><span class="hc-tri">▲</span> ${Math.abs(delta)} over 3 months</span>`;
-      else if (delta > 0) commentHtml = `<span class="myhc-trend worsened"><span class="hc-tri">▼</span> +${delta} over 3 months</span>`;
-      else                commentHtml = `<span class="myhc-trend flat">— Unchanged over 3 months</span>`;
+      if      (delta < 0) commentHtml = `<span class="myhc-trend improved">Handicap has improved ${Math.abs(delta)} over 3 months</span>`;
+      else if (delta > 0) commentHtml = `<span class="myhc-trend worsened">Handicap has worsened ${delta} over 3 months</span>`;
+      else                commentHtml = `<span class="myhc-trend flat">Handicap unchanged over 3 months</span>`;
     }
   }
 
@@ -669,7 +669,7 @@ function renderMyHcCard() {
         <div style="font-size:11px;color:rgba(255,255,255,.55)">handicap</div>
       </div>
     </div>
-    ${commentHtml ? `<div style="margin-top:6px;font-size:12px"><span style="color:rgba(255,255,255,.45);font-size:11px">Handicap: </span>${commentHtml}</div>` : ''}
+    ${commentHtml ? `<div style="margin-top:6px;font-size:15px">${commentHtml}</div>` : ''}
     <div class="home-card-link" style="padding-top:8px" onclick="openPlayerHcModal('${me.id}','${esc(me.first_name + ' ' + me.last_name)}')">View full history →</div>`;
 }
 
@@ -1660,9 +1660,9 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
   // ── Card 1: Me ───────────────────────────────────────────────────────────
   let commentHtml = '';
   if (hcTrend) {
-    if      (hcTrend.dir === 'improved') commentHtml = `<span class="myhc-trend improved"><span class="hc-tri">▲</span> ${hcTrend.delta} over 12m</span>`;
-    else if (hcTrend.dir === 'worsened') commentHtml = `<span class="myhc-trend worsened"><span class="hc-tri">▼</span> +${hcTrend.delta} over 12m</span>`;
-    else                                 commentHtml = `<span class="myhc-trend flat">— Unchanged 12m</span>`;
+    if      (hcTrend.dir === 'improved') commentHtml = `<span class="myhc-trend improved">Handicap has improved ${hcTrend.delta} over 12m</span>`;
+    else if (hcTrend.dir === 'worsened') commentHtml = `<span class="myhc-trend worsened">Handicap has worsened ${hcTrend.delta} over 12m</span>`;
+    else                                 commentHtml = `<span class="myhc-trend flat">Handicap unchanged over 12m</span>`;
   }
   const fullName = `${esc(me.first_name)} ${esc(me.last_name)}`;
   const meCard = `
@@ -1677,8 +1677,8 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
           <div style="font-size:10px;color:rgba(255,255,255,.45)">handicap</div>
         </div>
       </div>
-      ${commentHtml ? `<div style="margin-top:6px;font-size:13px"><span style="color:rgba(255,255,255,.45);font-size:13px">HC: </span>${commentHtml}</div>` : ''}
-      <div style="font-size:13px;color:rgba(255,255,255,.55);margin-top:2px">Attended ${myAttendance12m} sessions (12m)</div>
+      ${commentHtml ? `<div style="margin-top:6px;font-size:15px">${commentHtml}</div>` : ''}
+      <div style="font-size:15px;color:rgba(255,255,255,.55);margin-top:2px">Played ${myAttendance12m} sessions (12m)</div>
       <div class="home-card-link">View full history →</div>
     </div>`;
 
