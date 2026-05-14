@@ -1505,6 +1505,14 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
   border-radius: 8px;
   font-weight: 400;
 }
+.tag-active {
+  font-size: 10px;
+  background: #d4f5e2;
+  color: #1a7a45;
+  padding: 1px 5px;
+  border-radius: 8px;
+  font-weight: 600;
+}
 
 /* Small inline action buttons */
 .btn-icon-sm {

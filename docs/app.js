@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.49';
+const APP_VERSION = '4.50';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -1230,7 +1230,7 @@ function renderHof() {
     }
     dualHtml += `</div>`;
     const statusHtml = `<div class="hof-leaders-status">
-      <button class="hof-lstatus-btn${hofStatusFilter==='all'?' active':''}" onclick="hofStatusFilter='all';renderHof()">All</button>
+      <button class="hof-lstatus-btn${hofStatusFilter==='all'?' active':''}" onclick="hofStatusFilter='all';renderHof()">All Time</button>
       <button class="hof-lstatus-btn${hofStatusFilter==='active'?' active':''}" onclick="hofStatusFilter='active';renderHof()">Active Players Only</button>
     </div>`;
     leadersHtml = `<div class="hof-leaders-card">${dualHtml}${statusHtml}</div>`;
@@ -2340,26 +2340,17 @@ function renderPlayersTable() {
           const statusTag = pending
             ? ' <span class="tag-pending">Pending</span>'
             : !p.active ? ' <span class="tag-inactive">Inactive</span>' : '';
-          return `<div class="player-card">
+          return `<div class="player-card" onclick="openEditPlayerForm('${p.id}')" style="cursor:pointer">
             <div class="pc-row1">
               <div class="pc-name">${esc(p.first_name)} ${esc(p.last_name)}${statusTag}${roleLabel}</div>
               <span class="hcap-badge">${p.current_handicap ?? '–'}</span>
             </div>
             <div class="pc-row2">
               <span class="pc-phone">${esc(p.phone || '')}</span>
-              <div class="btn-actions">
-                ${pending
-                  ? `<button class="btn-icon-sm" onclick="approvePlayer('${p.id}')">Approve</button>
-                     <button class="btn-icon-sm btn-icon-danger" onclick="rejectPlayer('${p.id}')">Reject</button>`
-                  : `<button class="btn-icon-sm" onclick="openHandicapModal('${p.id}','${esc(p.first_name)} ${esc(p.last_name)}')">HC</button>
-                     <button class="btn-icon-sm" onclick="openEditPlayerForm('${p.id}')">Edit</button>
-                     ${p.active
-                       ? `<button class="btn-icon-sm btn-icon-danger" onclick="deactivatePlayer('${p.id}')">Deact.</button>`
-                       : `<button class="btn-icon-sm" onclick="reactivatePlayer('${p.id}')">Restore</button>
-                          ${ST.player.is_super_admin
-                            ? `<button class="btn-icon-sm btn-icon-danger" onclick="deletePlayer('${p.id}','${esc(p.first_name)} ${esc(p.last_name)}')">Delete</button>`
-                            : ''}`}`}
-              </div>
+              ${pending ? `<div class="btn-actions">
+                <button class="btn-icon-sm" onclick="event.stopPropagation();approvePlayer('${p.id}')">Approve</button>
+                <button class="btn-icon-sm btn-icon-danger" onclick="event.stopPropagation();rejectPlayer('${p.id}')">Reject</button>
+              </div>` : ''}
             </div>
           </div>`;
         }).join('')}
@@ -2433,6 +2424,14 @@ function openEditPlayerForm(id) {
   const isSelf = p.id === ST.player.id;
   const saLocked = isSelf || p.is_super_admin;
   const saNote = isSelf ? '(cannot change own)' : '(cannot revoke)';
+  const hcDisplay = p.current_handicap ?? '–';
+  const activeLabel = p.active
+    ? '<span class="tag-active">Active</span>'
+    : '<span class="tag-inactive">Inactive</span>';
+  const toggleBtn = p.active
+    ? `<button type="button" class="btn-icon-sm btn-icon-danger" style="margin-left:10px" onclick="deactivatePlayerFromForm('${id}')">Deactivate</button>`
+    : `<button type="button" class="btn-icon-sm" style="margin-left:10px" onclick="reactivatePlayerFromForm('${id}')">Restore</button>
+       ${ST.player.is_super_admin ? `<button type="button" class="btn-icon-sm btn-icon-danger" style="margin-left:4px" onclick="deletePlayer('${id}','${esc(p.first_name)} ${esc(p.last_name)}')">Delete</button>` : ''}`;
   showFormModal('Edit Player', `
     <div class="form-group"><label>First name</label><input type="text" id="ep-first" value="${esc(p.first_name)}"></div>
     <div class="form-group"><label>Last name</label><input type="text" id="ep-last" value="${esc(p.last_name)}"></div>
@@ -2445,6 +2444,17 @@ function openEditPlayerForm(id) {
     </div>
     <div class="form-group"><label><input type="checkbox" id="ep-admin" ${p.is_admin ? 'checked' : ''}> Admin</label></div>
     ${ST.player.is_super_admin ? `<div class="form-group"><label><input type="checkbox" id="ep-super-admin" ${p.is_super_admin ? 'checked' : ''} ${saLocked ? 'disabled' : ''}> Super Admin${saLocked ? ` <span style="font-size:11px;color:#aaa">${saNote}</span>` : ''}</label></div>` : ''}
+    <div class="form-group">
+      <label>Handicap</label>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="hcap-badge" style="font-size:15px;padding:4px 12px">${hcDisplay}</span>
+        <button type="button" class="btn-icon-sm" onclick="closeFormModal();openHandicapModal('${id}','${esc(p.first_name)} ${esc(p.last_name)}')">Edit HC</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Status</label>
+      <div style="display:flex;align-items:center">${activeLabel}${toggleBtn}</div>
+    </div>
     <div style="text-align:right;margin-top:8px">
       <button class="btn-primary" onclick="submitEditPlayer('${id}')">Save</button>
     </div>`);
@@ -2486,6 +2496,16 @@ async function reactivatePlayer(id) {
   if (p) p.active = true;
   ST.players = allPlayers.filter(p => p.active);
   renderPlayersTable();
+}
+
+async function deactivatePlayerFromForm(id) {
+  closeFormModal();
+  await deactivatePlayer(id);
+}
+
+async function reactivatePlayerFromForm(id) {
+  closeFormModal();
+  await reactivatePlayer(id);
 }
 
 async function deletePlayer(id, name) {
