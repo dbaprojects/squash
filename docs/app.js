@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.47';
+const APP_VERSION = '4.48';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -1711,13 +1711,13 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
         <span class="home-sess-right">${countStr}</span>
       </div>`;
     }).join('');
-    const avail = upcomingEvents.length;
-    signupInner = `
+    const avail = upcomingEvents.length - myBookings.length;
+    const availHdr = avail > 0 ? `
       <div class="home-signup-booked-hdr">
         <img src="racket01.png" class="home-racket-sm" alt="">
         <span class="home-racket-avail">${avail} session${avail !== 1 ? 's' : ''} available!</span>
-      </div>
-      <div class="home-sess-list">${rows}</div>`;
+      </div>` : '';
+    signupInner = `${availHdr}<div class="home-sess-list">${rows}</div>`;
   }
   const signupCard = `
     <div class="home-card home-card-signup" onclick="navTo('schedule')">
