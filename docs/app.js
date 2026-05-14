@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.32';
+const APP_VERSION = '4.33';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -1268,38 +1268,38 @@ function renderHof() {
     byYear[yr].push(r);
   }
 
-  const showYearHdrs = hofYearFilter === 'all';
   let resultsHtml = '';
-
   for (const yr of Object.keys(byYear).sort((a,b) => b-a)) {
-    if (showYearHdrs) resultsHtml += `<div class="hof-year-hdr">${yr}</div>`;
-    resultsHtml += `<table class="hof-table">
-      <thead><tr>
-        <th class="hof-col-month"></th>
-        <th>Champion</th>
-        <th>Runner-Up</th>
-        <th class="hof-col-score">Score</th>
-      </tr></thead>
-      <tbody>
-        ${byYear[yr].map(r => {
-          if (r.not_played) {
-            return `<tr class="hof-not-played">
-              <td>${fmtHofMonthShort(r.event_month)}</td>
-              <td colspan="3" style="color:#bbb;font-style:italic">Not played</td>
-            </tr>`;
-          }
-          const score = fmtScore(r.winner_score, r.runner_up_score);
-          const wHc = r.winner_hc    != null ? ` <span class="hof-hc-inline">(${r.winner_hc})</span>`    : '';
-          const rHc = r.runner_up_hc != null ? ` <span class="hof-hc-inline">(${r.runner_up_hc})</span>` : '';
-          return `<tr>
-            <td class="hof-month">${fmtHofMonthShort(r.event_month)}</td>
-            <td class="hof-winner">${esc(r.winner_name || '–')}${wHc}</td>
-            <td class="hof-runnerup">${esc(r.runner_up_name || '–')}${rHc}</td>
-            <td class="hof-col-score hof-score">${score}</td>
-          </tr>`;
-        }).join('')}
-      </tbody>
-    </table>${showYearHdrs ? '<div style="margin-bottom:14px"></div>' : ''}`;
+    const cards = byYear[yr].map(r => {
+      if (r.not_played) {
+        return `<div class="hof-result-card hof-card-not-played-row">
+          <div class="hof-card-month">${fmtHofMonthShort(r.event_month)}</div>
+          <div class="hof-card-body"><span class="hof-card-np-label">Not played</span></div>
+        </div>`;
+      }
+      const score = fmtScore(r.winner_score, r.runner_up_score);
+      const wHc = r.winner_hc    != null ? ` <span class="hof-hc-inline">(${r.winner_hc})</span>` : '';
+      const rHc = r.runner_up_hc != null ? ` <span class="hof-hc-inline">(${r.runner_up_hc})</span>` : '';
+      return `<div class="hof-result-card">
+        <div class="hof-card-month">${fmtHofMonthShort(r.event_month)}</div>
+        <div class="hof-card-body">
+          <div class="hof-card-winner">🏆 ${esc(r.winner_name || '–')}${wHc}</div>
+          <div class="hof-card-runnerup">🥈 ${esc(r.runner_up_name || '–')}${rHc}</div>
+        </div>
+        ${score ? `<div class="hof-card-score">${score}</div>` : ''}
+      </div>`;
+    }).join('');
+
+    resultsHtml += `<div class="schedule-day-group">
+      <div class="sched-aside">
+        <div class="sched-day-circle">
+          <span class="hof-yr-num">${yr}</span>
+        </div>
+      </div>
+      <div class="sched-main">
+        <div class="sched-sessions hof-result-sessions">${cards}</div>
+      </div>
+    </div>`;
   }
 
   if (!Object.keys(byYear).length) {

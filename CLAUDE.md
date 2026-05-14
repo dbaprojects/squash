@@ -5,7 +5,7 @@
 - **Owner:** David Barkess — personal project, unrelated to SAP/DealSensAI work
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `C:\Users\I061437\OneDrive\Projects\Squash`
-- **Current version:** v4.32
+- **Current version:** v4.33
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -302,3 +302,4 @@ SUPABASE_SERVICE_ROLE_KEY=... node db/reseed.js
 | v4.30 | Sign-up: timeline line navy + connected (::after pseudo-element, bottom:-28px bridges margin gap); smaller buttons (12px); remove hover-red on ENROLLED; enrolled card no longer green tinted |
 | v4.31 | HoF leaders: chip font 12→15px, count badge 11→12px, status buttons 11→13px |
 | v4.32 | Admin players table: phone column always visible on mobile (col-role still hidden on mobile) |
+| v4.33 | HoF results redesigned as timeline: year circles + connecting line + per-month cards (🏆 winner / 🥈 runner-up / score); replaces table layout |
