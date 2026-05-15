@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.63';
+const APP_VERSION = '4.64';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -129,6 +129,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const cached = JSON.parse(saved);
       const { data } = await sb.from('players').select('*').eq('id', cached.id).maybeSingle();
       if (data && data.active && !data.pending) {
+        auditLog('session_resume', { playerId: data.id, playerName: `${data.first_name} ${data.last_name}` });
         loginSuccess(data);
         return;
       }
@@ -137,6 +138,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
   showView('login');
 });
+
+// ── Audit logging ─────────────────────────────────────────────────────────
+async function auditLog(eventType, payload = {}) {
+  try {
+    await sb.from('audit_log').insert({
+      event_type:  eventType,
+      player_id:   payload.playerId   || null,
+      player_name: payload.playerName || null,
+      phone:       payload.phone      || null,
+      user_agent:  navigator.userAgent.slice(0, 300),
+      details:     payload.details    || null
+    });
+  } catch (_) { /* never interrupt the user flow */ }
+}
 
 // ── Auth ──────────────────────────────────────────────────────────────────
 function normalizePhone(p) {
@@ -153,13 +168,23 @@ async function submitLoginPhone() {
   const phone     = buildPhone(dialCode, local);
   const normInput = normalizePhone(phone);
 
-  const { data: players } = await sb.from('players')
+  const { data: players, error: fetchErr } = await sb.from('players')
     .select('*').not('phone', 'is', null);
+
+  if (fetchErr) {
+    auditLog('login_error', { phone, details: { error: fetchErr.message, stage: 'players_fetch' } });
+    errEl.textContent = 'Error connecting. Please try again.';
+    return;
+  }
 
   const match = (players || []).find(p => normalizePhone(p.phone) === normInput);
 
   if (match) {
-    if (match.pending) { showOnboardStep('pending'); return; }
+    if (match.pending) {
+      auditLog('login_pending', { playerId: match.id, playerName: `${match.first_name} ${match.last_name}`, phone });
+      showOnboardStep('pending');
+      return;
+    }
     document.getElementById('ob-confirm-name').textContent  = `${match.first_name} ${match.last_name}`;
     document.getElementById('ob-confirm-phone').textContent = phone;
     document.getElementById('ob-confirm-yes').onclick = () => completeLogin(match);
@@ -174,6 +199,7 @@ async function submitLoginPhone() {
     };
     showOnboardStep('confirm');
   } else {
+    auditLog('login_not_found', { phone, details: { stage: 'phone_lookup' } });
     prefillRegForm(phone);
     showOnboardStep('register');
   }
@@ -326,6 +352,7 @@ async function createPendingPlayer(first, last, phone) {
     is_admin: false, active: false, pending: true, current_handicap: null
   });
   if (error) { errEl.textContent = error.message; showOnboardStep('register'); return; }
+  auditLog('registration_submitted', { playerName: `${first} ${last}`, phone, details: { first_name: first, last_name: last } });
   showOnboardStep('pending');
 }
 
@@ -359,8 +386,9 @@ async function checkPendingBadge() {
   }
 }
 
-function loginSuccess(player) {
+function loginSuccess(player, source = 'session_start') {
   if (!player.active) { showOnboardStep('pending'); return; }
+  auditLog(source, { playerId: player.id, playerName: `${player.first_name} ${player.last_name}` });
   ST.player = player;
   localStorage.setItem('squash_player', JSON.stringify(player));
   showView('app');
@@ -1734,11 +1762,22 @@ async function loadHome() {
       sb.from('players').select('*', { count: 'exact', head: true }).eq('pending', true)
     );
   }
+  if (me.is_super_admin) {
+    const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
+    fetches.push(
+      sb.from('audit_log')
+        .select('event_type, player_name, phone, created_at, details')
+        .gte('created_at', weekAgo.toISOString())
+        .order('created_at', { ascending: false })
+        .limit(200)
+    );
+  }
 
   const results = await Promise.all(fetches);
   const [eventsRes, playersRes, histRes, hofRes, signupCountRes] = results;
   const myAttendance12m = signupCountRes?.count || 0;
   const pendingCount = me.is_admin ? (results[5]?.count || 0) : 0;
+  const auditRows = me.is_super_admin ? (results[6]?.data || []) : null;
 
   // HC trend — use full history from histRes (already fetched) for accurate months
   const currentHc = me.current_handicap;
@@ -1775,10 +1814,10 @@ async function loadHome() {
   const validHcs = allPlayers.map(p => p.current_handicap).filter(v => v != null);
   const avgHc = validHcs.length ? (validHcs.reduce((a, b) => a + b, 0) / validHcs.length).toFixed(1) : '–';
 
-  renderHome(eventsRes.data || [], hcTrend, { players: allPlayers.length, improved, worsened, avg: avgHc }, hofRes.data, pendingCount, myAttendance12m);
+  renderHome(eventsRes.data || [], hcTrend, { players: allPlayers.length, improved, worsened, avg: avgHc }, hofRes.data, pendingCount, myAttendance12m, auditRows);
 }
 
-function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCount, myAttendance12m) {
+function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCount, myAttendance12m, auditRows = null) {
   const me = ST.player;
   const hc = me.current_handicap;
 
@@ -1917,7 +1956,34 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
       <div class="home-card-link" style="margin-top:auto">Manage →</div>
     </div>` : '';
 
-  document.getElementById('home-grid').innerHTML = meCard + signupCard + ladderCard + hofCard + adminCard;
+  // ── Card 6: Audit (super_admin only) ─────────────────────────────────────
+  let auditCard = '';
+  if (me.is_super_admin && auditRows !== null) {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const loginsToday  = auditRows.filter(r => r.event_type === 'session_start'  && r.created_at.slice(0,10) === todayStr).length;
+    const resumesToday = auditRows.filter(r => r.event_type === 'session_resume' && r.created_at.slice(0,10) === todayStr).length;
+    const errors7d     = auditRows.filter(r => ['login_error','login_not_found','login_pending'].includes(r.event_type)).length;
+    const regs7d       = auditRows.filter(r => r.event_type === 'registration_submitted').length;
+    const logins7d     = auditRows.filter(r => r.event_type === 'session_start').length;
+    const lastLogin    = auditRows.find(r => r.event_type === 'session_start');
+    const lastLoginStr = lastLogin
+      ? `${lastLogin.player_name || '—'} · ${timeAgo(lastLogin.created_at)}`
+      : 'No logins this week';
+    auditCard = `
+    <div class="home-card home-card-audit" style="grid-column:1/-1" onclick="openAuditLog()">
+      <div class="home-card-label">Audit Log</div>
+      <div class="audit-summary-grid">
+        <div class="audit-stat"><span class="audit-num">${loginsToday + resumesToday}</span><span class="audit-lbl">Today</span></div>
+        <div class="audit-stat"><span class="audit-num">${logins7d}</span><span class="audit-lbl">Logins (7d)</span></div>
+        <div class="audit-stat ${errors7d > 0 ? 'audit-warn' : ''}"><span class="audit-num">${errors7d}</span><span class="audit-lbl">Issues (7d)</span></div>
+        <div class="audit-stat"><span class="audit-num">${regs7d}</span><span class="audit-lbl">New regs (7d)</span></div>
+      </div>
+      <div class="audit-last-login">Last login: ${esc(lastLoginStr)}</div>
+      <div class="home-card-link" style="margin-top:auto">View log →</div>
+    </div>`;
+  }
+
+  document.getElementById('home-grid').innerHTML = meCard + signupCard + ladderCard + hofCard + adminCard + auditCard;
 }
 
 function navTo(view, callback) {
@@ -3072,6 +3138,67 @@ function setupModalClose() {
 function openModal()      { document.getElementById('modal-overlay').classList.remove('hidden'); }
 function closeModal()     { document.getElementById('modal-overlay').classList.add('hidden'); }
 function closeFormModal() { document.getElementById('form-overlay').classList.add('hidden'); }
+
+// ── Audit log modal ───────────────────────────────────────────────────────
+function timeAgo(isoStr) {
+  const diff = Math.floor((Date.now() - new Date(isoStr)) / 1000);
+  if (diff < 60)   return `${diff}s ago`;
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
+}
+
+async function openAuditLog() {
+  const me = ST.player;
+  if (!me?.is_super_admin) return;
+  showFormModal('Audit Log', '<p style="color:#888;padding:8px 0">Loading…</p>');
+
+  const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const { data: rows } = await sb.from('audit_log')
+    .select('event_type, player_name, phone, user_agent, details, created_at')
+    .gte('created_at', thirtyDaysAgo.toISOString())
+    .order('created_at', { ascending: false })
+    .limit(300);
+
+  const typeLabel = {
+    session_start:          { text: 'Login',        cls: 'audit-tag-ok' },
+    session_resume:         { text: 'Resume',        cls: 'audit-tag-ok' },
+    login_not_found:        { text: 'Not found',     cls: 'audit-tag-warn' },
+    login_pending:          { text: 'Pending user',  cls: 'audit-tag-warn' },
+    login_error:            { text: 'Error',         cls: 'audit-tag-err' },
+    registration_submitted: { text: 'Registration',  cls: 'audit-tag-info' },
+  };
+
+  const rows_html = (rows || []).map(r => {
+    const tl = typeLabel[r.event_type] || { text: r.event_type, cls: 'audit-tag-info' };
+    const who = r.player_name || r.phone || '—';
+    const detail = r.details?.error || '';
+    const ua = r.user_agent || '';
+    const device = /mobile|android|iphone|ipad/i.test(ua) ? '📱' : '💻';
+    return `<tr>
+      <td style="white-space:nowrap;color:#888;font-size:11px">${new Date(r.created_at).toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</td>
+      <td><span class="audit-tag ${tl.cls}">${tl.text}</span></td>
+      <td style="font-size:12px">${esc(who)}</td>
+      <td style="font-size:11px;color:#888">${device} ${esc(detail)}</td>
+    </tr>`;
+  }).join('');
+
+  showFormModal('Audit Log — Last 30 Days', `
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead>
+          <tr style="border-bottom:2px solid #e2e8f0;text-align:left">
+            <th style="padding:6px 8px;color:#555;font-weight:600">Time</th>
+            <th style="padding:6px 8px;color:#555;font-weight:600">Event</th>
+            <th style="padding:6px 8px;color:#555;font-weight:600">User</th>
+            <th style="padding:6px 8px;color:#555;font-weight:600">Detail</th>
+          </tr>
+        </thead>
+        <tbody>${rows_html || '<tr><td colspan="4" style="padding:12px;color:#888;text-align:center">No events found</td></tr>'}</tbody>
+      </table>
+    </div>
+  `);
+}
 
 function openTermsModal() {
   showFormModal('Terms of Use', `

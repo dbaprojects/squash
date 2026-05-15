@@ -5,7 +5,7 @@
 - **Owner:** David Barkess — personal project, unrelated to SAP/DealSensAI work
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `C:\Users\I061437\OneDrive\Projects\Squash`
-- **Current version:** v4.63
+- **Current version:** v4.64
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -333,3 +333,4 @@ SUPABASE_SERVICE_ROLE_KEY=... node db/reseed.js
 | v4.61 | Terms: add Opting Out clause — advise organising committee to withdraw data |
 | v4.62 | Fix admin events signup count (ambiguous FK — use players!player_id); admin home card shows upcoming sessions with enrollment |
 | v4.63 | Admin home tile: hide pending badge when zero (no "All clear"); show "N pending approval(s)" only when needed |
+| v4.64 | Audit log: new audit_log table (db/schema-audit.sql); logs session_start, session_resume, login_not_found, login_pending, login_error, registration_submitted; super_admin-only Audit tile on home + detail modal (last 30 days) |
