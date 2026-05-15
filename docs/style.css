@@ -1268,6 +1268,26 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 .audit-tag-err  { background: #fee2e2; color: #991b1b; }
 .audit-tag-info { background: #e0f2fe; color: #075985; }
 
+.home-admin-section-title { font-size: 10px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: .5px; margin: 6px 0 2px; }
+
+.audit-filter-bar   { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+.audit-filter-group { display: flex; flex-wrap: wrap; gap: 6px; }
+.audit-filter-btn   { padding: 5px 12px; border-radius: 16px; border: 1.5px solid var(--bc-border); background: var(--bc-surface); font-size: 12px; cursor: pointer; color: #555; }
+.audit-filter-btn.active { background: var(--bc-navy); color: #fff; border-color: var(--bc-navy); }
+.audit-count  { font-size: 12px; color: #888; margin-bottom: 8px; }
+.audit-rows   { display: flex; flex-direction: column; gap: 6px; }
+.audit-row    { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border: 1px solid var(--bc-border); border-radius: 8px; background: var(--bc-surface); }
+.audit-row-left  { display: flex; align-items: center; gap: 8px; }
+.audit-row-right { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.audit-row-time  { font-size: 11px; color: #888; }
+.audit-row-who   { font-size: 13px; font-weight: 500; color: var(--bc-navy); }
+.audit-row-detail { font-size: 11px; color: #999; }
+.audit-danger-zone { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--bc-border); }
+.btn-danger-sm  { background: none; border: 1.5px solid #dc2626; color: #dc2626; padding: 6px 14px; border-radius: 6px; font-size: 13px; cursor: pointer; }
+.btn-danger-sm:hover { background: #fee2e2; }
+.btn-danger     { background: #dc2626; color: #fff; border: none; padding: 10px 20px; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.btn-danger:hover { background: #b91c1c; }
+
 /* Back-to-home button in header */
 .btn-back-home {
   background: rgba(255,255,255,0.12);

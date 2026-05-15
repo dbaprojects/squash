@@ -22,6 +22,10 @@ CREATE POLICY "audit_insert" ON audit_log
 CREATE POLICY "audit_select" ON audit_log
   FOR SELECT USING (TRUE);
 
+-- DELETE open to anon — app-level super_admin guard in deleteAllAuditLogs()
+CREATE POLICY "audit_delete" ON audit_log
+  FOR DELETE USING (TRUE);
+
 -- Index for fast recent-events queries
 CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_log(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_audit_type    ON audit_log(event_type);

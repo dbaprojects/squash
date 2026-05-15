@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.64';
+const APP_VERSION = '4.65';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -449,7 +449,7 @@ function showView(name) {
 }
 
 function showSection(id) {
-  ['view-home','view-schedule','view-event','view-ladder','view-hof','view-admin','view-player'].forEach(s => {
+  ['view-home','view-schedule','view-event','view-ladder','view-hof','view-admin','view-player','view-audit'].forEach(s => {
     document.getElementById(s)?.classList.add('hidden');
   });
   document.getElementById(id).classList.remove('hidden');
@@ -459,7 +459,7 @@ function showSection(id) {
   const titles = {
     'view-home': '', 'view-schedule': 'Sign-Up', 'view-ladder': 'Handicaps',
     'view-hof': 'Hall of Fame', 'view-admin': 'Admin', 'view-event': 'Session',
-    'view-player': ''
+    'view-player': '', 'view-audit': 'Audit Log'
   };
   const titleEl = document.getElementById('header-page-title');
   if (titleEl) titleEl.textContent = titles[id] ?? '';
@@ -1952,7 +1952,7 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
     <div class="home-card home-card-admin" style="grid-column:1/-1" onclick="goToAdmin()">
       <div class="home-card-label">Admin</div>
       ${pendingCount > 0 ? `<div id="home-admin-pending" class="home-admin-badge">${pendingCount} pending approval${pendingCount > 1 ? 's' : ''}</div>` : '<div id="home-admin-pending" class="home-admin-badge hidden"></div>'}
-      ${adminSessionRows}
+      ${adminSessionRows ? `<div class="home-admin-section-title">Upcoming Sessions</div>${adminSessionRows}` : ''}
       <div class="home-card-link" style="margin-top:auto">Manage →</div>
     </div>` : '';
 
@@ -3148,56 +3148,130 @@ function timeAgo(isoStr) {
   return `${Math.floor(diff / 86400)}d ago`;
 }
 
-async function openAuditLog() {
-  const me = ST.player;
-  if (!me?.is_super_admin) return;
-  showFormModal('Audit Log', '<p style="color:#888;padding:8px 0">Loading…</p>');
+// ── Audit log view ────────────────────────────────────────────────────────
+let auditTypeFilter   = 'all';   // 'all' | 'logins' | 'issues' | 'registrations'
+let auditPeriodFilter = '30d';   // '7d' | '30d' | 'all'
 
-  const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  const { data: rows } = await sb.from('audit_log')
+const AUDIT_TYPE_LABEL = {
+  session_start:          { text: 'Login',        cls: 'audit-tag-ok' },
+  session_resume:         { text: 'Resume',        cls: 'audit-tag-ok' },
+  login_not_found:        { text: 'Not found',     cls: 'audit-tag-warn' },
+  login_pending:          { text: 'Pending user',  cls: 'audit-tag-warn' },
+  login_error:            { text: 'Error',         cls: 'audit-tag-err' },
+  registration_submitted: { text: 'Registration',  cls: 'audit-tag-info' },
+};
+
+function openAuditLog() {
+  if (!ST.player?.is_super_admin) return;
+  showSection('view-audit');
+  loadAuditLog();
+}
+
+async function loadAuditLog() {
+  const wrap = document.getElementById('audit-log-wrap');
+  if (!wrap) return;
+  wrap.innerHTML = '<p style="color:#888;padding:16px 0">Loading…</p>';
+
+  let query = sb.from('audit_log')
     .select('event_type, player_name, phone, user_agent, details, created_at')
-    .gte('created_at', thirtyDaysAgo.toISOString())
     .order('created_at', { ascending: false })
-    .limit(300);
+    .limit(500);
 
-  const typeLabel = {
-    session_start:          { text: 'Login',        cls: 'audit-tag-ok' },
-    session_resume:         { text: 'Resume',        cls: 'audit-tag-ok' },
-    login_not_found:        { text: 'Not found',     cls: 'audit-tag-warn' },
-    login_pending:          { text: 'Pending user',  cls: 'audit-tag-warn' },
-    login_error:            { text: 'Error',         cls: 'audit-tag-err' },
-    registration_submitted: { text: 'Registration',  cls: 'audit-tag-info' },
+  if (auditPeriodFilter !== 'all') {
+    const days = auditPeriodFilter === '7d' ? 7 : 30;
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - days);
+    query = query.gte('created_at', cutoff.toISOString());
+  }
+
+  const { data: rows } = await query;
+  renderAuditLog(rows || []);
+}
+
+function renderAuditLog(rows) {
+  const wrap = document.getElementById('audit-log-wrap');
+  if (!wrap) return;
+
+  const typeGroups = {
+    logins:        ['session_start', 'session_resume'],
+    issues:        ['login_not_found', 'login_pending', 'login_error'],
+    registrations: ['registration_submitted'],
   };
+  const filtered = auditTypeFilter === 'all'
+    ? rows
+    : rows.filter(r => typeGroups[auditTypeFilter]?.includes(r.event_type));
 
-  const rows_html = (rows || []).map(r => {
-    const tl = typeLabel[r.event_type] || { text: r.event_type, cls: 'audit-tag-info' };
+  const periodBtn = p => `<button class="audit-filter-btn${auditPeriodFilter===p?' active':''}" onclick="setAuditPeriod('${p}')">${p==='7d'?'Last 7 days':p==='30d'?'Last 30 days':'All time'}</button>`;
+  const typeBtn   = (t, lbl) => `<button class="audit-filter-btn${auditTypeFilter===t?' active':''}" onclick="setAuditType('${t}')">${lbl}</button>`;
+
+  const issueCount = rows.filter(r => typeGroups.issues.includes(r.event_type)).length;
+
+  const rowsHtml = filtered.length ? filtered.map(r => {
+    const tl = AUDIT_TYPE_LABEL[r.event_type] || { text: r.event_type, cls: 'audit-tag-info' };
     const who = r.player_name || r.phone || '—';
-    const detail = r.details?.error || '';
+    const detail = r.details?.error || r.details?.stage || '';
     const ua = r.user_agent || '';
     const device = /mobile|android|iphone|ipad/i.test(ua) ? '📱' : '💻';
-    return `<tr>
-      <td style="white-space:nowrap;color:#888;font-size:11px">${new Date(r.created_at).toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</td>
-      <td><span class="audit-tag ${tl.cls}">${tl.text}</span></td>
-      <td style="font-size:12px">${esc(who)}</td>
-      <td style="font-size:11px;color:#888">${device} ${esc(detail)}</td>
-    </tr>`;
-  }).join('');
+    const dt = new Date(r.created_at);
+    const dtStr = dt.toLocaleString('en-GB', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
+    return `<div class="audit-row">
+      <div class="audit-row-left">
+        <span class="audit-tag ${tl.cls}">${tl.text}</span>
+        <span class="audit-row-time">${dtStr}</span>
+      </div>
+      <div class="audit-row-right">
+        <span class="audit-row-who">${device} ${esc(who)}</span>
+        ${detail ? `<span class="audit-row-detail">${esc(detail)}</span>` : ''}
+      </div>
+    </div>`;
+  }).join('')
+  : '<p style="color:#888;padding:16px 0;text-align:center">No events for this filter</p>';
 
-  showFormModal('Audit Log — Last 30 Days', `
-    <div style="overflow-x:auto">
-      <table style="width:100%;border-collapse:collapse;font-size:13px">
-        <thead>
-          <tr style="border-bottom:2px solid #e2e8f0;text-align:left">
-            <th style="padding:6px 8px;color:#555;font-weight:600">Time</th>
-            <th style="padding:6px 8px;color:#555;font-weight:600">Event</th>
-            <th style="padding:6px 8px;color:#555;font-weight:600">User</th>
-            <th style="padding:6px 8px;color:#555;font-weight:600">Detail</th>
-          </tr>
-        </thead>
-        <tbody>${rows_html || '<tr><td colspan="4" style="padding:12px;color:#888;text-align:center">No events found</td></tr>'}</tbody>
-      </table>
+  wrap.innerHTML = `
+    <div class="audit-filter-bar">
+      <div class="audit-filter-group">
+        ${periodBtn('7d')}${periodBtn('30d')}${periodBtn('all')}
+      </div>
+      <div class="audit-filter-group">
+        ${typeBtn('all','All')}
+        ${typeBtn('logins','Logins')}
+        ${typeBtn('issues', issueCount > 0 ? `Issues (${issueCount})` : 'Issues')}
+        ${typeBtn('registrations','Registrations')}
+      </div>
+    </div>
+    <div class="audit-count">${filtered.length} event${filtered.length !== 1 ? 's' : ''}</div>
+    <div class="audit-rows">${rowsHtml}</div>
+    <div class="audit-danger-zone">
+      <button class="btn-danger-sm" onclick="confirmDeleteAuditLog()">Delete all logs…</button>
+    </div>`;
+}
+
+function setAuditType(t)   { auditTypeFilter = t;   loadAuditLog(); }
+function setAuditPeriod(p) { auditPeriodFilter = p;  loadAuditLog(); }
+
+async function confirmDeleteAuditLog() {
+  if (!ST.player?.is_super_admin) return;
+  showFormModal('Delete All Audit Logs', `
+    <p style="margin-bottom:16px">This will permanently delete <strong>all</strong> audit log entries. This cannot be undone.</p>
+    <div class="btn-row">
+      <button class="btn-danger" onclick="deleteAllAuditLogs()">Yes, delete all</button>
+      <button class="btn-secondary" onclick="closeFormModal()">Cancel</button>
     </div>
   `);
+}
+
+async function deleteAllAuditLogs() {
+  closeFormModal();
+  const wrap = document.getElementById('audit-log-wrap');
+  if (wrap) wrap.innerHTML = '<p style="color:#888;padding:16px 0">Deleting…</p>';
+  const cutoff = new Date('2000-01-01').toISOString();
+  const { error } = await sb.from('audit_log').delete().gte('created_at', cutoff);
+  if (error) {
+    if (wrap) wrap.innerHTML = `<p style="color:red;padding:16px 0">Error: ${esc(error.message)}</p>`;
+    return;
+  }
+  auditPeriodFilter = '30d';
+  auditTypeFilter   = 'all';
+  loadAuditLog();
 }
 
 function openTermsModal() {
