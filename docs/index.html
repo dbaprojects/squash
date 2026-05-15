@@ -7,7 +7,7 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>BC Squash Section</title>
-  <link rel="stylesheet" href="style.css?v=4.58">
+  <link rel="stylesheet" href="style.css?v=4.59">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#1B2A6B">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -30,7 +30,8 @@
     </div>
     <div id="login-phone-error" class="error-msg" style="margin-bottom:8px"></div>
     <button class="btn-google-full" onclick="submitLoginPhone()">Sign In</button>
-    <p class="login-version">v4.58</p>
+    <p class="login-version">v4.59</p>
+    <p class="login-terms"><button class="login-terms-link" onclick="openTermsModal()">Terms of Use</button></p>
   </div>
 </div>
 
@@ -93,7 +94,7 @@
       <img src="bcss.png" class="header-logo" alt="BC">
       <div class="header-title">
         <span class="logo">British Club</span>
-        <span class="logo-sub">Squash Section <span class="version">v4.58</span></span>
+        <span class="logo-sub">Squash Section <span class="version">v4.59</span></span>
       </div>
     </div>
     <div id="header-page-title" class="header-page-title"></div>
@@ -114,6 +115,7 @@
         <div id="home-switcher-dropdown" class="home-switcher-dropdown hidden"></div>
       </div>
       <button class="home-footer-link" onclick="signOutAndReset()">Sign out</button>
+      <button class="home-footer-link" onclick="openTermsModal()">Terms of Use</button>
     </div>
   </main>
 
@@ -197,6 +199,8 @@
 
   </main>
 
+  <div class="app-footer"><button class="app-footer-link" onclick="openTermsModal()">Terms of Use</button></div>
+
 </div><!-- /#view-app -->
 
 <!-- ── Handicap history modal ──────────────────────────────────────────────── -->
@@ -234,6 +238,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
-<script src="app.js?v=4.58"></script>
+<script src="app.js?v=4.59"></script>
 </body>
 </html>

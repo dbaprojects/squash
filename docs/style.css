@@ -67,6 +67,13 @@ body {
 
 .login-box > p:not(.login-section) { color: #666; margin-bottom: 20px; font-size: 13px; }
 .login-version { margin-top: 14px; font-size: 11px; color: #bbb; text-align: center; }
+.login-terms { margin-top: 4px; text-align: center; }
+.login-terms-link { background: none; border: none; color: #aaa; font-size: 11px; cursor: pointer; text-decoration: underline; padding: 0; }
+.login-terms-link:hover { color: var(--bc-navy); }
+
+.app-footer { text-align: center; padding: 16px 0 20px; border-top: 1px solid var(--bc-border); margin-top: 16px; }
+.app-footer-link { background: none; border: none; color: #aaa; font-size: 12px; cursor: pointer; padding: 4px 8px; border-radius: 4px; }
+.app-footer-link:hover { color: var(--bc-navy); background: var(--bc-navy-lt); }
 
 .login-box input {
   width: 100%;

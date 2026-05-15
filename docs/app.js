@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.58';
+const APP_VERSION = '4.59';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -3054,6 +3054,22 @@ function setupModalClose() {
 function openModal()      { document.getElementById('modal-overlay').classList.remove('hidden'); }
 function closeModal()     { document.getElementById('modal-overlay').classList.add('hidden'); }
 function closeFormModal() { document.getElementById('form-overlay').classList.add('hidden'); }
+
+function openTermsModal() {
+  showFormModal('Terms of Use', `
+    <div style="font-size:14px;line-height:1.6;color:#333">
+      <p>By using this app you agree to the following:</p>
+      <ol style="padding-left:18px;margin-top:10px;display:flex;flex-direction:column;gap:10px">
+        <li><strong>Informal tool.</strong> This app is provided as a convenience for members of the BC Squash Section. It is not an official British Club service.</li>
+        <li><strong>No guarantee of accuracy.</strong> Session times, availability, and handicap data may not always be current or correct.</li>
+        <li><strong>No liability.</strong> The app is provided as-is, with no warranties of any kind. The developer and organising committee accept no responsibility for missed sessions, incorrect handicap records, data loss, or any other consequence of using or being unable to use this app. Use is entirely at your own risk.</li>
+        <li><strong>Your data.</strong> Your name and phone number may be stored to identify you within the app. Use of this app is not mandatory — only share information you are comfortable with, to the extent you wish to participate. Data is not shared with third parties and is used solely to manage section participation. This app does not implement strong security measures — do not store sensitive personal information beyond what is needed.</li>
+        <li><strong>Access may change.</strong> The app may be updated, suspended, or shut down at any time without notice.</li>
+        <li><strong>Fair use.</strong> Don't attempt to manipulate results, impersonate other members, or misuse admin functions.</li>
+      </ol>
+    </div>
+  `);
+}
 
 function showFormModal(title, bodyHtml) {
   document.getElementById('form-title').textContent = title;
