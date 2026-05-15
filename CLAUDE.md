@@ -258,6 +258,12 @@ SUPABASE_SERVICE_ROLE_KEY=... node db/reseed.js
 
 ## Versioning
 
+**Version bump checklist** — two distinct string forms, both must be updated:
+- `APP_VERSION = '4.XX'` in app.js (no `v` prefix — used for cache-bust logic)
+- `v4.XX` display strings in app.js, index.html (×2), style.css query string, version.json
+
+`sed 's/v4\.XX/v4.YY/g'` misses `APP_VERSION`. Always update it explicitly.
+
 | Version | Description |
 |---|---|
 | v1.0 | Initial build — SQLite backend, all core features |
