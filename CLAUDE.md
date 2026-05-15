@@ -5,7 +5,7 @@
 - **Owner:** David Barkess — personal project, unrelated to SAP/DealSensAI work
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `C:\Users\I061437\OneDrive\Projects\Squash`
-- **Current version:** v4.69
+- **Current version:** v4.70
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -260,9 +260,10 @@ SUPABASE_SERVICE_ROLE_KEY=... node db/reseed.js
 
 **Version bump checklist** — two distinct string forms, both must be updated:
 - `APP_VERSION = '4.XX'` in app.js (no `v` prefix — used for cache-bust logic)
-- `v4.XX` display strings in app.js, index.html (×2), style.css query string, version.json
+- `v4.XX` display strings in app.js, index.html (×2), version.json
+- `style.css?v=4.XX` and `app.js?v=4.XX` query strings in index.html (not matched by `s/v4.XX/...`)
 
-`sed 's/v4\.XX/v4.YY/g'` misses `APP_VERSION`. Always update it explicitly.
+`sed 's/v4\.XX/v4.YY/g'` misses `APP_VERSION` and the `?v=` query strings. Update all explicitly.
 
 | Version | Description |
 |---|---|
@@ -345,3 +346,4 @@ SUPABASE_SERVICE_ROLE_KEY=... node db/reseed.js
 | v4.67 | Audit log: move delete-all button to top of page |
 | v4.68 | Audit tile stats: unified session types (start+resume), renamed to Sessions(7d), added Unique users(7d), removed New regs |
 | v4.69 | Sign-Up home tile: green ✓ tick on each enrolled session row |
+| v4.70 | Home footer: "Install as App" link — triggers native prompt (Android) or shows step-by-step instructions (iOS/fallback); hidden when already standalone |

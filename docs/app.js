@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.69';
+const APP_VERSION = '4.70';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -74,6 +74,26 @@ async function triggerInstall() {
   const { outcome } = await deferredInstallPrompt.userChoice;
   deferredInstallPrompt = null;
   dismissInstallBanner();
+}
+
+function footerInstall() {
+  if (deferredInstallPrompt) { triggerInstall(); return; }
+  const isIOS = /iPad|iPhone|iPod/i.test(navigator.userAgent) && !window.MSStream;
+  const body = isIOS
+    ? `<p style="margin-bottom:12px">To install on your iPhone/iPad:</p>
+       <ol style="padding-left:20px;line-height:2">
+         <li>Tap the <strong>Share</strong> button (the box with an arrow)</li>
+         <li>Scroll down and tap <strong>"Add to Home Screen"</strong></li>
+         <li>Tap <strong>Add</strong></li>
+       </ol>`
+    : `<p style="margin-bottom:12px">To install on your device:</p>
+       <ol style="padding-left:20px;line-height:2">
+         <li>Tap the browser menu <strong>⋮</strong></li>
+         <li>Tap <strong>"Add to Home Screen"</strong> or <strong>"Install App"</strong></li>
+         <li>Tap <strong>Add</strong></li>
+       </ol>
+       <p style="margin-top:12px;font-size:12px;color:#999">Best supported in Chrome (Android) or Safari (iOS).</p>`;
+  showFormModal('Install as App', body);
 }
 
 // ── Supabase client ───────────────────────────────────────────────────────
@@ -396,6 +416,9 @@ function loginSuccess(player, source = 'session_start') {
   document.getElementById('home-user-switcher-wrap').classList.add('hidden');
   if (player.is_super_admin) loadUserSwitcher();
   showInstallBanner();
+  if (!isStandalone()) {
+    document.getElementById('btn-install-footer')?.classList.remove('hidden');
+  }
 }
 
 // ── User switcher ─────────────────────────────────────────────────────────
