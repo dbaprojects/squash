@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.70';
+const APP_VERSION = '4.71';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -3178,7 +3178,9 @@ function timeAgo(isoStr) {
 
 // ── Audit log view ────────────────────────────────────────────────────────
 let auditTypeFilter   = 'all';   // 'all' | 'logins' | 'issues' | 'registrations'
-let auditPeriodFilter = '30d';   // '7d' | '30d' | 'all'
+let auditPeriodFilter = '7d';    // 'today' | '7d' | '30d' | 'all'
+let auditNameFilter   = '';
+let auditUniqueOnly   = false;
 
 const AUDIT_TYPE_LABEL = {
   session_start:          { text: 'Login',        cls: 'audit-tag-ok' },
@@ -3206,8 +3208,13 @@ async function loadAuditLog() {
     .limit(500);
 
   if (auditPeriodFilter !== 'all') {
-    const days = auditPeriodFilter === '7d' ? 7 : 30;
-    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - days);
+    let cutoff;
+    if (auditPeriodFilter === 'today') {
+      cutoff = new Date(); cutoff.setHours(0, 0, 0, 0);
+    } else {
+      const days = auditPeriodFilter === '7d' ? 7 : 30;
+      cutoff = new Date(); cutoff.setDate(cutoff.getDate() - days);
+    }
     query = query.gte('created_at', cutoff.toISOString());
   }
 
@@ -3224,18 +3231,36 @@ function renderAuditLog(rows) {
     issues:        ['login_not_found', 'login_pending', 'login_error'],
     registrations: ['registration_submitted'],
   };
-  const filtered = auditTypeFilter === 'all'
+
+  let filtered = auditTypeFilter === 'all'
     ? rows
     : rows.filter(r => typeGroups[auditTypeFilter]?.includes(r.event_type));
 
-  const periodBtn = p => `<button class="audit-filter-btn${auditPeriodFilter===p?' active':''}" onclick="setAuditPeriod('${p}')">${p==='7d'?'Last 7 days':p==='30d'?'Last 30 days':'All time'}</button>`;
-  const typeBtn   = (t, lbl) => `<button class="audit-filter-btn${auditTypeFilter===t?' active':''}" onclick="setAuditType('${t}')">${lbl}</button>`;
+  if (auditNameFilter) {
+    const q = auditNameFilter.toLowerCase();
+    filtered = filtered.filter(r => (r.player_name || r.phone || '').toLowerCase().includes(q));
+  }
+
+  if (auditUniqueOnly) {
+    const seen = new Set();
+    filtered = filtered.filter(r => {
+      const key = r.player_name || r.phone || '---';
+      if (seen.has(key)) return false;
+      seen.add(key); return true;
+    });
+  }
+
+  const periodBtn = p => {
+    const labels = { today: 'Today', '7d': 'Last 7 days', '30d': 'Last 30 days', all: 'All time' };
+    return `<button class="audit-filter-btn${auditPeriodFilter===p?' active':''}" onclick="setAuditPeriod('${p}')">${labels[p]}</button>`;
+  };
+  const typeBtn = (t, lbl) => `<button class="audit-filter-btn${auditTypeFilter===t?' active':''}" onclick="setAuditType('${t}')">${lbl}</button>`;
 
   const issueCount = rows.filter(r => typeGroups.issues.includes(r.event_type)).length;
 
   const rowsHtml = filtered.length ? filtered.map(r => {
     const tl = AUDIT_TYPE_LABEL[r.event_type] || { text: r.event_type, cls: 'audit-tag-info' };
-    const who = r.player_name || r.phone || '—';
+    const who = r.player_name || r.phone || '---';
     const detail = r.details?.error || r.details?.stage || '';
     const ua = r.user_agent || '';
     const device = /mobile|android|iphone|ipad/i.test(ua) ? '📱' : '💻';
@@ -3254,13 +3279,15 @@ function renderAuditLog(rows) {
   }).join('')
   : '<p style="color:#888;padding:16px 0;text-align:center">No events for this filter</p>';
 
+  const hadFocus = document.activeElement?.id === 'audit-name-input';
+
   wrap.innerHTML = `
     <div class="audit-top-bar">
-      <button class="btn-danger-sm" onclick="confirmDeleteAuditLog()">Delete all logs…</button>
+      <button class="btn-danger-sm" onclick="confirmDeleteAuditLog()">Delete all logs...</button>
     </div>
     <div class="audit-filter-bar">
       <div class="audit-filter-group">
-        ${periodBtn('7d')}${periodBtn('30d')}${periodBtn('all')}
+        ${periodBtn('today')}${periodBtn('7d')}${periodBtn('30d')}${periodBtn('all')}
       </div>
       <div class="audit-filter-group">
         ${typeBtn('all','All')}
@@ -3268,13 +3295,25 @@ function renderAuditLog(rows) {
         ${typeBtn('issues', issueCount > 0 ? `Issues (${issueCount})` : 'Issues')}
         ${typeBtn('registrations','Registrations')}
       </div>
+      <div class="audit-filter-group">
+        <input id="audit-name-input" class="audit-name-input" type="text"
+          placeholder="Filter by name..." value="${esc(auditNameFilter)}"
+          oninput="setAuditName(this.value)">
+        <button class="audit-filter-btn${auditUniqueOnly?' active':''}" onclick="toggleAuditUnique()">Unique users</button>
+      </div>
     </div>
-    <div class="audit-count">${filtered.length} event${filtered.length !== 1 ? 's' : ''}</div>
+    <div class="audit-count">${filtered.length} event${filtered.length !== 1 ? 's' : ''}${auditUniqueOnly ? ' · unique users' : ''}</div>
     <div class="audit-rows">${rowsHtml}</div>`;
-}
 
+  if (hadFocus) {
+    const inp = document.getElementById('audit-name-input');
+    if (inp) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
+  }
+}
 function setAuditType(t)   { auditTypeFilter = t;   loadAuditLog(); }
 function setAuditPeriod(p) { auditPeriodFilter = p;  loadAuditLog(); }
+function setAuditName(v)   { auditNameFilter = v;    loadAuditLog(); }
+function toggleAuditUnique() { auditUniqueOnly = !auditUniqueOnly; loadAuditLog(); }
 
 async function confirmDeleteAuditLog() {
   if (!ST.player?.is_super_admin) return;

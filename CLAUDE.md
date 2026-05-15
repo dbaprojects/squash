@@ -5,7 +5,7 @@
 - **Owner:** David Barkess — personal project, unrelated to SAP/DealSensAI work
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `C:\Users\I061437\OneDrive\Projects\Squash`
-- **Current version:** v4.70
+- **Current version:** v4.71
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -346,4 +346,5 @@ SUPABASE_SERVICE_ROLE_KEY=... node db/reseed.js
 | v4.67 | Audit log: move delete-all button to top of page |
 | v4.68 | Audit tile stats: unified session types (start+resume), renamed to Sessions(7d), added Unique users(7d), removed New regs |
 | v4.69 | Sign-Up home tile: green ✓ tick on each enrolled session row |
-| v4.70 | Home footer: "Install as App" link — triggers native prompt (Android) or shows step-by-step instructions (iOS/fallback); hidden when already standalone |
+| v4.70 | Home footer: "Install as App" link; fix style.css/app.js query string versioning; Sign-Up card header text tweaks |
+| v4.71 | Audit log: name filter input, Unique users toggle, Today period button, default period changed to 7d |
