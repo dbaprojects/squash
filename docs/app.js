@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.60';
+const APP_VERSION = '4.61';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -3068,6 +3068,7 @@ function openTermsModal() {
         <li><strong>Your data.</strong> Your name and phone number may be stored to identify you within the app. Use of this app is not mandatory — only share information you are comfortable with, to the extent you wish to participate. Data is not shared with third parties and is used solely to manage section participation. This app does not implement strong security measures — do not store sensitive personal information beyond what is needed.</li>
         <li><strong>Access may change.</strong> The app may be updated, suspended, or shut down at any time without notice.</li>
         <li><strong>Fair use.</strong> Don't attempt to manipulate results, impersonate other members, or misuse admin functions.</li>
+        <li><strong>Opting out.</strong> If you do not wish to participate or would like your data removed, please advise the organising committee and your details will be withdrawn from the app.</li>
       </ol>
     </div>
   `);
