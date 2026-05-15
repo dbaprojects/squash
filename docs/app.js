@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.66';
+const APP_VERSION = '4.67';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -3226,6 +3226,9 @@ function renderAuditLog(rows) {
   : '<p style="color:#888;padding:16px 0;text-align:center">No events for this filter</p>';
 
   wrap.innerHTML = `
+    <div class="audit-top-bar">
+      <button class="btn-danger-sm" onclick="confirmDeleteAuditLog()">Delete all logs…</button>
+    </div>
     <div class="audit-filter-bar">
       <div class="audit-filter-group">
         ${periodBtn('7d')}${periodBtn('30d')}${periodBtn('all')}
@@ -3238,10 +3241,7 @@ function renderAuditLog(rows) {
       </div>
     </div>
     <div class="audit-count">${filtered.length} event${filtered.length !== 1 ? 's' : ''}</div>
-    <div class="audit-rows">${rowsHtml}</div>
-    <div class="audit-danger-zone">
-      <button class="btn-danger-sm" onclick="confirmDeleteAuditLog()">Delete all logs…</button>
-    </div>`;
+    <div class="audit-rows">${rowsHtml}</div>`;
 }
 
 function setAuditType(t)   { auditTypeFilter = t;   loadAuditLog(); }
