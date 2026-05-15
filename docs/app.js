@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.71';
+const APP_VERSION = '4.72';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -3283,7 +3283,8 @@ function renderAuditLog(rows) {
 
   wrap.innerHTML = `
     <div class="audit-top-bar">
-      <button class="btn-danger-sm" onclick="confirmDeleteAuditLog()">Delete all logs...</button>
+      <button class="btn-danger-sm" onclick="confirmDeleteAdminLogs()">Delete my test logs…</button>
+      <button class="btn-danger-sm" onclick="confirmDeleteAuditLog()">Delete all logs…</button>
     </div>
     <div class="audit-filter-bar">
       <div class="audit-filter-group">
@@ -3336,8 +3337,34 @@ async function deleteAllAuditLogs() {
     if (wrap) wrap.innerHTML = `<p style="color:red;padding:16px 0">Error: ${esc(error.message)}</p>`;
     return;
   }
-  auditPeriodFilter = '30d';
+  auditPeriodFilter = '7d';
   auditTypeFilter   = 'all';
+  loadAuditLog();
+}
+
+async function confirmDeleteAdminLogs() {
+  if (!ST.player?.is_super_admin) return;
+  const superAdmins = ST.players.filter(p => p.is_super_admin).map(p => `${p.first_name} ${p.last_name}`).join(', ');
+  showFormModal('Delete Admin Test Logs', `
+    <p style="margin-bottom:16px">Delete all audit entries from super admin users (<strong>${esc(superAdmins)}</strong>). Real user logs will not be affected.</p>
+    <div class="btn-row">
+      <button class="btn-danger" onclick="deleteAdminAuditLogs()">Yes, delete</button>
+      <button class="btn-secondary" onclick="closeFormModal()">Cancel</button>
+    </div>
+  `);
+}
+
+async function deleteAdminAuditLogs() {
+  closeFormModal();
+  if (!ST.player?.is_super_admin) return;
+  const adminIds = ST.players.filter(p => p.is_super_admin).map(p => p.id);
+  const wrap = document.getElementById('audit-log-wrap');
+  if (wrap) wrap.innerHTML = '<p style="color:#888;padding:16px 0">Deleting…</p>';
+  const { error } = await sb.from('audit_log').delete().in('player_id', adminIds);
+  if (error) {
+    if (wrap) wrap.innerHTML = `<p style="color:red;padding:16px 0">Error: ${esc(error.message)}</p>`;
+    return;
+  }
   loadAuditLog();
 }
 
