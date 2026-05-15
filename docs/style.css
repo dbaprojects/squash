@@ -1194,6 +1194,7 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 .home-sess-row:last-child { border-bottom: none; }
 .home-sess-date  { color: #888; min-width: 34px; flex-shrink: 0; }
 .home-sess-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--bc-text); }
+.home-sess-tick  { color: #22c55e; font-weight: 700; flex-shrink: 0; font-size: 13px; }
 .home-sess-right { margin-left: auto; white-space: nowrap; color: #666; flex-shrink: 0; }
 .home-sess-in    { color: #2a9d8f; font-weight: 700; }
 .home-sess-empty { color: #aaa; font-size: 13px; padding: 8px 0; }

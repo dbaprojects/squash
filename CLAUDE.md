@@ -5,7 +5,7 @@
 - **Owner:** David Barkess — personal project, unrelated to SAP/DealSensAI work
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `C:\Users\I061437\OneDrive\Projects\Squash`
-- **Current version:** v4.67
+- **Current version:** v4.69
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -337,3 +337,5 @@ SUPABASE_SERVICE_ROLE_KEY=... node db/reseed.js
 | v4.65 | Audit log: full in-app view (view-audit) replaces modal; type + period filters; delete-all with confirmation; admin tile "Upcoming Sessions" section label |
 | v4.66 | Fix audit double-logging on session resume — pass source to loginSuccess instead of calling auditLog separately |
 | v4.67 | Audit log: move delete-all button to top of page |
+| v4.68 | Audit tile stats: unified session types (start+resume), renamed to Sessions(7d), added Unique users(7d), removed New regs |
+| v4.69 | Sign-Up home tile: green ✓ tick on each enrolled session row |

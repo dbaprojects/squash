@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.67';
+const APP_VERSION = '4.68';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -1866,6 +1866,7 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
       return `<div class="home-sess-row">
         <span class="home-sess-date">${dayName}</span>
         <span class="home-sess-title">${esc(ev.title)}</span>
+        <span class="home-sess-tick">✓</span>
         <span class="home-sess-right">${countStr}</span>
       </div>`;
     }).join('');
@@ -1959,25 +1960,25 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
   let auditCard = '';
   if (me.is_super_admin && auditRows !== null) {
     const todayStr = new Date().toISOString().slice(0, 10);
-    const loginsToday  = auditRows.filter(r => r.event_type === 'session_start'  && r.created_at.slice(0,10) === todayStr).length;
-    const resumesToday = auditRows.filter(r => r.event_type === 'session_resume' && r.created_at.slice(0,10) === todayStr).length;
-    const errors7d     = auditRows.filter(r => ['login_error','login_not_found','login_pending'].includes(r.event_type)).length;
-    const regs7d       = auditRows.filter(r => r.event_type === 'registration_submitted').length;
-    const logins7d     = auditRows.filter(r => r.event_type === 'session_start').length;
-    const lastLogin    = auditRows.find(r => r.event_type === 'session_start');
-    const lastLoginStr = lastLogin
+    const sessionTypes   = ['session_start', 'session_resume'];
+    const sessionsToday  = auditRows.filter(r => sessionTypes.includes(r.event_type) && r.created_at.slice(0,10) === todayStr).length;
+    const sessions7d     = auditRows.filter(r => sessionTypes.includes(r.event_type)).length;
+    const unique7d       = new Set(auditRows.filter(r => sessionTypes.includes(r.event_type) && r.player_name).map(r => r.player_name)).size;
+    const errors7d       = auditRows.filter(r => ['login_error','login_not_found','login_pending'].includes(r.event_type)).length;
+    const lastLogin      = auditRows.find(r => sessionTypes.includes(r.event_type));
+    const lastLoginStr   = lastLogin
       ? `${lastLogin.player_name || '—'} · ${timeAgo(lastLogin.created_at)}`
-      : 'No logins this week';
+      : 'No sessions this week';
     auditCard = `
     <div class="home-card home-card-audit" style="grid-column:1/-1" onclick="openAuditLog()">
       <div class="home-card-label">Audit Log</div>
       <div class="audit-summary-grid">
-        <div class="audit-stat"><span class="audit-num">${loginsToday + resumesToday}</span><span class="audit-lbl">Today</span></div>
-        <div class="audit-stat"><span class="audit-num">${logins7d}</span><span class="audit-lbl">Logins (7d)</span></div>
+        <div class="audit-stat"><span class="audit-num">${sessionsToday}</span><span class="audit-lbl">Today</span></div>
+        <div class="audit-stat"><span class="audit-num">${sessions7d}</span><span class="audit-lbl">Sessions (7d)</span></div>
+        <div class="audit-stat"><span class="audit-num">${unique7d}</span><span class="audit-lbl">Unique users (7d)</span></div>
         <div class="audit-stat ${errors7d > 0 ? 'audit-warn' : ''}"><span class="audit-num">${errors7d}</span><span class="audit-lbl">Issues (7d)</span></div>
-        <div class="audit-stat"><span class="audit-num">${regs7d}</span><span class="audit-lbl">New regs (7d)</span></div>
       </div>
-      <div class="audit-last-login">Last login: ${esc(lastLoginStr)}</div>
+      <div class="audit-last-login">Last session: ${esc(lastLoginStr)}</div>
       <div class="home-card-link" style="margin-top:auto">View log →</div>
     </div>`;
   }
