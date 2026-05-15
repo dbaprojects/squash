@@ -5,7 +5,7 @@
 - **Owner:** David Barkess — personal project, unrelated to SAP/DealSensAI work
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `C:\Users\I061437\OneDrive\Projects\Squash`
-- **Current version:** v4.61
+- **Current version:** v4.62
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -331,3 +331,4 @@ SUPABASE_SERVICE_ROLE_KEY=... node db/reseed.js
 | v4.59 | Terms of Use modal: link on login screen, home footer, and global app-footer on all sections |
 | v4.60 | Fix duplicate Terms of Use on home: hide app-footer when view-home is active (showSection toggle) |
 | v4.61 | Terms: add Opting Out clause — advise organising committee to withdraw data |
+| v4.62 | Fix admin events signup count (ambiguous FK — use players!player_id); admin home card shows upcoming sessions with enrollment |

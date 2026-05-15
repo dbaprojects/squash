@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.61';
+const APP_VERSION = '4.62';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -1892,12 +1892,30 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
     </div>`;
 
   // ── Card 5: Admin (admin only) ────────────────────────────────────────────
+  let adminSessionRows = '';
+  if (me.is_admin && upcomingEvents.length) {
+    const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    adminSessionRows = upcomingEvents.slice(0, 6).map(ev => {
+      const d = new Date(ev.event_date + 'T12:00:00');
+      const dateStr = `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`;
+      const confirmed = (ev.signups || []).filter(s => !s.is_reserve).length;
+      const countStr = ev.max_signups ? `${confirmed}/${ev.max_signups}` : `${confirmed}`;
+      const full = ev.max_signups && confirmed >= ev.max_signups;
+      return `<div class="home-admin-session">
+        <span class="has-date">${dateStr}</span>
+        <span class="has-title">${esc(ev.title)}</span>
+        <span class="has-count${full ? ' full' : ''}">${countStr}</span>
+      </div>`;
+    }).join('');
+  }
   const adminCard = me.is_admin ? `
     <div class="home-card home-card-admin" style="grid-column:1/-1" onclick="goToAdmin()">
       <div class="home-card-label">Admin</div>
       <div id="home-admin-pending" class="home-admin-badge${pendingCount > 0 ? '' : ' clear'}">
         ${pendingCount > 0 ? `${pendingCount} pending` : 'All clear'}
       </div>
+      ${adminSessionRows}
       <div class="home-card-link" style="margin-top:auto">Manage →</div>
     </div>` : '';
 
@@ -2778,7 +2796,7 @@ async function renderAdminEvents() {
   let signupMap = {};
   if (eventIds.length) {
     const { data: sups } = await sb.from('signups')
-      .select('event_id, is_reserve, guest_name, players(first_name, last_name)')
+      .select('event_id, is_reserve, guest_name, player:players!player_id(first_name, last_name)')
       .in('event_id', eventIds);
     for (const s of (sups || [])) {
       if (!signupMap[s.event_id]) signupMap[s.event_id] = [];
@@ -2806,8 +2824,8 @@ async function renderAdminEvents() {
         const reserves  = sups.filter(s =>  s.is_reserve);
         const countStr  = ev.max_signups ? `${confirmed.length}/${ev.max_signups}` : `${confirmed.length}`;
         const chips = [...confirmed, ...reserves].map(s => {
-          const name = s.players
-            ? `${s.players.first_name} ${s.players.last_name}`
+          const name = s.player
+            ? `${s.player.first_name} ${s.player.last_name}`
             : (s.guest_name || 'Guest');
           return `<span class="ae-sup-chip${s.is_reserve ? ' ae-sup-reserve' : ''}">${esc(name)}</span>`;
         }).join('');

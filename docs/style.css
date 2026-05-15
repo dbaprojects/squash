@@ -1247,6 +1247,12 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 .home-card-admin { border-top: 3px solid #6c5ce7; }
 .home-admin-badge { font-size: 14px; font-weight: 600; color: var(--bc-gold); margin: 6px 0; }
 .home-admin-badge.clear { color: #2a9d8f; font-weight: 400; font-size: 13px; }
+.home-admin-session { display: flex; align-items: center; gap: 8px; padding: 3px 0; font-size: 12px; border-bottom: 1px solid var(--bc-border); }
+.home-admin-session:last-of-type { border-bottom: none; }
+.has-date  { color: #888; min-width: 72px; flex-shrink: 0; }
+.has-title { flex: 1; color: var(--bc-navy); font-weight: 500; }
+.has-count { color: #555; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+.has-count.full { color: #e07b39; font-weight: 600; }
 
 /* Back-to-home button in header */
 .btn-back-home {
