@@ -1876,10 +1876,12 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
   let signupInner = '';
   if (myBookings.length === 0) {
     const quip = QUIPS[Math.floor(Math.random() * QUIPS.length)];
+    const n = upcomingEvents.length;
     signupInner = `
       <div class="home-signup-empty">
         <img src="racket01.png" class="home-racket-big" alt="">
         <div class="home-racket-quip">${quip}</div>
+        ${n > 0 ? `<div class="home-racket-more">${n} session${n !== 1 ? 's' : ''} available!</div>` : ''}
       </div>`;
   } else {
     const rows = myBookings.map(ev => {
