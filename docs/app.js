@@ -1975,7 +1975,7 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
     <div class="home-card home-card-admin" style="grid-column:1/-1" onclick="goToAdmin()">
       <div class="home-card-label">Admin</div>
       ${pendingCount > 0 ? `<div id="home-admin-pending" class="home-admin-badge">${pendingCount} pending approval${pendingCount > 1 ? 's' : ''}</div>` : '<div id="home-admin-pending" class="home-admin-badge hidden"></div>'}
-      ${adminSessionRows ? `<div class="home-admin-section-title">Upcoming Sessions</div>${adminSessionRows}` : ''}
+      ${adminSessionRows ? `<div class="home-admin-section-title">Sign-ups for Upcoming Sessions</div>${adminSessionRows}` : ''}
       <div class="home-card-link" style="margin-top:auto">Manage →</div>
     </div>` : '';
 
