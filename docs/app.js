@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.65';
+const APP_VERSION = '4.66';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -129,8 +129,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const cached = JSON.parse(saved);
       const { data } = await sb.from('players').select('*').eq('id', cached.id).maybeSingle();
       if (data && data.active && !data.pending) {
-        auditLog('session_resume', { playerId: data.id, playerName: `${data.first_name} ${data.last_name}` });
-        loginSuccess(data);
+        loginSuccess(data, 'session_resume');
         return;
       }
     } catch (_) { /* ignore */ }
