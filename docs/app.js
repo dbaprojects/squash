@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.62';
+const APP_VERSION = '4.63';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -354,8 +354,8 @@ async function checkPendingBadge() {
     .eq('pending', true);
   const el = document.getElementById('home-admin-pending');
   if (el) {
-    el.textContent = count > 0 ? `${count} pending` : 'All clear';
-    el.className = `home-admin-badge${count > 0 ? '' : ' clear'}`;
+    el.textContent = count > 0 ? `${count} pending approval${count > 1 ? 's' : ''}` : '';
+    el.className = count > 0 ? 'home-admin-badge' : 'home-admin-badge hidden';
   }
 }
 
@@ -1912,9 +1912,7 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
   const adminCard = me.is_admin ? `
     <div class="home-card home-card-admin" style="grid-column:1/-1" onclick="goToAdmin()">
       <div class="home-card-label">Admin</div>
-      <div id="home-admin-pending" class="home-admin-badge${pendingCount > 0 ? '' : ' clear'}">
-        ${pendingCount > 0 ? `${pendingCount} pending` : 'All clear'}
-      </div>
+      ${pendingCount > 0 ? `<div id="home-admin-pending" class="home-admin-badge">${pendingCount} pending approval${pendingCount > 1 ? 's' : ''}</div>` : '<div id="home-admin-pending" class="home-admin-badge hidden"></div>'}
       ${adminSessionRows}
       <div class="home-card-link" style="margin-top:auto">Manage →</div>
     </div>` : '';
