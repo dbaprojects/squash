@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.59';
+const APP_VERSION = '4.60';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -426,6 +426,8 @@ function showSection(id) {
   });
   document.getElementById(id).classList.remove('hidden');
   document.getElementById('btn-back-home').classList.toggle('hidden', id === 'view-home');
+  const appFooter = document.getElementById('app-footer');
+  if (appFooter) appFooter.classList.toggle('hidden', id === 'view-home');
   const titles = {
     'view-home': '', 'view-schedule': 'Sign-Up', 'view-ladder': 'Handicaps',
     'view-hof': 'Hall of Fame', 'view-admin': 'Admin', 'view-event': 'Session',
