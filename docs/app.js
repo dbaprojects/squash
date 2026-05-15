@@ -1894,11 +1894,14 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
       </div>`;
     }).join('');
     const avail = upcomingEvents.length - myBookings.length;
-    const availHdr = avail > 0 ? `
+    const hdrText = avail > 0
+      ? `You're signed up for ${myBookings.length}, ${avail} other session${avail !== 1 ? 's' : ''} available!`
+      : `You're signed up for ${myBookings.length} session${myBookings.length !== 1 ? 's' : ''}!`;
+    const availHdr = `
       <div class="home-signup-booked-hdr">
         <img src="racket01.png" class="home-racket-sm" alt="">
-        <span class="home-racket-avail">${avail} session${avail !== 1 ? 's' : ''} available!</span>
-      </div>` : '';
+        <span class="home-racket-avail">${hdrText}</span>
+      </div>`;
     signupInner = `${availHdr}<div class="home-sess-list">${rows}</div>`;
   }
   const signupCard = `
