@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS players (
   is_super_admin   BOOLEAN NOT NULL DEFAULT FALSE,
   current_handicap NUMERIC,
   active           BOOLEAN NOT NULL DEFAULT TRUE,
+  pending          BOOLEAN NOT NULL DEFAULT FALSE,
   phone            TEXT,
   created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -131,5 +132,6 @@ CREATE POLICY "handicaps_admin_all" ON handicap_history
   FOR ALL TO authenticated
   USING (is_admin_user()) WITH CHECK (is_admin_user());
 
--- ── Migration: add is_super_admin (run once on existing DB) ──────────────────
+-- ── Migrations (run once on existing DBs) ────────────────────────────────────
 -- ALTER TABLE players ADD COLUMN IF NOT EXISTS is_super_admin BOOLEAN NOT NULL DEFAULT FALSE;
+-- ALTER TABLE players ADD COLUMN IF NOT EXISTS pending         BOOLEAN NOT NULL DEFAULT FALSE;

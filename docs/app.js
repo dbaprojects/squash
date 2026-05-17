@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.72';
+const APP_VERSION = '4.73';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -2657,7 +2657,7 @@ function openEditPlayerForm(id) {
     : '<span class="tag-inactive">Inactive</span>';
   const toggleBtn = p.active
     ? `<button type="button" class="btn-icon-sm btn-icon-danger" style="margin-left:10px" onclick="deactivatePlayerFromForm('${id}')">Deactivate</button>`
-    : `<button type="button" class="btn-icon-sm" style="margin-left:10px" onclick="reactivatePlayerFromForm('${id}')">Restore</button>
+    : `<button type="button" class="btn-icon-sm" style="margin-left:10px" onclick="reactivatePlayerFromForm('${id}')">Re-activate</button>
        ${ST.player.is_super_admin ? `<button type="button" class="btn-icon-sm btn-icon-danger" style="margin-left:4px" onclick="deletePlayer('${id}','${esc(p.first_name)} ${esc(p.last_name)}')">Delete</button>` : ''}`;
   showFormModal('Edit Player', `
     <div class="form-group"><label>First name</label><input type="text" id="ep-first" value="${esc(p.first_name)}"></div>
@@ -2706,33 +2706,33 @@ async function submitEditPlayer(id) {
 }
 
 async function deactivatePlayer(id) {
-  if (!confirm('Deactivate this player? They will be hidden from the active list but can still sign in.')) return;
+  if (!confirm('Deactivate this player? They will be hidden from the active list but can still sign in.')) return false;
   const { error } = await sb.from('players').update({ active: false }).eq('id', id);
-  if (error) { alert(error.message); return; }
+  if (error) { alert(error.message); return false; }
   const p = allPlayers.find(x => x.id === id);
   if (p) p.active = false;
   ST.players = allPlayers.filter(p => p.active);
   renderPlayersTable();
+  return true;
 }
 
 async function reactivatePlayer(id) {
-  if (!confirm('Restore this player? They will be able to sign in again.')) return;
+  if (!confirm('Re-activate this player? They will be able to sign in again.')) return false;
   const { error } = await sb.from('players').update({ active: true }).eq('id', id);
-  if (error) { alert(error.message); return; }
+  if (error) { alert(error.message); return false; }
   const p = allPlayers.find(x => x.id === id);
   if (p) p.active = true;
   ST.players = allPlayers.filter(p => p.active);
   renderPlayersTable();
+  return true;
 }
 
 async function deactivatePlayerFromForm(id) {
-  closeFormModal();
-  await deactivatePlayer(id);
+  if (await deactivatePlayer(id)) openEditPlayerForm(id);
 }
 
 async function reactivatePlayerFromForm(id) {
-  closeFormModal();
-  await reactivatePlayer(id);
+  if (await reactivatePlayer(id)) openEditPlayerForm(id);
 }
 
 async function deletePlayer(id, name) {
@@ -2744,6 +2744,7 @@ async function deletePlayer(id, name) {
   if (error) { alert(error.message); return; }
   allPlayers = allPlayers.filter(x => x.id !== id);
   ST.players = allPlayers.filter(p => p.active);
+  closeFormModal();
   renderPlayersTable();
 }
 
