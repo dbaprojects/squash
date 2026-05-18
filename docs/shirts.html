@@ -413,6 +413,11 @@
     <button class="btn-admin-refresh" onclick="refreshAdmin()">↻ Refresh</button>
   </div>
   <div class="content" style="max-width:720px">
+    <div class="admin-filter-row" id="admin-filter-wrap" style="display:none;padding:0 0 4px">
+      <input class="admin-filter" id="admin-filter-input" type="text"
+             placeholder="Search by name or member number…"
+             oninput="renderAdmin()">
+    </div>
     <div class="card" id="admin-content">
       <p style="color:#94a3b8;text-align:center;padding:20px">Loading orders…</p>
     </div>
@@ -720,6 +725,7 @@ async function loadAdmin() {
     return;
   }
   adminData = data;
+  document.getElementById('admin-filter-wrap').style.display = '';
   renderAdmin('');
 }
 
@@ -731,12 +737,14 @@ async function refreshAdmin() {
     return;
   }
   adminData = data;
+  const fi = document.getElementById('admin-filter-input');
+  if (fi) fi.value = '';
   renderAdmin('');
 }
 
 function renderAdmin(filterQ) {
   const data = adminData || [];
-  const q = filterQ.toLowerCase().trim();
+  const q = (filterQ !== undefined ? filterQ : (document.getElementById('admin-filter-input') || {}).value || '').toLowerCase().trim();
 
   // Flatten all items
   const allItems = [];
@@ -842,10 +850,6 @@ function renderAdmin(filterQ) {
     </div>
 
     <h2 style="margin-bottom:10px">All Members (${filtered.length}${filtered.length !== data.length ? ` of ${data.length}` : ''})</h2>
-    <div class="admin-filter-row">
-      <input class="admin-filter" type="text" placeholder="Search by name or member number…"
-             value="${filterQ}" oninput="renderAdmin(this.value)">
-    </div>
     <div style="overflow-x:auto">
       <table class="all-orders-table">
         <thead><tr><th>#</th><th>Name</th><th>Phone</th><th>Items</th></tr></thead>
