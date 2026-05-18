@@ -1035,7 +1035,9 @@ function selectDesign(d) {
   document.getElementById('btn-d-banksy').classList.toggle('selected',  d === 'Banksy');
   document.getElementById('picker-extra').classList.remove('hidden');
   document.getElementById('btn-view-larger').classList.add('hidden');
-  renderColourRow();
+  const available = COLOURS_ENABLED[d] || COLOURS;
+  if (available.length === 1) selectColour(available[0]);
+  else renderColourRow();
   checkAddButton();
 }
 
