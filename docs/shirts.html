@@ -214,8 +214,16 @@
     .admin-header {
       background: #7f1d1d; color: #fff;
       padding: 16px 20px; text-align: center;
+      position: relative;
     }
     .admin-header h1 { font-size: 18px; font-weight: 700; }
+    .btn-admin-refresh {
+      position: absolute; top: 50%; right: 16px; transform: translateY(-50%);
+      background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.4);
+      border-radius: 6px; padding: 6px 12px; font-size: 13px; font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-admin-refresh:hover { background: rgba(255,255,255,0.28); }
 
     .totals-table { width: 100%; border-collapse: collapse; font-size: 13px; }
     .totals-table th {
@@ -402,6 +410,7 @@
 <div id="view-admin" class="view">
   <div class="admin-header">
     <h1>Shirt Order — Admin</h1>
+    <button class="btn-admin-refresh" onclick="refreshAdmin()">↻ Refresh</button>
   </div>
   <div class="content" style="max-width:720px">
     <div class="card" id="admin-content">
@@ -705,6 +714,17 @@ async function loadAdmin() {
   if (pin !== 'admin') { alert('Incorrect PIN.'); showView('login'); return; }
 
   showView('admin');
+  const { data, error } = await sb.from('shirt_orders').select('*').order('name');
+  if (error) {
+    document.getElementById('admin-content').innerHTML = `<p class="err">${error.message}</p>`;
+    return;
+  }
+  adminData = data;
+  renderAdmin('');
+}
+
+async function refreshAdmin() {
+  document.getElementById('admin-content').innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px">Refreshing…</p>';
   const { data, error } = await sb.from('shirt_orders').select('*').order('name');
   if (error) {
     document.getElementById('admin-content').innerHTML = `<p class="err">${error.message}</p>`;
