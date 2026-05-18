@@ -10,15 +10,15 @@
 
     .admin-header {
       background: #7f1d1d; color: #fff;
-      padding: 16px 20px; text-align: center; position: relative;
+      padding: 16px 20px; text-align: center;
     }
     .admin-header h1 { font-size: 18px; font-weight: 700; }
     .btn-admin-refresh {
-      position: absolute; top: 50%; right: 16px; transform: translateY(-50%);
-      background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.4);
-      border-radius: 6px; padding: 6px 12px; font-size: 13px; font-weight: 600; cursor: pointer;
+      display: inline-block; padding: 9px 18px; background: #334155;
+      color: #fff; border: none; border-radius: 8px; font-size: 14px;
+      font-weight: 600; cursor: pointer; margin-bottom: 16px; margin-left: 8px;
     }
-    .btn-admin-refresh:hover { background: rgba(255,255,255,0.28); }
+    .btn-admin-refresh:hover { background: #1e293b; }
 
     .content { padding: 24px 16px; max-width: 720px; width: 100%; margin: 0 auto; }
 
@@ -96,7 +96,6 @@
 <div id="admin-ui" style="display:none">
   <div class="admin-header">
     <h1>Shirt Order — Admin</h1>
-    <button class="btn-admin-refresh" onclick="refreshAdmin()">↻ Refresh</button>
   </div>
   <div class="content">
     <div class="card" id="admin-content">
@@ -229,6 +228,7 @@ function renderAdmin(filterQ) {
 
   document.getElementById('admin-content').innerHTML = `
     <button class="btn-export" onclick="exportExcel()">⬇ Export Excel</button>
+    <button class="btn-admin-refresh" onclick="refreshAdmin()">↻ Refresh</button>
     <h2 style="margin-bottom:10px">Summary</h2>
     <div class="summary-grid">
       <div class="stat-box"><div class="stat-val">${totalShirts}</div><div class="stat-lbl">Total Shirts</div></div>
