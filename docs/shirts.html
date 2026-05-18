@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BC Club — Shirt Order 2026</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f1f5f9;
+      color: #1e293b;
+      min-height: 100vh;
+    }
+
+    .view { display: none; min-height: 100vh; flex-direction: column; }
+    .view.active { display: flex; }
+
+    /* ── Header ─────────────────────────────────────────────────────────── */
+    .app-header {
+      background: #1B2A6B;
+      color: #fff;
+      padding: 16px 20px;
+      text-align: center;
+    }
+    .app-header h1 { font-size: 18px; font-weight: 700; letter-spacing: 0.5px; }
+    .app-header p  { font-size: 12px; opacity: 0.75; margin-top: 2px; }
+
+    /* ── Content wrapper ─────────────────────────────────────────────────── */
+    .content {
+      flex: 1;
+      padding: 24px 16px;
+      max-width: 480px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* ── Cards ───────────────────────────────────────────────────────────── */
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      margin-bottom: 16px;
+    }
+    .card h2 { font-size: 14px; font-weight: 700; color: #1B2A6B; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    /* ── Form elements ───────────────────────────────────────────────────── */
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 5px; }
+    .form-group input {
+      width: 100%; padding: 10px 12px; border: 1.5px solid #cbd5e1;
+      border-radius: 8px; font-size: 15px; outline: none; transition: border-color 0.15s;
+    }
+    .form-group input:focus { border-color: #1B2A6B; }
+
+    .err { color: #dc2626; font-size: 13px; margin-top: 8px; min-height: 18px; }
+
+    /* ── Buttons ─────────────────────────────────────────────────────────── */
+    .btn-primary {
+      width: 100%; padding: 12px; background: #1B2A6B; color: #fff;
+      border: none; border-radius: 8px; font-size: 15px; font-weight: 600;
+      cursor: pointer; transition: opacity 0.15s;
+    }
+    .btn-primary:hover { opacity: 0.88; }
+    .btn-primary:disabled { background: #94a3b8; cursor: not-allowed; opacity: 1; }
+    .btn-ghost {
+      background: none; border: none; color: #64748b; font-size: 13px;
+      cursor: pointer; text-decoration: underline; padding: 4px 0;
+    }
+    .btn-ghost:hover { color: #1e293b; }
+
+    /* ── Login view ──────────────────────────────────────────────────────── */
+    #view-login .content { display: flex; flex-direction: column; justify-content: center; padding-top: 40px; }
+    .login-subtitle { font-size: 14px; color: #64748b; text-align: center; margin-bottom: 24px; }
+
+    /* ── Main header bar ─────────────────────────────────────────────────── */
+    .member-bar {
+      background: #e8edf7;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+    }
+    .member-bar strong { color: #1B2A6B; }
+
+    /* ── Cart ────────────────────────────────────────────────────────────── */
+    .cart-empty { color: #94a3b8; font-size: 14px; text-align: center; padding: 12px 0; }
+    .cart-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 0; border-bottom: 1px solid #f1f5f9;
+    }
+    .cart-item:last-child { border-bottom: none; }
+    .cart-item-info { font-size: 14px; line-height: 1.4; }
+    .cart-item-info .ci-main { font-weight: 600; }
+    .cart-item-info .ci-sub  { font-size: 12px; color: #64748b; }
+    .ci-colour-dot {
+      display: inline-block; width: 10px; height: 10px;
+      border-radius: 50%; margin-right: 4px; vertical-align: middle;
+      border: 1px solid rgba(0,0,0,0.15);
+    }
+    .btn-del {
+      background: none; border: none; color: #94a3b8; font-size: 18px;
+      cursor: pointer; padding: 4px 8px; line-height: 1; flex-shrink: 0;
+    }
+    .btn-del:hover { color: #dc2626; }
+
+    /* ── Picker ──────────────────────────────────────────────────────────── */
+    .picker-group { margin-bottom: 18px; }
+    .picker-label {
+      font-size: 12px; font-weight: 700; color: #64748b;
+      text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;
+    }
+
+    /* Design + Cut: text option buttons */
+    .opt-row { display: flex; gap: 8px; }
+    .opt-btn {
+      flex: 1; padding: 10px 6px; border: 2px solid #e2e8f0;
+      border-radius: 8px; background: #fff; font-size: 14px; font-weight: 600;
+      cursor: pointer; text-align: center; transition: border-color 0.15s, background 0.15s;
+      color: #334155;
+    }
+    .opt-btn:hover    { border-color: #1B2A6B; }
+    .opt-btn.selected { border-color: #1B2A6B; background: #1B2A6B; color: #fff; }
+
+    /* Colour: image cards */
+    .colour-row { display: flex; gap: 8px; }
+    .colour-card {
+      flex: 1; border: 2px solid #e2e8f0; border-radius: 10px; overflow: hidden;
+      cursor: pointer; transition: border-color 0.15s; background: #f8fafc;
+    }
+    .colour-card:hover    { border-color: #1B2A6B; }
+    .colour-card.selected { border-color: #1B2A6B; box-shadow: 0 0 0 2px #1B2A6B33; }
+    .colour-card img {
+      width: 100%; aspect-ratio: 1; object-fit: cover; display: block;
+    }
+    .colour-swatch {
+      width: 100%; aspect-ratio: 1; display: block;
+    }
+    .colour-card-label {
+      text-align: center; font-size: 12px; font-weight: 600;
+      padding: 6px 4px; color: #334155;
+    }
+
+    /* Size: button grid */
+    .size-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    .size-btn {
+      border: 2px solid #e2e8f0; border-radius: 8px; background: #fff;
+      padding: 8px 4px; cursor: pointer; text-align: center;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .size-btn:hover    { border-color: #1B2A6B; }
+    .size-btn.selected { border-color: #1B2A6B; background: #1B2A6B; color: #fff; }
+    .size-btn .sz-name { font-size: 15px; font-weight: 700; display: block; }
+    .size-btn .sz-in   { font-size: 10px; display: block; opacity: 0.7; margin-top: 2px; }
+    .size-btn.selected .sz-in { opacity: 0.85; }
+
+    .btn-add-wrap { margin-top: 6px; }
+
+    /* ── Admin ───────────────────────────────────────────────────────────── */
+    .admin-header {
+      background: #7f1d1d; color: #fff;
+      padding: 16px 20px; text-align: center;
+    }
+    .admin-header h1 { font-size: 18px; font-weight: 700; }
+
+    .totals-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .totals-table th {
+      background: #1B2A6B; color: #fff; padding: 7px 10px;
+      text-align: left; font-weight: 600;
+    }
+    .totals-table td { padding: 7px 10px; border-bottom: 1px solid #e2e8f0; }
+    .totals-table tr:last-child td { border-bottom: none; }
+    .totals-table .count { font-weight: 700; text-align: center; color: #1B2A6B; }
+
+    .all-orders-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .all-orders-table th {
+      background: #334155; color: #fff; padding: 6px 8px; text-align: left;
+    }
+    .all-orders-table td { padding: 6px 8px; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
+    .all-orders-table tr:hover td { background: #f8fafc; }
+
+    .btn-export {
+      display: inline-block; padding: 9px 18px; background: #15803d;
+      color: #fff; border: none; border-radius: 8px; font-size: 14px;
+      font-weight: 600; cursor: pointer; margin-bottom: 16px;
+    }
+    .btn-export:hover { background: #166534; }
+
+    .tag { display: inline-block; padding: 2px 7px; border-radius: 12px; font-size: 11px; font-weight: 600; margin: 1px; }
+    .tag-beatles { background: #dbeafe; color: #1d4ed8; }
+    .tag-banksy  { background: #fce7f3; color: #9d174d; }
+    .tag-blue    { background: #bfdbfe; color: #1e40af; }
+    .tag-white   { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+    .tag-red     { background: #fee2e2; color: #991b1b; }
+    .tag-mens    { background: #d1fae5; color: #065f46; }
+    .tag-womens  { background: #fdf4ff; color: #7e22ce; }
+  </style>
+</head>
+<body>
+
+<!-- ── LOGIN ───────────────────────────────────────────────────────────── -->
+<div id="view-login" class="view active">
+  <div class="app-header">
+    <h1>BC Club — Shirt Order 2026</h1>
+    <p>Beatles &amp; Banksy designs</p>
+  </div>
+  <div class="content">
+    <p class="login-subtitle">Enter your membership number to get started</p>
+    <div class="card">
+      <div class="form-group">
+        <label for="inp-member">Membership Number</label>
+        <input id="inp-member" type="text" inputmode="numeric" placeholder="e.g. 1234"
+               onkeydown="if(event.key==='Enter')continueLogin()">
+      </div>
+      <button class="btn-primary" onclick="continueLogin()">Continue</button>
+      <p class="err" id="login-err"></p>
+    </div>
+  </div>
+</div>
+
+<!-- ── REGISTER ─────────────────────────────────────────────────────────── -->
+<div id="view-register" class="view">
+  <div class="app-header">
+    <h1>BC Club — Shirt Order 2026</h1>
+    <p>New member registration</p>
+  </div>
+  <div class="content">
+    <div class="card">
+      <p style="font-size:14px;color:#64748b;margin-bottom:16px">
+        Member number <strong id="reg-num-display"></strong> not found.<br>Please enter your details to register.
+      </p>
+      <div class="form-group">
+        <label>Full Name</label>
+        <input id="inp-name" type="text" placeholder="Your name" autocomplete="name">
+      </div>
+      <div class="form-group">
+        <label>Phone Number</label>
+        <input id="inp-phone" type="tel" placeholder="e.g. 9123 4567" inputmode="tel">
+      </div>
+      <button class="btn-primary" onclick="registerMember()" style="margin-bottom:10px">Register &amp; Continue</button>
+      <button class="btn-ghost" onclick="showView('login')">← Back</button>
+      <p class="err" id="reg-err"></p>
+    </div>
+  </div>
+</div>
+
+<!-- ── MAIN ─────────────────────────────────────────────────────────────── -->
+<div id="view-main" class="view">
+  <div class="app-header">
+    <h1>BC Club — Shirt Order 2026</h1>
+  </div>
+  <div class="member-bar">
+    <span>👤 <strong id="main-name"></strong> &nbsp;#<span id="main-member"></span></span>
+    <button class="btn-ghost" onclick="logout()">Change member</button>
+  </div>
+  <div class="content">
+
+    <!-- Cart -->
+    <div class="card" id="cart-card">
+      <h2>Your Order</h2>
+      <div id="cart-items"></div>
+    </div>
+
+    <!-- Picker -->
+    <div class="card">
+      <h2>Add Item</h2>
+
+      <div class="picker-group">
+        <div class="picker-label">Design</div>
+        <div class="opt-row">
+          <button class="opt-btn" id="btn-d-beatles" onclick="selectDesign('Beatles')">🎵 Beatles</button>
+          <button class="opt-btn" id="btn-d-banksy"  onclick="selectDesign('Banksy')">🎨 Banksy</button>
+        </div>
+      </div>
+
+      <div class="picker-group">
+        <div class="picker-label">Cut</div>
+        <div class="opt-row">
+          <button class="opt-btn" id="btn-c-mens"   onclick="selectCut('Mens')">Mens</button>
+          <button class="opt-btn" id="btn-c-womens" onclick="selectCut('Womens')">Womens</button>
+        </div>
+      </div>
+
+      <div class="picker-group">
+        <div class="picker-label">Colour</div>
+        <div class="colour-row" id="colour-row"></div>
+      </div>
+
+      <div class="picker-group">
+        <div class="picker-label">Size <span id="size-label-cut" style="font-weight:400;text-transform:none;letter-spacing:0"></span></div>
+        <div class="size-grid" id="size-grid"></div>
+      </div>
+
+      <div class="btn-add-wrap">
+        <button class="btn-primary" id="btn-add" onclick="addToCart()" disabled>Add to Order</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── ADMIN ─────────────────────────────────────────────────────────────── -->
+<div id="view-admin" class="view">
+  <div class="admin-header">
+    <h1>Shirt Order — Admin</h1>
+  </div>
+  <div class="content" style="max-width:720px">
+    <div class="card" id="admin-content">
+      <p style="color:#94a3b8;text-align:center;padding:20px">Loading orders…</p>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const { createClient } = supabase;
+const sb = createClient(
+  'https://ikfzmqtglgeotyooosur.supabase.co',
+  'sb_publishable_zs7ClfRPKw5TEaVSn2_oTA_kqVLhZfe'
+);
+
+const COLOURS = ['Blue', 'White', 'Red'];
+const COLOUR_HEX = { Blue: '#2563eb', White: '#f1f5f9', Red: '#dc2626' };
+const DESIGNS = ['Beatles', 'Banksy'];
+const CUTS    = ['Mens', 'Womens'];
+
+const SIZES = {
+  Mens: [
+    {s:'XS', in:'18"',  cm:'46cm'},
+    {s:'S',  in:'20"',  cm:'51cm'},
+    {s:'M',  in:'21.5"',cm:'54.5cm'},
+    {s:'L',  in:'23"',  cm:'58.5cm'},
+    {s:'XL', in:'25"',  cm:'63.5cm'},
+    {s:'2XL',in:'27"',  cm:'68.5cm'},
+    {s:'3XL',in:'29"',  cm:'74cm'},
+    {s:'4XL',in:'30"',  cm:'76cm'},
+  ],
+  Womens: [
+    {s:'XS', in:'14"',  cm:'35.5cm'},
+    {s:'S',  in:'16"',  cm:'40.5cm'},
+    {s:'M',  in:'18"',  cm:'46cm'},
+    {s:'L',  in:'19"',  cm:'48cm'},
+    {s:'XL', in:'21"',  cm:'53.5cm'},
+    {s:'2XL',in:'22"',  cm:'56cm'},
+    {s:'3XL',in:'23"',  cm:'58.5cm'},
+    {s:'4XL',in:'24"',  cm:'61cm'},
+  ],
+};
+
+let currentMember = null; // { member_number, name, phone, orders }
+let picker = { design: null, cut: null, colour: null, size: null };
+
+// ── Views ───────────────────────────────────────────────────────────────
+function showView(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + id).classList.add('active');
+}
+
+// ── Login ────────────────────────────────────────────────────────────────
+async function continueLogin() {
+  const num = document.getElementById('inp-member').value.trim();
+  const err = document.getElementById('login-err');
+  if (!num) { err.textContent = 'Please enter your membership number.'; return; }
+  err.textContent = 'Checking…';
+
+  const { data, error } = await sb.from('shirt_orders')
+    .select('*').eq('member_number', num).maybeSingle();
+
+  if (error) { err.textContent = error.message; return; }
+
+  if (data) {
+    currentMember = data;
+    loadMain();
+  } else {
+    document.getElementById('reg-num-display').textContent = num;
+    document.getElementById('reg-err').textContent = '';
+    document.getElementById('inp-name').value = '';
+    document.getElementById('inp-phone').value = '';
+    showView('register');
+    err.textContent = '';
+  }
+}
+
+// ── Register ─────────────────────────────────────────────────────────────
+async function registerMember() {
+  const num   = document.getElementById('inp-member').value.trim();
+  const name  = document.getElementById('inp-name').value.trim();
+  const phone = document.getElementById('inp-phone').value.trim();
+  const err   = document.getElementById('reg-err');
+
+  if (!name)  { err.textContent = 'Please enter your name.'; return; }
+  err.textContent = 'Registering…';
+
+  const { data, error } = await sb.from('shirt_orders')
+    .insert({ member_number: num, name, phone, orders: [] })
+    .select().single();
+
+  if (error) { err.textContent = error.message; return; }
+  currentMember = data;
+  loadMain();
+}
+
+// ── Logout ───────────────────────────────────────────────────────────────
+function logout() {
+  currentMember = null;
+  picker = { design: null, cut: null, colour: null, size: null };
+  document.getElementById('inp-member').value = '';
+  document.getElementById('login-err').textContent = '';
+  showView('login');
+}
+
+// ── Main screen ──────────────────────────────────────────────────────────
+function loadMain() {
+  document.getElementById('main-name').textContent   = currentMember.name;
+  document.getElementById('main-member').textContent = currentMember.member_number;
+  picker = { design: null, cut: null, colour: null, size: null };
+  resetPickerUI();
+  renderCart();
+  showView('main');
+}
+
+function renderCart() {
+  const orders = currentMember.orders || [];
+  const el = document.getElementById('cart-items');
+  if (orders.length === 0) {
+    el.innerHTML = '<p class="cart-empty">No items yet — add one below.</p>';
+    return;
+  }
+  el.innerHTML = orders.map((item, i) => `
+    <div class="cart-item">
+      <div class="cart-item-info">
+        <div class="ci-main">${item.design} · ${item.cut} · ${item.size}</div>
+        <div class="ci-sub">
+          <span class="ci-colour-dot" style="background:${COLOUR_HEX[item.colour] || '#ccc'}"></span>${item.colour}
+        </div>
+      </div>
+      <button class="btn-del" onclick="removeFromCart(${i})" title="Remove">×</button>
+    </div>`).join('');
+}
+
+// ── Picker ───────────────────────────────────────────────────────────────
+function resetPickerUI() {
+  picker = { design: null, cut: null, colour: null, size: null };
+  ['beatles','banksy'].forEach(d => document.getElementById('btn-d-'+d)?.classList.remove('selected'));
+  ['mens','womens'].forEach(c => document.getElementById('btn-c-'+c)?.classList.remove('selected'));
+  renderColourRow();
+  renderSizeGrid();
+  checkAddButton();
+}
+
+function selectDesign(d) {
+  picker.design = d;
+  picker.colour = null;
+  document.getElementById('btn-d-beatles').classList.toggle('selected', d === 'Beatles');
+  document.getElementById('btn-d-banksy').classList.toggle('selected',  d === 'Banksy');
+  renderColourRow();
+  checkAddButton();
+}
+
+function selectCut(c) {
+  picker.cut  = c;
+  picker.size = null;
+  document.getElementById('btn-c-mens').classList.toggle('selected',   c === 'Mens');
+  document.getElementById('btn-c-womens').classList.toggle('selected', c === 'Womens');
+  document.getElementById('size-label-cut').textContent = c ? `— ${c}` : '';
+  renderSizeGrid();
+  checkAddButton();
+}
+
+function selectColour(c) {
+  picker.colour = c;
+  document.querySelectorAll('.colour-card').forEach(el => {
+    el.classList.toggle('selected', el.dataset.colour === c);
+  });
+  checkAddButton();
+}
+
+function selectSize(s) {
+  picker.size = s;
+  document.querySelectorAll('.size-btn').forEach(el => {
+    el.classList.toggle('selected', el.dataset.size === s);
+  });
+  checkAddButton();
+}
+
+function renderColourRow() {
+  const row = document.getElementById('colour-row');
+  row.innerHTML = COLOURS.map(c => {
+    const imgSrc = picker.design
+      ? `shirt-${picker.design.toLowerCase()}-${c.toLowerCase()}.jpg`
+      : null;
+    const imgHtml = imgSrc
+      ? `<img src="${imgSrc}" alt="${c}" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">`
+      : '';
+    const swatchStyle = `background:${COLOUR_HEX[c]};border:${c==='White'?'1px solid #d1d5db':'none'}`;
+    return `
+      <div class="colour-card${picker.colour===c?' selected':''}" data-colour="${c}" onclick="selectColour('${c}')">
+        ${imgHtml}
+        <div class="colour-swatch" style="${imgSrc?'display:none':'display:block'};${swatchStyle}"></div>
+        <div class="colour-card-label">${c}</div>
+      </div>`;
+  }).join('');
+}
+
+function renderSizeGrid() {
+  const grid = document.getElementById('size-grid');
+  const sizes = picker.cut ? SIZES[picker.cut] : SIZES.Mens;
+  grid.innerHTML = sizes.map(sz => `
+    <button class="size-btn${picker.size===sz.s?' selected':''}" data-size="${sz.s}" onclick="selectSize('${sz.s}')">
+      <span class="sz-name">${sz.s}</span>
+      <span class="sz-in">${sz.in} / ${sz.cm}</span>
+    </button>`).join('');
+}
+
+function checkAddButton() {
+  const ready = picker.design && picker.cut && picker.colour && picker.size;
+  document.getElementById('btn-add').disabled = !ready;
+}
+
+// ── Cart actions ─────────────────────────────────────────────────────────
+async function addToCart() {
+  const item = {
+    id:     Math.random().toString(36).slice(2, 9),
+    design: picker.design,
+    cut:    picker.cut,
+    colour: picker.colour,
+    size:   picker.size,
+  };
+  const orders = [...(currentMember.orders || []), item];
+  await saveOrders(orders);
+  resetPickerUI();
+}
+
+async function removeFromCart(idx) {
+  const orders = (currentMember.orders || []).filter((_, i) => i !== idx);
+  await saveOrders(orders);
+}
+
+async function saveOrders(orders) {
+  const { error } = await sb.from('shirt_orders')
+    .update({ orders, updated_at: new Date().toISOString() })
+    .eq('member_number', currentMember.member_number);
+  if (error) { alert(error.message); return; }
+  currentMember.orders = orders;
+  renderCart();
+}
+
+// ── Admin view ───────────────────────────────────────────────────────────
+async function loadAdmin() {
+  const pin = prompt('Admin PIN:');
+  if (pin !== 'admin') { alert('Incorrect PIN.'); showView('login'); return; }
+
+  showView('admin');
+  const { data, error } = await sb.from('shirt_orders').select('*').order('name');
+  if (error) {
+    document.getElementById('admin-content').innerHTML = `<p class="err">${error.message}</p>`;
+    return;
+  }
+
+  // Flatten all orders
+  const allItems = [];
+  for (const row of data) {
+    for (const item of (row.orders || [])) {
+      allItems.push({ member: row.member_number, name: row.name, phone: row.phone || '', ...item });
+    }
+  }
+
+  // Totals by combo
+  const totals = {};
+  for (const it of allItems) {
+    const key = `${it.design}|${it.cut}|${it.colour}|${it.size}`;
+    totals[key] = (totals[key] || 0) + 1;
+  }
+
+  const totalRows = Object.entries(totals)
+    .sort(([a],[b]) => a.localeCompare(b))
+    .map(([key, count]) => {
+      const [design, cut, colour, size] = key.split('|');
+      return `<tr>
+        <td>${design}</td><td>${cut}</td>
+        <td>${colour}</td><td>${size}</td>
+        <td class="count">${count}</td>
+      </tr>`;
+    }).join('');
+
+  // All orders table
+  const orderRows = data.map(row => {
+    const items = (row.orders || []).map(it =>
+      `<span class="tag tag-${it.design.toLowerCase()}">${it.design}</span>`+
+      `<span class="tag tag-${it.cut.toLowerCase()}">${it.cut}</span>`+
+      `<span class="tag tag-${it.colour.toLowerCase()}">${it.colour}</span>`+
+      `<strong>${it.size}</strong>`
+    ).join('<br>');
+    return `<tr>
+      <td>${row.member_number}</td>
+      <td>${row.name}</td>
+      <td>${row.phone || '—'}</td>
+      <td>${items || '<span style="color:#94a3b8">No items</span>'}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('admin-content').innerHTML = `
+    <button class="btn-export" onclick="exportCSV()">⬇ Export CSV</button>
+
+    <h2 style="margin-bottom:12px">Order Totals (${allItems.length} items)</h2>
+    <div style="overflow-x:auto;margin-bottom:24px">
+      <table class="totals-table">
+        <thead><tr><th>Design</th><th>Cut</th><th>Colour</th><th>Size</th><th>Qty</th></tr></thead>
+        <tbody>${totalRows || '<tr><td colspan="5" style="color:#94a3b8;text-align:center">No orders yet</td></tr>'}</tbody>
+      </table>
+    </div>
+
+    <h2 style="margin-bottom:12px">All Members (${data.length})</h2>
+    <div style="overflow-x:auto">
+      <table class="all-orders-table">
+        <thead><tr><th>#</th><th>Name</th><th>Phone</th><th>Items</th></tr></thead>
+        <tbody>${orderRows}</tbody>
+      </table>
+    </div>`;
+}
+
+function exportCSV() {
+  sb.from('shirt_orders').select('*').order('name').then(({ data }) => {
+    const rows = [['Member','Name','Phone','Design','Cut','Colour','Size']];
+    for (const row of (data || [])) {
+      for (const item of (row.orders || [])) {
+        rows.push([row.member_number, row.name, row.phone || '', item.design, item.cut, item.colour, item.size]);
+      }
+    }
+    const csv = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    a.download = 'shirt-orders.csv';
+    a.click();
+  });
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────
+if (new URLSearchParams(location.search).get('admin') === '1') {
+  loadAdmin();
+}
+</script>
+</body>
+</html>
