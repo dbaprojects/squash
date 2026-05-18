@@ -98,26 +98,20 @@
     /* ── Cart ────────────────────────────────────────────────────────────── */
     .cart-empty { color: #94a3b8; font-size: 14px; text-align: center; padding: 12px 0; }
     .cart-item {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 10px 0; border-bottom: 1px solid #f1f5f9;
+      display: flex; align-items: center;
+      padding: 9px 0; border-bottom: 1px solid #f1f5f9; gap: 8px;
     }
     .cart-item:last-child { border-bottom: none; }
-    .cart-item-info { font-size: 14px; line-height: 1.4; }
-    .cart-item-info .ci-main { font-weight: 600; }
-    .cart-item-info .ci-sub  { font-size: 12px; color: #64748b; }
-    .ci-colour-dot {
-      display: inline-block; width: 10px; height: 10px;
-      border-radius: 50%; margin-right: 4px; vertical-align: middle;
-      border: 1px solid rgba(0,0,0,0.15);
+    .cart-item-info { display: flex; align-items: center; gap: 7px; flex: 1; min-width: 0; }
+    .ci-dot {
+      display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+      flex-shrink: 0; border: 1px solid rgba(0,0,0,0.15);
     }
-    .btn-del {
-      background: none; border: none; color: #94a3b8; font-size: 18px;
-      cursor: pointer; padding: 4px 8px; line-height: 1; flex-shrink: 0;
-    }
-    .btn-del:hover { color: #dc2626; }
+    .ci-text { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ci-qty-ro { font-size: 14px; font-weight: 700; color: #475569; flex-shrink: 0; }
 
     /* ── Qty stepper ──────────────────────────────────────────────────────── */
-    .qty-ctrl { display: flex; align-items: center; gap: 6px; margin-right: 4px; flex-shrink: 0; }
+    .qty-ctrl { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
     .qty-btn {
       width: 26px; height: 26px; border: 1.5px solid #cbd5e1; border-radius: 6px;
       background: #fff; font-size: 16px; cursor: pointer; display: flex;
@@ -777,9 +771,6 @@ function renderMemberInfo() {
       <span class="mi-label">Phone</span>
       <span class="mi-value">${m.phone || '—'}</span>
       <button class="mi-edit-btn" onclick="editMemberField('phone')" title="Edit">✎</button>
-    </div>
-    <div style="text-align:right;margin-top:8px">
-      <button class="btn-ghost" onclick="logout()">Change member</button>
     </div>`;
 }
 
@@ -824,10 +815,7 @@ function editMemberField(field) {
       <span class="mi-value">${m.member_number}</span>
     </div>
     ${nameRow}
-    ${phoneRow}
-    <div style="text-align:right;margin-top:8px">
-      <button class="btn-ghost" onclick="logout()">Change member</button>
-    </div>`;
+    ${phoneRow}`;
   const inp = document.getElementById(field === 'name' ? 'mi-name-inp' : 'mi-phone-local');
   if (inp) inp.focus();
 }
@@ -947,18 +935,16 @@ function renderCart() {
   el.innerHTML = orders.map((item, i) => `
     <div class="cart-item">
       <div class="cart-item-info">
-        <div class="ci-main">${item.design} · ${item.cut} · ${item.size}</div>
-        <div class="ci-sub">
-          <span class="ci-colour-dot" style="background:${COLOUR_HEX[item.colour] || '#ccc'}"></span>${item.colour}
-        </div>
+        <span class="ci-dot" style="background:${COLOUR_HEX[item.colour] || '#ccc'}"></span>
+        <span class="ci-text">${item.design} · ${item.cut} · ${item.colour} · ${item.size}</span>
       </div>
-      ${closed ? `<span style="font-size:14px;font-weight:700;color:#475569;margin-right:8px">Qty: ${item.qty || 1}</span>` : `
-      <div class="qty-ctrl">
-        <button class="qty-btn" onclick="changeQty(${i},-1)">−</button>
-        <span class="qty-val">${item.qty || 1}</span>
-        <button class="qty-btn" onclick="changeQty(${i},1)">+</button>
-      </div>
-      <button class="btn-del" onclick="removeFromCart(${i})" title="Remove">×</button>`}
+      ${closed
+        ? `<span class="ci-qty-ro">×${item.qty || 1}</span>`
+        : `<div class="qty-ctrl">
+            <button class="qty-btn" onclick="changeQty(${i},-1)">−</button>
+            <span class="qty-val">${item.qty || 1}</span>
+            <button class="qty-btn" onclick="changeQty(${i},1)">+</button>
+          </div>`}
     </div>`).join('');
 }
 
