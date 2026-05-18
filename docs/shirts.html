@@ -346,7 +346,8 @@
         <label>Phone Number</label>
         <div class="phone-row">
           <select class="dial-select" id="inp-dial"></select>
-          <input id="inp-phone" type="tel" placeholder="9123 4567" inputmode="tel" style="flex:1">
+          <input id="inp-phone" type="tel" placeholder="9123 4567" inputmode="numeric"
+                 oninput="this.value=this.value.replace(/\D/g,'')" style="flex:1">
         </div>
       </div>
       <button class="btn-primary" onclick="registerMember()" style="margin-bottom:10px">Register &amp; Continue</button>
@@ -779,7 +780,8 @@ function editMemberField(field) {
         <div style="flex:1;display:flex;gap:6px">
           <select class="dial-select" id="mi-phone-dial" style="padding:6px 6px">${dialOptionsHtml(dial)}</select>
           <input class="mi-input" id="mi-phone-local" type="tel" value="${local}"
-                 placeholder="9123 4567" inputmode="tel"
+                 placeholder="9123 4567" inputmode="numeric"
+                 oninput="this.value=this.value.replace(/\D/g,'')"
                  onkeydown="if(event.key==='Enter')saveMemberField('phone')">
         </div>
         <button class="mi-save-btn" onclick="saveMemberField('phone')">Save</button>
