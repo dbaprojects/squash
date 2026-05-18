@@ -1032,15 +1032,25 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeZoom();
 
 // ── Cart actions ──────────────────────────────────────────────────────────
 async function addToCart() {
-  const item = {
-    id:     Math.random().toString(36).slice(2, 9),
-    design: picker.design,
-    cut:    picker.cut,
-    colour: picker.colour,
-    size:   picker.size,
-    qty:    1,
-  };
-  const orders = [...(currentMember.orders || []), item];
+  const orders = [...(currentMember.orders || [])];
+  const match = orders.findIndex(it =>
+    it.design === picker.design &&
+    it.cut    === picker.cut    &&
+    it.colour === picker.colour &&
+    it.size   === picker.size
+  );
+  if (match >= 0) {
+    orders[match] = { ...orders[match], qty: (orders[match].qty || 1) + 1 };
+  } else {
+    orders.push({
+      id:     Math.random().toString(36).slice(2, 9),
+      design: picker.design,
+      cut:    picker.cut,
+      colour: picker.colour,
+      size:   picker.size,
+      qty:    1,
+    });
+  }
   await saveOrders(orders);
   resetPickerUI();
 }
