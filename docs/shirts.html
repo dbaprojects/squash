@@ -548,6 +548,12 @@ const isClosed = () => new Date() >= CUTOFF;
 const COLOURS = ['Blue', 'White', 'Red'];
 const COLOUR_HEX = { Blue: '#2563eb', White: '#f1f5f9', Red: '#dc2626' };
 
+// Colours available per design (others hidden pending stock confirmation)
+const COLOURS_ENABLED = {
+  Beatles: ['Blue'],          // White, Red hidden for now
+  Banksy:  ['Blue', 'White'], // Red hidden for now
+};
+
 const SIZES = {
   Mens: [
     {s:'XS', in:'18"',  cm:'46cm'},
@@ -1068,7 +1074,8 @@ function selectSize(s) {
 
 function renderColourRow() {
   const row = document.getElementById('colour-row');
-  row.innerHTML = COLOURS.map(c => {
+  const available = COLOURS_ENABLED[picker.design] || COLOURS;
+  row.innerHTML = available.map(c => {
     const imgSrc = picker.design
       ? `shirt-${picker.design.toLowerCase()}-${c.toLowerCase()}.jpg`
       : null;
@@ -1220,8 +1227,8 @@ function renderAdmin(filterQ) {
     dcTotals[key] = (dcTotals[key] || 0) + (it.qty || 1);
   }
   const DC_ORDER = [
-    'Beatles|Blue','Beatles|White','Beatles|Red',
-    'Banksy|Blue','Banksy|White','Banksy|Red',
+    'Beatles|Blue',
+    'Banksy|Blue','Banksy|White',
   ];
   const dcCards = DC_ORDER.map(key => {
     const [design, colour] = key.split('|');
