@@ -108,6 +108,16 @@
     }
     .btn-del:hover { color: #dc2626; }
 
+    /* ── Qty stepper ──────────────────────────────────────────────────────── */
+    .qty-ctrl { display: flex; align-items: center; gap: 6px; margin-right: 4px; flex-shrink: 0; }
+    .qty-btn {
+      width: 26px; height: 26px; border: 1.5px solid #cbd5e1; border-radius: 6px;
+      background: #fff; font-size: 16px; cursor: pointer; display: flex;
+      align-items: center; justify-content: center; color: #1B2A6B; line-height: 1;
+    }
+    .qty-btn:hover { border-color: #1B2A6B; background: #f0f4ff; }
+    .qty-val { font-size: 14px; font-weight: 700; min-width: 18px; text-align: center; }
+
     /* ── Picker ──────────────────────────────────────────────────────────── */
     .picker-group { margin-bottom: 18px; }
     .picker-label {
@@ -540,6 +550,11 @@ function renderCart() {
           <span class="ci-colour-dot" style="background:${COLOUR_HEX[item.colour] || '#ccc'}"></span>${item.colour}
         </div>
       </div>
+      <div class="qty-ctrl">
+        <button class="qty-btn" onclick="changeQty(${i},-1)">−</button>
+        <span class="qty-val">${item.qty || 1}</span>
+        <button class="qty-btn" onclick="changeQty(${i},1)">+</button>
+      </div>
       <button class="btn-del" onclick="removeFromCart(${i})" title="Remove">×</button>
     </div>`).join('');
 }
@@ -650,6 +665,7 @@ async function addToCart() {
     cut:    picker.cut,
     colour: picker.colour,
     size:   picker.size,
+    qty:    1,
   };
   const orders = [...(currentMember.orders || []), item];
   await saveOrders(orders);
@@ -658,6 +674,17 @@ async function addToCart() {
 
 async function removeFromCart(idx) {
   const orders = (currentMember.orders || []).filter((_, i) => i !== idx);
+  await saveOrders(orders);
+}
+
+async function changeQty(idx, delta) {
+  const orders = [...(currentMember.orders || [])];
+  const newQty = (orders[idx].qty || 1) + delta;
+  if (newQty < 1) {
+    orders.splice(idx, 1);
+  } else {
+    orders[idx] = { ...orders[idx], qty: newQty };
+  }
   await saveOrders(orders);
 }
 
