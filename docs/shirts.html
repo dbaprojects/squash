@@ -302,7 +302,18 @@
       flex: 1; padding: 8px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px;
       font-size: 14px; outline: none;
     }
-    .admin-filter:focus { border-color: #1B2A6B; }
+    .cutoff-notice {
+      background: #fef3c7; border: 1.5px solid #fbbf24; border-radius: 10px;
+      padding: 10px 14px; font-size: 13px; color: #92400e; margin-bottom: 16px;
+      text-align: center;
+    }
+    .cutoff-notice strong { color: #78350f; }
+    .closed-banner {
+      background: #fee2e2; border: 1.5px solid #fca5a5; border-radius: 10px;
+      padding: 12px 16px; font-size: 14px; color: #7f1d1d; margin-bottom: 16px;
+      text-align: center;
+    }
+    .closed-banner strong { display: block; font-size: 15px; margin-bottom: 4px; }
   </style>
 </head>
 <body>
@@ -315,6 +326,7 @@
   </div>
   <div class="content">
     <p class="login-subtitle">Enter your membership number to get started</p>
+    <p class="cutoff-notice">Order cut-off: <strong>31 May 2026</strong></p>
     <div class="card">
       <div class="form-group">
         <label for="inp-member">Membership Number</label>
@@ -367,6 +379,12 @@
     <!-- Member info -->
     <div class="card" id="member-info-card"></div>
 
+    <!-- Closed banner (shown after cutoff) -->
+    <div id="closed-banner" class="closed-banner hidden">
+      <strong>Orders are now closed</strong>
+      The cut-off was 31 May 2026. Your order is shown below for reference — no further changes can be made.
+    </div>
+
     <!-- Cart -->
     <div class="card">
       <h2>Your Order</h2>
@@ -374,7 +392,7 @@
     </div>
 
     <!-- Picker -->
-    <div class="card">
+    <div class="card" id="picker-card">
       <h2>Add Item</h2>
 
       <!-- Design — always visible -->
@@ -463,6 +481,10 @@ const sb = createClient(
   'https://ikfzmqtglgeotyooosur.supabase.co',
   'sb_publishable_zs7ClfRPKw5TEaVSn2_oTA_kqVLhZfe'
 );
+
+// Orders close end of 31 May 2026 Singapore time (UTC+8)
+const CUTOFF = new Date('2026-06-01T00:00:00+08:00');
+const isClosed = () => new Date() >= CUTOFF;
 
 const COLOURS = ['Blue', 'White', 'Red'];
 const COLOUR_HEX = { Blue: '#2563eb', White: '#f1f5f9', Red: '#dc2626' };
@@ -759,6 +781,7 @@ function renderMemberInfo() {
 }
 
 function editMemberField(field) {
+  if (isClosed()) return;
   const m = currentMember;
   const { dial, local } = parsePhone(m.phone);
   const nameRow = field === 'name'
@@ -903,12 +926,17 @@ function loadMain() {
   resetPickerUI();
   renderMemberInfo();
   renderCart();
+  const closed = isClosed();
+  document.getElementById('picker-card').classList.toggle('hidden', closed);
+  const banner = document.getElementById('closed-banner');
+  if (banner) banner.classList.toggle('hidden', !closed);
   showView('main');
 }
 
 function renderCart() {
   const orders = currentMember.orders || [];
   const el = document.getElementById('cart-items');
+  const closed = isClosed();
   if (orders.length === 0) {
     el.innerHTML = '<p class="cart-empty">No items yet — add one below.</p>';
     return;
@@ -921,12 +949,13 @@ function renderCart() {
           <span class="ci-colour-dot" style="background:${COLOUR_HEX[item.colour] || '#ccc'}"></span>${item.colour}
         </div>
       </div>
+      ${closed ? `<span style="font-size:14px;font-weight:700;color:#475569;margin-right:8px">Qty: ${item.qty || 1}</span>` : `
       <div class="qty-ctrl">
         <button class="qty-btn" onclick="changeQty(${i},-1)">−</button>
         <span class="qty-val">${item.qty || 1}</span>
         <button class="qty-btn" onclick="changeQty(${i},1)">+</button>
       </div>
-      <button class="btn-del" onclick="removeFromCart(${i})" title="Remove">×</button>
+      <button class="btn-del" onclick="removeFromCart(${i})" title="Remove">×</button>`}
     </div>`).join('');
 }
 
@@ -1032,6 +1061,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeZoom();
 
 // ── Cart actions ──────────────────────────────────────────────────────────
 async function addToCart() {
+  if (isClosed()) return;
   const orders = [...(currentMember.orders || [])];
   const match = orders.findIndex(it =>
     it.design === picker.design &&
@@ -1056,11 +1086,13 @@ async function addToCart() {
 }
 
 async function removeFromCart(idx) {
+  if (isClosed()) return;
   const orders = (currentMember.orders || []).filter((_, i) => i !== idx);
   await saveOrders(orders);
 }
 
 async function changeQty(idx, delta) {
+  if (isClosed()) return;
   const orders = [...(currentMember.orders || [])];
   const newQty = (orders[idx].qty || 1) + delta;
   if (newQty < 1) {
