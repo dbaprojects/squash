@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.75';
+const APP_VERSION = '4.76';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -2223,11 +2223,13 @@ async function promoteFirstReserve(eventId) {
   const { count } = await sb.from('signups')
     .select('id', { count: 'exact', head: true })
     .eq('event_id', eventId).eq('is_reserve', false);
-  if (count < ev.max_signups) {
-    const { data: first } = await sb.from('signups')
-      .select('id').eq('event_id', eventId).eq('is_reserve', true)
-      .order('signed_up_at').limit(1).maybeSingle();
-    if (first) await sb.from('signups').update({ is_reserve: false }).eq('id', first.id);
+  const slots = ev.max_signups - count;
+  if (slots <= 0) return;
+  const { data: reserves } = await sb.from('signups')
+    .select('id').eq('event_id', eventId).eq('is_reserve', true)
+    .order('signed_up_at').limit(slots);
+  for (const r of (reserves || [])) {
+    await sb.from('signups').update({ is_reserve: false }).eq('id', r.id);
   }
 }
 
@@ -3046,6 +3048,7 @@ async function submitEditEvent(id) {
   };
   const { error } = await sb.from('events').update(body).eq('id', id);
   if (error) { alert(error.message); return; }
+  await promoteFirstReserve(id);
   closeFormModal();
   await renderAdminEvents();
 }
