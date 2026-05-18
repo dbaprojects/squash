@@ -725,7 +725,7 @@ function renderAdmin(filterQ) {
       allItems.push({ member: row.member_number, name: row.name, phone: row.phone || '', ...item });
     }
   }
-  const totalShirts = allItems.length;
+  const totalShirts = allItems.reduce((s, it) => s + (it.qty || 1), 0);
 
   // Pricing
   const pricePerShirt = totalShirts >= 50 ? 40 : 45;
@@ -735,7 +735,7 @@ function renderAdmin(filterQ) {
   const dcTotals = {};
   for (const it of allItems) {
     const key = `${it.design}|${it.colour}`;
-    dcTotals[key] = (dcTotals[key] || 0) + 1;
+    dcTotals[key] = (dcTotals[key] || 0) + (it.qty || 1);
   }
   const DC_ORDER = [
     'Beatles|Blue','Beatles|White','Beatles|Red',
@@ -759,7 +759,7 @@ function renderAdmin(filterQ) {
   const totals = {};
   for (const it of allItems) {
     const key = `${it.design}|${it.cut}|${it.colour}|${it.size}`;
-    totals[key] = (totals[key] || 0) + 1;
+    totals[key] = (totals[key] || 0) + (it.qty || 1);
   }
   const totalRows = Object.entries(totals)
     .sort(([a],[b]) => a.localeCompare(b))
@@ -779,7 +779,7 @@ function renderAdmin(filterQ) {
       `<span class="tag tag-${it.design.toLowerCase()}">${it.design}</span>`+
       `<span class="tag tag-${it.cut.toLowerCase()}">${it.cut}</span>`+
       `<span class="tag tag-${it.colour.toLowerCase()}">${it.colour}</span>`+
-      `<strong>${it.size}</strong>`
+      `<strong>${it.size}</strong>${(it.qty || 1) > 1 ? ` ×${it.qty}` : ''}`
     ).join('<br>');
     return `<tr>
       <td>${row.member_number}</td><td>${row.name}</td><td>${row.phone || '—'}</td>
@@ -832,10 +832,10 @@ function renderAdmin(filterQ) {
 
 function exportCSV() {
   sb.from('shirt_orders').select('*').order('name').then(({ data }) => {
-    const rows = [['Member','Name','Phone','Design','Cut','Colour','Size']];
+    const rows = [['Member','Name','Phone','Design','Cut','Colour','Size','Qty']];
     for (const row of (data || [])) {
       for (const item of (row.orders || [])) {
-        rows.push([row.member_number, row.name, row.phone || '', item.design, item.cut, item.colour, item.size]);
+        rows.push([row.member_number, row.name, row.phone || '', item.design, item.cut, item.colour, item.size, item.qty || 1]);
       }
     }
     const csv = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n');
