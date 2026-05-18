@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Squash Shirts — Admin</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f1f5f9; color: #1e293b; min-height: 100vh; }
+
+    .admin-header {
+      background: #7f1d1d; color: #fff;
+      padding: 16px 20px; text-align: center; position: relative;
+    }
+    .admin-header h1 { font-size: 18px; font-weight: 700; }
+    .btn-admin-refresh {
+      position: absolute; top: 50%; right: 16px; transform: translateY(-50%);
+      background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.4);
+      border-radius: 6px; padding: 6px 12px; font-size: 13px; font-weight: 600; cursor: pointer;
+    }
+    .btn-admin-refresh:hover { background: rgba(255,255,255,0.28); }
+
+    .content { padding: 24px 16px; max-width: 720px; width: 100%; margin: 0 auto; }
+
+    .card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin-bottom: 16px; }
+    .card h2 { font-size: 14px; font-weight: 700; color: #1B2A6B; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    /* PIN screen */
+    .pin-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+    .pin-box { background: #fff; border-radius: 14px; padding: 32px 28px; width: min(92vw, 360px); box-shadow: 0 4px 24px rgba(0,0,0,0.12); text-align: center; }
+    .pin-box h2 { font-size: 18px; font-weight: 700; color: #1B2A6B; margin-bottom: 6px; }
+    .pin-box p  { font-size: 13px; color: #64748b; margin-bottom: 20px; }
+    .pin-box input { width: 100%; padding: 10px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 16px; outline: none; margin-bottom: 12px; text-align: center; letter-spacing: 4px; }
+    .pin-box input:focus { border-color: #1B2A6B; }
+    .btn-primary { width: 100%; padding: 12px; background: #1B2A6B; color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; }
+    .btn-primary:hover { opacity: 0.88; }
+    .err { color: #dc2626; font-size: 13px; margin-top: 8px; }
+
+    .totals-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .totals-table th { background: #1B2A6B; color: #fff; padding: 7px 10px; text-align: left; font-weight: 600; }
+    .totals-table td { padding: 7px 10px; border-bottom: 1px solid #e2e8f0; }
+    .totals-table tr:last-child td { border-bottom: none; }
+    .totals-table .count { font-weight: 700; text-align: center; color: #1B2A6B; }
+
+    .all-orders-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .all-orders-table th { background: #334155; color: #fff; padding: 6px 8px; text-align: left; }
+    .all-orders-table td { padding: 6px 8px; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
+    .all-orders-table tr:hover td { background: #f8fafc; }
+
+    .btn-export {
+      display: inline-block; padding: 9px 18px; background: #15803d;
+      color: #fff; border: none; border-radius: 8px; font-size: 14px;
+      font-weight: 600; cursor: pointer; margin-bottom: 16px;
+    }
+    .btn-export:hover { background: #166534; }
+
+    .summary-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 20px; }
+    .stat-box { background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 12px 10px; text-align: center; }
+    .stat-box .stat-val { font-size: 26px; font-weight: 800; color: #1B2A6B; }
+    .stat-box .stat-lbl { font-size: 11px; color: #64748b; margin-top: 2px; }
+    .stat-box.stat-hi   { border-color: #16a34a; }
+    .stat-box.stat-hi .stat-val { color: #15803d; }
+
+    .dc-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 8px; margin-bottom: 20px; }
+    .dc-card { border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; display: flex; align-items: center; justify-content: space-between; }
+    .dc-card.met   { border-color: #86efac; background: #f0fdf4; }
+    .dc-card.unmet { border-color: #fca5a5; background: #fef2f2; }
+    .dc-name  { font-size: 13px; font-weight: 600; }
+    .dc-count { font-size: 20px; font-weight: 800; }
+    .dc-card.met   .dc-count { color: #15803d; }
+    .dc-card.unmet .dc-count { color: #dc2626; }
+    .dc-badge { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 10px; display: block; text-align: center; margin-top: 2px; }
+    .dc-card.met   .dc-badge { background: #bbf7d0; color: #166534; }
+    .dc-card.unmet .dc-badge { background: #fee2e2; color: #991b1b; }
+
+    .admin-filter { flex: 1; padding: 8px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 14px; outline: none; }
+    #admin-content { display: none; }
+    #admin-members-card { display: none; }
+  </style>
+</head>
+<body>
+
+<!-- PIN screen -->
+<div id="pin-screen" class="pin-wrap">
+  <div class="pin-box">
+    <h2>Squash Shirts — Admin</h2>
+    <p>Enter the admin PIN to continue</p>
+    <input id="pin-input" type="password" placeholder="PIN" autocomplete="off"
+           onkeydown="if(event.key==='Enter')checkPin()">
+    <button class="btn-primary" onclick="checkPin()">Enter</button>
+    <p class="err" id="pin-err"></p>
+  </div>
+</div>
+
+<!-- Admin UI (hidden until PIN correct) -->
+<div id="admin-ui" style="display:none">
+  <div class="admin-header">
+    <h1>Shirt Order — Admin</h1>
+    <button class="btn-admin-refresh" onclick="refreshAdmin()">↻ Refresh</button>
+  </div>
+  <div class="content">
+    <div class="card" id="admin-content">
+      <p style="color:#94a3b8;text-align:center;padding:20px">Loading orders…</p>
+    </div>
+    <div class="card" id="admin-members-card">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px">
+        <h2 style="margin:0;white-space:nowrap" id="admin-members-heading">All Members</h2>
+        <input class="admin-filter" id="admin-filter-input" type="text"
+               placeholder="Search name or number…" oninput="renderAdmin()">
+      </div>
+      <div id="admin-members-table"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+const { createClient } = supabase;
+const sb = createClient(
+  'https://ikfzmqtglgeotyooosur.supabase.co',
+  'sb_publishable_zs7ClfRPKw5TEaVSn2_oTA_kqVLhZfe'
+);
+
+const ADMIN_PIN = 'admin';
+let adminData = null;
+
+function checkPin() {
+  const pin = document.getElementById('pin-input').value;
+  if (pin !== ADMIN_PIN) {
+    document.getElementById('pin-err').textContent = 'Incorrect PIN.';
+    document.getElementById('pin-input').value = '';
+    return;
+  }
+  document.getElementById('pin-screen').style.display = 'none';
+  document.getElementById('admin-ui').style.display = '';
+  loadAdmin();
+}
+
+async function loadAdmin() {
+  document.getElementById('admin-content').style.display = '';
+  document.getElementById('admin-content').innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px">Loading orders…</p>';
+  const { data, error } = await sb.from('shirt_orders').select('*').order('name');
+  if (error) {
+    document.getElementById('admin-content').innerHTML = `<p style="color:#dc2626;padding:20px">${error.message}</p>`;
+    return;
+  }
+  adminData = data;
+  renderAdmin('');
+}
+
+async function refreshAdmin() {
+  document.getElementById('admin-content').innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px">Refreshing…</p>';
+  const { data, error } = await sb.from('shirt_orders').select('*').order('name');
+  if (error) {
+    document.getElementById('admin-content').innerHTML = `<p style="color:#dc2626;padding:20px">${error.message}</p>`;
+    return;
+  }
+  adminData = data;
+  const fi = document.getElementById('admin-filter-input');
+  if (fi) fi.value = '';
+  renderAdmin('');
+}
+
+function renderAdmin(filterQ) {
+  const data = adminData || [];
+  const q = (filterQ !== undefined ? filterQ : (document.getElementById('admin-filter-input') || {}).value || '').toLowerCase().trim();
+
+  const allItems = [];
+  for (const row of data) {
+    for (const item of (row.orders || [])) {
+      allItems.push({ member: row.member_number, name: row.name, phone: row.phone || '', ...item });
+    }
+  }
+  const totalShirts = allItems.reduce((s, it) => s + (it.qty || 1), 0);
+  const pricePerShirt = totalShirts >= 50 ? 40 : 45;
+  const estTotal = totalShirts * pricePerShirt;
+
+  const dcTotals = {};
+  for (const it of allItems) {
+    const key = `${it.design}|${it.colour}`;
+    dcTotals[key] = (dcTotals[key] || 0) + (it.qty || 1);
+  }
+  const DC_ORDER = ['Beatles|Blue', 'Banksy|Blue', 'Banksy|White'];
+  const dcCards = DC_ORDER.map(key => {
+    const [design, colour] = key.split('|');
+    const count = dcTotals[key] || 0;
+    const met = count >= 10;
+    return `<div class="dc-card ${met ? 'met' : 'unmet'}">
+      <div>
+        <div class="dc-name">${design} ${colour}</div>
+        <span class="dc-badge">${met ? '✓ min met' : `✗ need ${10 - count} more`}</span>
+      </div>
+      <div class="dc-count">${count}</div>
+    </div>`;
+  }).join('');
+
+  const totals = {};
+  for (const it of allItems) {
+    const key = `${it.design}|${it.cut}|${it.colour}|${it.size}`;
+    totals[key] = (totals[key] || 0) + (it.qty || 1);
+  }
+  const totalRows = Object.entries(totals)
+    .sort(([a],[b]) => a.localeCompare(b))
+    .map(([key, count]) => {
+      const [design, cut, colour, size] = key.split('|');
+      return `<tr><td>${design}</td><td>${cut}</td><td>${colour}</td><td>${size}</td><td class="count">${count}</td></tr>`;
+    }).join('');
+
+  const filtered = data.filter(row =>
+    !q || row.name.toLowerCase().includes(q) || row.member_number.toLowerCase().includes(q)
+  );
+  const orderRows = filtered.map(row => {
+    const grouped = {};
+    for (const it of (row.orders || [])) {
+      const key = `${it.design}|${it.cut}|${it.colour}|${it.size}`;
+      grouped[key] = (grouped[key] || 0) + (it.qty || 1);
+    }
+    const items = Object.entries(grouped)
+      .map(([key, qty]) => {
+        const [design, cut, colour, size] = key.split('|');
+        return `${design} ${cut} ${colour} ${size}${qty > 1 ? ` ×${qty}` : ''}`;
+      }).join('<br>');
+    return `<tr>
+      <td>${row.member_number}</td><td>${row.name}</td><td>${row.phone || '—'}</td>
+      <td style="font-size:13px">${items || '<span style="color:#94a3b8">No items</span>'}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('admin-content').innerHTML = `
+    <button class="btn-export" onclick="exportExcel()">⬇ Export Excel</button>
+    <h2 style="margin-bottom:10px">Summary</h2>
+    <div class="summary-grid">
+      <div class="stat-box"><div class="stat-val">${totalShirts}</div><div class="stat-lbl">Total Shirts</div></div>
+      <div class="stat-box ${totalShirts >= 50 ? 'stat-hi' : ''}">
+        <div class="stat-val">$${pricePerShirt}</div>
+        <div class="stat-lbl">Per Shirt${totalShirts >= 50 ? ' (50+ rate)' : ' (<50 rate)'}</div>
+      </div>
+      <div class="stat-box"><div class="stat-val">$${estTotal.toLocaleString()}</div><div class="stat-lbl">Est. Total</div></div>
+    </div>
+    <h2 style="margin-bottom:10px">By Design &amp; Colour <span style="font-weight:400;font-size:11px;color:#64748b">(min 10 each)</span></h2>
+    <div class="dc-grid" style="margin-bottom:20px">${dcCards}</div>
+    <h2 style="margin-bottom:10px">Full Breakdown</h2>
+    <div style="overflow-x:auto">
+      <table class="totals-table">
+        <thead><tr><th>Design</th><th>Cut</th><th>Colour</th><th>Size</th><th>Qty</th></tr></thead>
+        <tbody>${totalRows || '<tr><td colspan="5" style="color:#94a3b8;text-align:center">No orders yet</td></tr>'}</tbody>
+      </table>
+    </div>`;
+
+  document.getElementById('admin-members-heading').textContent =
+    `All Members (${filtered.length}${filtered.length !== data.length ? ` of ${data.length}` : ''})`;
+  document.getElementById('admin-members-table').innerHTML = `
+    <div style="overflow-x:auto">
+      <table class="all-orders-table">
+        <thead><tr><th>#</th><th>Name</th><th>Phone</th><th>Items</th></tr></thead>
+        <tbody>${orderRows || '<tr><td colspan="4" style="color:#94a3b8;text-align:center">No results</td></tr>'}</tbody>
+      </table>
+    </div>`;
+  document.getElementById('admin-members-card').style.display = '';
+}
+
+function exportExcel() {
+  sb.from('shirt_orders').select('*').order('name').then(({ data }) => {
+    const wb = XLSX.utils.book_new();
+
+    const memberRows = [['Member', 'Name', 'Phone', 'Design', 'Cut', 'Colour', 'Size', 'Qty']];
+    for (const row of (data || [])) {
+      const grouped = {};
+      for (const item of (row.orders || [])) {
+        const key = `${item.design}|${item.cut}|${item.colour}|${item.size}`;
+        grouped[key] = (grouped[key] || 0) + (item.qty || 1);
+      }
+      Object.entries(grouped).sort(([a],[b]) => a.localeCompare(b)).forEach(([key, qty]) => {
+        const [design, cut, colour, size] = key.split('|');
+        memberRows.push([row.member_number, row.name, row.phone || '', design, cut, colour, size, qty]);
+      });
+    }
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(memberRows), 'By Member');
+
+    const totals = {};
+    for (const row of (data || [])) {
+      for (const item of (row.orders || [])) {
+        const key = `${item.design}|${item.cut}|${item.colour}|${item.size}`;
+        totals[key] = (totals[key] || 0) + (item.qty || 1);
+      }
+    }
+    const totalsRows = [['Design', 'Cut', 'Colour', 'Size', 'Qty']];
+    Object.entries(totals).sort(([a],[b]) => a.localeCompare(b)).forEach(([key, qty]) => {
+      const [design, cut, colour, size] = key.split('|');
+      totalsRows.push([design, cut, colour, size, qty]);
+    });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(totalsRows), 'Totals');
+
+    XLSX.writeFile(wb, 'shirt-orders.xlsx');
+  });
+}
+</script>
+</body>
+</html>
