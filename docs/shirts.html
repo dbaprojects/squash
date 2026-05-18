@@ -18,6 +18,26 @@
     .view.active { display: flex; }
     .hidden { display: none !important; }
 
+    #view-login {
+      background: url('shirts-bg.jpg') center center / cover no-repeat;
+      position: relative;
+    }
+    #view-login::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      pointer-events: none;
+    }
+    #view-login .app-header,
+    #view-login .content {
+      position: relative;
+      z-index: 1;
+    }
+    #view-login .app-header {
+      background: transparent;
+    }
+
     /* ── Header ─────────────────────────────────────────────────────────── */
     .app-header {
       background: #1B2A6B;
