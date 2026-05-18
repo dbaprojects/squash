@@ -820,10 +820,10 @@ function editMemberField(field) {
     const { dial, local } = parsePhone(m.phone);
     title.textContent = 'Edit Phone Number';
     body.innerHTML = `
-      <div class="phone-row">
-        <select class="dial-select" id="mi-phone-dial">${dialOptionsHtml(dial)}</select>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <select class="dial-select" id="mi-phone-dial" style="width:100%;font-size:16px">${dialOptionsHtml(dial)}</select>
         <input class="mi-input" id="mi-phone-local" type="tel" value="${local}"
-               placeholder="9123 4567" inputmode="numeric" style="flex:1;font-size:16px"
+               placeholder="9123 4567" inputmode="numeric" style="width:100%;font-size:16px"
                oninput="this.value=this.value.replace(/\\D/g,'')"
                onkeydown="if(event.key==='Enter')saveMemberField()">
       </div>`;
