@@ -238,6 +238,39 @@
     .tag-red     { background: #fee2e2; color: #991b1b; }
     .tag-mens    { background: #d1fae5; color: #065f46; }
     .tag-womens  { background: #fdf4ff; color: #7e22ce; }
+
+    /* ── Admin summary ───────────────────────────────────────────────────── */
+    .summary-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 20px; }
+    .stat-box {
+      background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px;
+      padding: 12px 10px; text-align: center;
+    }
+    .stat-box .stat-val { font-size: 26px; font-weight: 800; color: #1B2A6B; }
+    .stat-box .stat-lbl { font-size: 11px; color: #64748b; margin-top: 2px; }
+    .stat-box.stat-hi   { border-color: #16a34a; }
+    .stat-box.stat-hi .stat-val { color: #15803d; }
+
+    .dc-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 8px; margin-bottom: 20px; }
+    .dc-card {
+      border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 10px 12px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .dc-card.met   { border-color: #86efac; background: #f0fdf4; }
+    .dc-card.unmet { border-color: #fca5a5; background: #fef2f2; }
+    .dc-name { font-size: 13px; font-weight: 600; }
+    .dc-count { font-size: 20px; font-weight: 800; }
+    .dc-card.met   .dc-count { color: #15803d; }
+    .dc-card.unmet .dc-count { color: #dc2626; }
+    .dc-badge { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 10px; display: block; text-align: center; margin-top: 2px; }
+    .dc-card.met   .dc-badge { background: #bbf7d0; color: #166534; }
+    .dc-card.unmet .dc-badge { background: #fee2e2; color: #991b1b; }
+
+    .admin-filter-row { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
+    .admin-filter {
+      flex: 1; padding: 8px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px;
+      font-size: 14px; outline: none;
+    }
+    .admin-filter:focus { border-color: #1B2A6B; }
   </style>
 </head>
 <body>
@@ -638,6 +671,8 @@ async function saveOrders(orders) {
 }
 
 // ── Admin view ────────────────────────────────────────────────────────────
+let adminData = null; // stored for filter re-renders
+
 async function loadAdmin() {
   const pin = prompt('Admin PIN:');
   if (pin !== 'admin') { alert('Incorrect PIN.'); showView('login'); return; }
@@ -648,20 +683,57 @@ async function loadAdmin() {
     document.getElementById('admin-content').innerHTML = `<p class="err">${error.message}</p>`;
     return;
   }
+  adminData = data;
+  renderAdmin('');
+}
 
+function renderAdmin(filterQ) {
+  const data = adminData || [];
+  const q = filterQ.toLowerCase().trim();
+
+  // Flatten all items
   const allItems = [];
   for (const row of data) {
     for (const item of (row.orders || [])) {
       allItems.push({ member: row.member_number, name: row.name, phone: row.phone || '', ...item });
     }
   }
+  const totalShirts = allItems.length;
 
+  // Pricing
+  const pricePerShirt = totalShirts >= 50 ? 40 : 45;
+  const estTotal      = totalShirts * pricePerShirt;
+
+  // By Design + Colour (for minimum check — across all cuts/sizes)
+  const dcTotals = {};
+  for (const it of allItems) {
+    const key = `${it.design}|${it.colour}`;
+    dcTotals[key] = (dcTotals[key] || 0) + 1;
+  }
+  const DC_ORDER = [
+    'Beatles|Blue','Beatles|White','Beatles|Red',
+    'Banksy|Blue','Banksy|White','Banksy|Red',
+  ];
+  const dcCards = DC_ORDER.map(key => {
+    const [design, colour] = key.split('|');
+    const count = dcTotals[key] || 0;
+    const met   = count >= 10;
+    const need  = met ? '' : `need ${10 - count} more`;
+    return `<div class="dc-card ${met ? 'met' : 'unmet'}">
+      <div>
+        <div class="dc-name">${design} ${colour}</div>
+        <span class="dc-badge">${met ? '✓ min met' : `✗ ${need}`}</span>
+      </div>
+      <div class="dc-count">${count}</div>
+    </div>`;
+  }).join('');
+
+  // Full breakdown by Design/Cut/Colour/Size
   const totals = {};
   for (const it of allItems) {
     const key = `${it.design}|${it.cut}|${it.colour}|${it.size}`;
     totals[key] = (totals[key] || 0) + 1;
   }
-
   const totalRows = Object.entries(totals)
     .sort(([a],[b]) => a.localeCompare(b))
     .map(([key, count]) => {
@@ -669,7 +741,13 @@ async function loadAdmin() {
       return `<tr><td>${design}</td><td>${cut}</td><td>${colour}</td><td>${size}</td><td class="count">${count}</td></tr>`;
     }).join('');
 
-  const orderRows = data.map(row => {
+  // Filtered member rows
+  const filtered = data.filter(row =>
+    !q ||
+    row.name.toLowerCase().includes(q) ||
+    row.member_number.toLowerCase().includes(q)
+  );
+  const orderRows = filtered.map(row => {
     const items = (row.orders || []).map(it =>
       `<span class="tag tag-${it.design.toLowerCase()}">${it.design}</span>`+
       `<span class="tag tag-${it.cut.toLowerCase()}">${it.cut}</span>`+
@@ -684,18 +762,43 @@ async function loadAdmin() {
 
   document.getElementById('admin-content').innerHTML = `
     <button class="btn-export" onclick="exportCSV()">⬇ Export CSV</button>
-    <h2 style="margin-bottom:12px">Order Totals (${allItems.length} items)</h2>
+
+    <h2 style="margin-bottom:10px">Summary</h2>
+    <div class="summary-grid">
+      <div class="stat-box">
+        <div class="stat-val">${totalShirts}</div>
+        <div class="stat-lbl">Total Shirts</div>
+      </div>
+      <div class="stat-box ${totalShirts >= 50 ? 'stat-hi' : ''}">
+        <div class="stat-val">$${pricePerShirt}</div>
+        <div class="stat-lbl">Per Shirt${totalShirts >= 50 ? ' (50+ rate)' : ' (<50 rate)'}</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val">$${estTotal.toLocaleString()}</div>
+        <div class="stat-lbl">Est. Total</div>
+      </div>
+    </div>
+
+    <h2 style="margin-bottom:10px">By Design &amp; Colour <span style="font-weight:400;font-size:11px;color:#64748b">(min 10 each)</span></h2>
+    <div class="dc-grid" style="margin-bottom:20px">${dcCards}</div>
+
+    <h2 style="margin-bottom:10px">Full Breakdown</h2>
     <div style="overflow-x:auto;margin-bottom:24px">
       <table class="totals-table">
         <thead><tr><th>Design</th><th>Cut</th><th>Colour</th><th>Size</th><th>Qty</th></tr></thead>
         <tbody>${totalRows || '<tr><td colspan="5" style="color:#94a3b8;text-align:center">No orders yet</td></tr>'}</tbody>
       </table>
     </div>
-    <h2 style="margin-bottom:12px">All Members (${data.length})</h2>
+
+    <h2 style="margin-bottom:10px">All Members (${filtered.length}${filtered.length !== data.length ? ` of ${data.length}` : ''})</h2>
+    <div class="admin-filter-row">
+      <input class="admin-filter" type="text" placeholder="Search by name or member number…"
+             value="${filterQ}" oninput="renderAdmin(this.value)">
+    </div>
     <div style="overflow-x:auto">
       <table class="all-orders-table">
         <thead><tr><th>#</th><th>Name</th><th>Phone</th><th>Items</th></tr></thead>
-        <tbody>${orderRows}</tbody>
+        <tbody>${orderRows || '<tr><td colspan="4" style="color:#94a3b8;text-align:center">No results</td></tr>'}</tbody>
       </table>
     </div>`;
 }
