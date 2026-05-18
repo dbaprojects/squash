@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.78';
+const APP_VERSION = '4.79';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -2583,11 +2583,13 @@ function renderPlayersTable() {
     : `<span class="sort-arrow muted">↕</span>`;
 
   document.getElementById('players-list').innerHTML = players.length
-    ? `<div class="player-cards">
+    ? `<div class="pc-count-bar">${players.length} player${players.length !== 1 ? 's' : ''}</div>
+      <div class="player-cards">
         <div class="pc-sort-hdr">
-          <span style="font-size:12px;color:#64748b;font-weight:500">${players.length} player${players.length !== 1 ? 's' : ''}</span>
-          <span class="th-sort" onclick="setPlayersSort('name')">Name ${arrow('name')}</span>
-          <span class="th-sort" onclick="setPlayersSort('hc')">HC ${arrow('hc')}</span>
+          <span class="pc-name th-sort" onclick="setPlayersSort('name')">Name ${arrow('name')}</span>
+          <span class="pc-phone"></span>
+          <span class="pc-logins">Sign-ins</span>
+          <span class="pc-hc th-sort" style="cursor:pointer;user-select:none" onclick="setPlayersSort('hc')">HC ${arrow('hc')}</span>
         </div>
         ${players.map(p => {
           const pending = isPending(p);
@@ -2602,8 +2604,8 @@ function renderPlayersTable() {
             <div class="pc-row1" style="margin-bottom:0">
               <div class="pc-name">${esc(p.first_name)} ${esc(p.last_name)}${statusTag}${roleLabel}</div>
               <span class="pc-phone">${esc(p.phone || '')}</span>
-              <span class="pc-logins" title="Total logins">${logins > 0 ? logins + '×' : '–'}</span>
-              <span class="hcap-badge">${p.current_handicap ?? '–'}</span>
+              <span class="pc-logins">${logins > 0 ? logins + '×' : '–'}</span>
+              <span class="pc-hc"><span class="hcap-badge">${p.current_handicap ?? '–'}</span></span>
             </div>
             ${pending ? `<div class="pc-row2"><div class="btn-actions">
               <button class="btn-icon-sm" onclick="event.stopPropagation();approvePlayer('${p.id}')">Approve</button>

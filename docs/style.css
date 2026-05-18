@@ -1554,9 +1554,11 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 
 /* Player cards — admin list (replaces table) */
 .player-cards { background: var(--bc-surface); border-radius: 8px; border: 1px solid var(--bc-border); overflow: hidden; }
+.pc-count-bar { font-size: 12px; color: var(--bc-text-dim); font-weight: 500; padding: 0 2px 6px; }
 .pc-sort-hdr {
   display: flex;
-  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
   padding: 7px 12px;
   background: var(--bc-navy-lt);
   border-bottom: 1px solid var(--bc-border);
@@ -1567,11 +1569,12 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 .player-card { padding: 8px 12px; border-bottom: 1px solid #f0f2f8; }
 .player-card:last-child { border-bottom: none; }
 .player-card:hover { background: #f8f9fd; }
-.pc-row1 { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+.pc-row1 { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
 .pc-row2 { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .pc-name  { font-weight: 600; font-size: 15px; flex: 1; min-width: 0; }
 .pc-phone { font-size: 12px; color: var(--bc-text-dim); flex: 1; min-width: 0; }
-.pc-logins { font-size: 12px; color: var(--bc-text-dim); white-space: nowrap; }
+.pc-logins { font-size: 12px; color: var(--bc-text-dim); white-space: nowrap; width: 52px; text-align: right; }
+.pc-hc    { width: 36px; text-align: right; }
 
 /* Sortable column headers */
 .th-sort { cursor: pointer; user-select: none; }
