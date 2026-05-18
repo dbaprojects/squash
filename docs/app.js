@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.73';
+const APP_VERSION = '4.74';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -2176,6 +2176,10 @@ async function fetchEventSignups(eventId) {
 async function joinEvent(e, eventId) {
   e.stopPropagation();
   try {
+    const { count: already } = await sb.from('signups')
+      .select('id', { count: 'exact', head: true })
+      .eq('event_id', eventId).eq('player_id', ST.player.id);
+    if (already > 0) return;
     const { data: ev } = await sb.from('events').select('max_signups').eq('id', eventId).single();
     const { count }    = await sb.from('signups')
       .select('id', { count: 'exact', head: true })
