@@ -298,6 +298,20 @@
       flex: 1; padding: 8px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px;
       font-size: 14px; outline: none;
     }
+    /* ── Edit modal ─────────────────────────────────────────────────────────── */
+    .edit-modal {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+      display: flex; align-items: center; justify-content: center; z-index: 1000;
+    }
+    .edit-modal-box {
+      background: #fff; border-radius: 14px; padding: 24px 20px;
+      width: min(92vw, 380px); box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    }
+    .edit-modal-title { font-size: 15px; font-weight: 700; color: #1B2A6B; margin-bottom: 16px; }
+    .edit-modal-actions { display: flex; gap: 10px; margin-top: 16px; }
+    .edit-modal-actions .btn-primary { flex: 1; padding: 11px; }
+    .edit-modal-actions .btn-ghost   { flex: 0 0 auto; padding: 11px 16px; }
+
     .cutoff-notice {
       background: #fef3c7; border: 1.5px solid #fbbf24; border-radius: 10px;
       padding: 10px 14px; font-size: 13px; color: #92400e; margin-bottom: 16px;
@@ -467,6 +481,18 @@
   <div class="zoom-modal-inner" onclick="event.stopPropagation()">
     <img id="zoom-img" src="" alt="Shirt preview">
     <button class="zoom-close" onclick="closeZoom()">×</button>
+  </div>
+</div>
+
+<!-- ── EDIT MODAL ──────────────────────────────────────────────────────────── -->
+<div id="edit-modal" class="edit-modal hidden">
+  <div class="edit-modal-box">
+    <div class="edit-modal-title" id="edit-modal-title"></div>
+    <div id="edit-modal-body"></div>
+    <div class="edit-modal-actions">
+      <button class="btn-primary" onclick="saveMemberField()">Save</button>
+      <button class="btn-ghost" onclick="closeEditModal()">Cancel</button>
+    </div>
   </div>
 </div>
 
@@ -774,53 +800,46 @@ function renderMemberInfo() {
     </div>`;
 }
 
+let _editingField = null;
+
 function editMemberField(field) {
   if (isClosed()) return;
+  _editingField = field;
   const m = currentMember;
-  const { dial, local } = parsePhone(m.phone);
-  const nameRow = field === 'name'
-    ? `<div class="mi-row">
-        <span class="mi-label">Name</span>
-        <input class="mi-input" id="mi-name-inp" value="${m.name}" placeholder="Your name"
-               onkeydown="if(event.key==='Enter')saveMemberField('name')">
-        <button class="mi-save-btn" onclick="saveMemberField('name')">Save</button>
-        <button class="mi-cancel-btn" onclick="renderMemberInfo()">×</button>
-      </div>`
-    : `<div class="mi-row">
-        <span class="mi-label">Name</span>
-        <span class="mi-value">${m.name}</span>
-        <button class="mi-edit-btn" onclick="editMemberField('name')" title="Edit">✎</button>
+  const title = document.getElementById('edit-modal-title');
+  const body  = document.getElementById('edit-modal-body');
+  if (field === 'name') {
+    title.textContent = 'Edit Name';
+    body.innerHTML = `
+      <div class="form-group" style="margin-bottom:0">
+        <input class="mi-input" id="mi-name-inp" type="text" value="${m.name}"
+               placeholder="Your name" style="width:100%;font-size:16px"
+               onkeydown="if(event.key==='Enter')saveMemberField()">
       </div>`;
-  const phoneRow = field === 'phone'
-    ? `<div class="mi-row">
-        <span class="mi-label">Phone</span>
-        <div style="flex:1;display:flex;gap:6px">
-          <select class="dial-select" id="mi-phone-dial" style="padding:6px 6px">${dialOptionsHtml(dial)}</select>
-          <input class="mi-input" id="mi-phone-local" type="tel" value="${local}"
-                 placeholder="9123 4567" inputmode="numeric"
-                 oninput="this.value=this.value.replace(/\D/g,'')"
-                 onkeydown="if(event.key==='Enter')saveMemberField('phone')">
-        </div>
-        <button class="mi-save-btn" onclick="saveMemberField('phone')">Save</button>
-        <button class="mi-cancel-btn" onclick="renderMemberInfo()">×</button>
-      </div>`
-    : `<div class="mi-row">
-        <span class="mi-label">Phone</span>
-        <span class="mi-value">${m.phone || '—'}</span>
-        <button class="mi-edit-btn" onclick="editMemberField('phone')" title="Edit">✎</button>
+  } else {
+    const { dial, local } = parsePhone(m.phone);
+    title.textContent = 'Edit Phone Number';
+    body.innerHTML = `
+      <div class="phone-row">
+        <select class="dial-select" id="mi-phone-dial">${dialOptionsHtml(dial)}</select>
+        <input class="mi-input" id="mi-phone-local" type="tel" value="${local}"
+               placeholder="9123 4567" inputmode="numeric" style="flex:1;font-size:16px"
+               oninput="this.value=this.value.replace(/\\D/g,'')"
+               onkeydown="if(event.key==='Enter')saveMemberField()">
       </div>`;
-  document.getElementById('member-info-card').innerHTML = `
-    <div class="mi-row">
-      <span class="mi-label">Member</span>
-      <span class="mi-value">${m.member_number}</span>
-    </div>
-    ${nameRow}
-    ${phoneRow}`;
+  }
+  document.getElementById('edit-modal').classList.remove('hidden');
   const inp = document.getElementById(field === 'name' ? 'mi-name-inp' : 'mi-phone-local');
-  if (inp) inp.focus();
+  if (inp) setTimeout(() => inp.focus(), 50);
 }
 
-async function saveMemberField(field) {
+function closeEditModal() {
+  document.getElementById('edit-modal').classList.add('hidden');
+  _editingField = null;
+}
+
+async function saveMemberField() {
+  const field = _editingField;
   const update = {};
   if (field === 'name') {
     const val = document.getElementById('mi-name-inp').value.trim();
@@ -836,6 +855,7 @@ async function saveMemberField(field) {
     .eq('member_number', currentMember.member_number);
   if (error) { alert(error.message); return; }
   Object.assign(currentMember, update);
+  closeEditModal();
   renderMemberInfo();
 }
 
@@ -892,6 +912,7 @@ async function registerMember() {
   const err   = document.getElementById('reg-err');
 
   if (!name)  { err.textContent = 'Please enter your name.'; return; }
+  if (!local) { err.textContent = 'Please enter your phone number.'; return; }
   err.textContent = 'Registering…';
 
   const { data, error } = await sb.from('shirt_orders')
