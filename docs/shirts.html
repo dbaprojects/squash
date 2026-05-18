@@ -139,7 +139,7 @@
       flex: 1; padding: 10px 6px; border: 2px solid #e2e8f0;
       border-radius: 8px; background: #fff; font-size: 14px; font-weight: 600;
       cursor: pointer; text-align: center; transition: border-color 0.15s, background 0.15s;
-      color: #334155;
+      color: #334155; touch-action: manipulation;
     }
     .opt-btn:hover    { border-color: #1B2A6B; }
     .opt-btn.selected { border-color: #1B2A6B; background: #1B2A6B; color: #fff; }
@@ -149,7 +149,7 @@
     .design-btn {
       flex: 1; border: 2px solid #e2e8f0; border-radius: 10px; overflow: hidden;
       cursor: pointer; background: #f8fafc; padding: 0;
-      transition: border-color 0.15s; text-align: center;
+      transition: border-color 0.15s; text-align: center; touch-action: manipulation;
     }
     .design-btn:hover    { border-color: #1B2A6B; }
     .design-btn.selected { border-color: #1B2A6B; box-shadow: 0 0 0 2px #1B2A6B33; }
@@ -164,28 +164,33 @@
     .colour-card {
       flex: 1; border: 2px solid #e2e8f0; border-radius: 10px; overflow: hidden;
       cursor: pointer; transition: border-color 0.15s; background: #f8fafc;
+      touch-action: manipulation;
     }
-    .colour-card:hover    { border-color: #1B2A6B; }
-    .colour-card.selected { border-color: #1B2A6B; box-shadow: 0 0 0 2px #1B2A6B33; }
-    .colour-card img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
-    .colour-swatch   { width: 100%; aspect-ratio: 1; display: block; }
+    .colour-card:active    { border-color: #1B2A6B; }
+    .colour-card.selected  { border-color: #1B2A6B; box-shadow: 0 0 0 2px #1B2A6B33; }
+    .colour-card img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; pointer-events: none; }
+    .colour-swatch   { width: 100%; aspect-ratio: 1; display: block; pointer-events: none; }
     .colour-card-footer {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 5px 8px;
+      display: flex; align-items: center; justify-content: center;
+      padding: 7px 8px; transition: background 0.15s;
     }
-    .colour-card-label { font-size: 12px; font-weight: 600; color: #334155; }
-    .btn-zoom {
-      background: none; border: none; font-size: 17px; cursor: pointer;
-      padding: 4px 2px; line-height: 1; color: #64748b; flex-shrink: 0;
+    .colour-card.selected .colour-card-footer { background: #1B2A6B; }
+    .colour-card-label { font-size: 13px; font-weight: 600; color: #334155; pointer-events: none; }
+    .colour-card.selected .colour-card-label { color: #fff; }
+
+    .btn-view-larger {
+      width: 100%; padding: 8px; background: #f0f4ff; border: 1.5px solid #1B2A6B;
+      border-radius: 8px; font-size: 13px; font-weight: 600; color: #1B2A6B;
+      cursor: pointer; touch-action: manipulation; margin-top: 6px;
     }
-    .btn-zoom:hover { color: #1B2A6B; }
+    .btn-view-larger:active { background: #1B2A6B; color: #fff; }
 
     /* Size: button grid */
     .size-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
     .size-btn {
       border: 2px solid #e2e8f0; border-radius: 8px; background: #fff;
       padding: 8px 4px; cursor: pointer; text-align: center;
-      transition: border-color 0.15s, background 0.15s;
+      transition: border-color 0.15s, background 0.15s; touch-action: manipulation;
     }
     .size-btn:hover    { border-color: #1B2A6B; }
     .size-btn.selected { border-color: #1B2A6B; background: #1B2A6B; color: #fff; }
@@ -413,6 +418,7 @@
         <div class="picker-group">
           <div class="picker-label">Colour</div>
           <div class="colour-row" id="colour-row"></div>
+          <button class="btn-view-larger hidden" id="btn-view-larger">View full size ⤢</button>
         </div>
 
         <div class="picker-group">
@@ -966,6 +972,7 @@ function resetPickerUI() {
   document.getElementById('btn-c-womens').classList.remove('selected');
   document.getElementById('size-label-cut').textContent = '';
   document.getElementById('picker-size-group').classList.add('hidden');
+  document.getElementById('btn-view-larger').classList.add('hidden');
   renderColourRow();
   renderSizeGrid();
   checkAddButton();
@@ -977,6 +984,7 @@ function selectDesign(d) {
   document.getElementById('btn-d-beatles').classList.toggle('selected', d === 'Beatles');
   document.getElementById('btn-d-banksy').classList.toggle('selected',  d === 'Banksy');
   document.getElementById('picker-extra').classList.remove('hidden');
+  document.getElementById('btn-view-larger').classList.add('hidden');
   renderColourRow();
   checkAddButton();
 }
@@ -997,6 +1005,12 @@ function selectColour(c) {
   document.querySelectorAll('.colour-card').forEach(el => {
     el.classList.toggle('selected', el.dataset.colour === c);
   });
+  if (picker.design) {
+    const imgSrc = `shirt-${picker.design.toLowerCase()}-${c.toLowerCase()}.jpg`;
+    const btn = document.getElementById('btn-view-larger');
+    btn.onclick = () => openZoom(imgSrc);
+    btn.classList.remove('hidden');
+  }
   checkAddButton();
 }
 
@@ -1025,7 +1039,6 @@ function renderColourRow() {
         }
         <div class="colour-card-footer">
           <span class="colour-card-label">${c}</span>
-          ${imgSrc ? `<button class="btn-zoom" onclick="event.stopPropagation();openZoom('${imgSrc}')" title="View larger">⤢</button>` : ''}
         </div>
       </div>`;
   }).join('');
