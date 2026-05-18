@@ -326,7 +326,7 @@
     <div class="card">
       <div class="form-group">
         <label for="inp-member">Membership Number</label>
-        <input id="inp-member" type="text" inputmode="text" placeholder="e.g. X0123"
+        <input id="inp-member" type="text" inputmode="text" placeholder="e.g. B718"
                onkeydown="if(event.key==='Enter')continueLogin()">
       </div>
       <button class="btn-primary" onclick="continueLogin()">Continue</button>
@@ -846,12 +846,14 @@ function showView(id) {
 }
 
 // ── Member number normalisation ───────────────────────────────────────────
-// Format: 1 uppercase letter + 4 zero-padded digits  e.g. b718 → B0718
+// Format: 1 uppercase letter + up to 6 digits, leading zeros stripped
+// B0718 → B718, b0018 → B18, B000001 → B1
 function normalizeMemberNumber(raw) {
   const s = raw.trim().toUpperCase();
-  const m = s.match(/^([A-Z])(\d{1,4})$/);
+  const m = s.match(/^([A-Z])(\d{1,6})$/);
   if (!m) return null;
-  return m[1] + m[2].padStart(4, '0');
+  const digits = String(parseInt(m[2], 10)); // strip leading zeros
+  return m[1] + digits;
 }
 
 // ── Login ─────────────────────────────────────────────────────────────────
@@ -860,7 +862,7 @@ async function continueLogin() {
   const err = document.getElementById('login-err');
   if (!raw) { err.textContent = 'Please enter your membership number.'; return; }
   const num = normalizeMemberNumber(raw);
-  if (!num) { err.textContent = 'Invalid format — expected a letter followed by up to 4 digits (e.g. B0718).'; return; }
+  if (!num) { err.textContent = 'Invalid format — expected a letter followed by up to 6 digits (e.g. B718).'; return; }
   err.textContent = 'Checking…';
 
   const { data, error } = await sb.from('shirt_orders')
