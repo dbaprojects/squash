@@ -167,21 +167,18 @@
     }
     .colour-card:hover    { border-color: #1B2A6B; }
     .colour-card.selected { border-color: #1B2A6B; box-shadow: 0 0 0 2px #1B2A6B33; }
-    .colour-img-wrap { position: relative; }
     .colour-card img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
     .colour-swatch   { width: 100%; aspect-ratio: 1; display: block; }
-    .colour-card-label {
-      text-align: center; font-size: 12px; font-weight: 600;
-      padding: 6px 4px; color: #334155;
+    .colour-card-footer {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 5px 8px;
     }
+    .colour-card-label { font-size: 12px; font-weight: 600; color: #334155; }
     .btn-zoom {
-      position: absolute; bottom: 5px; right: 5px;
-      background: rgba(0,0,0,0.45); color: #fff; border: none;
-      border-radius: 4px; font-size: 13px; padding: 3px 6px;
-      cursor: pointer; line-height: 1; opacity: 0;
-      transition: opacity 0.15s;
+      background: none; border: none; font-size: 17px; cursor: pointer;
+      padding: 4px 2px; line-height: 1; color: #64748b; flex-shrink: 0;
     }
-    .colour-img-wrap:hover .btn-zoom { opacity: 1; }
+    .btn-zoom:hover { color: #1B2A6B; }
 
     /* Size: button grid */
     .size-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
@@ -1020,16 +1017,16 @@ function renderColourRow() {
     const isSelected = picker.colour === c;
     return `
       <div class="colour-card${isSelected ? ' selected' : ''}" data-colour="${c}" onclick="selectColour('${c}')">
-        <div class="colour-img-wrap">
-          ${imgSrc
-            ? `<img src="${imgSrc}" alt="${c}"
-                    onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
-               <div class="colour-swatch" style="display:none;background:${COLOUR_HEX[c]};${c==='White'?'border-bottom:1px solid #d1d5db':''}"></div>
-               <button class="btn-zoom" onclick="event.stopPropagation();openZoom('${imgSrc}')" title="View larger">⤢</button>`
-            : `<div class="colour-swatch" style="background:${COLOUR_HEX[c]};${c==='White'?'border-bottom:1px solid #d1d5db':''}"></div>`
-          }
+        ${imgSrc
+          ? `<img src="${imgSrc}" alt="${c}"
+                  onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+             <div class="colour-swatch" style="display:none;background:${COLOUR_HEX[c]};${c==='White'?'border-bottom:1px solid #d1d5db':''}"></div>`
+          : `<div class="colour-swatch" style="background:${COLOUR_HEX[c]};${c==='White'?'border-bottom:1px solid #d1d5db':''}"></div>`
+        }
+        <div class="colour-card-footer">
+          <span class="colour-card-label">${c}</span>
+          ${imgSrc ? `<button class="btn-zoom" onclick="event.stopPropagation();openZoom('${imgSrc}')" title="View larger">⤢</button>` : ''}
         </div>
-        <div class="colour-card-label">${c}</div>
       </div>`;
   }).join('');
 }
