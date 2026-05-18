@@ -359,11 +359,22 @@ function showView(id) {
   document.getElementById('view-' + id).classList.add('active');
 }
 
+// ── Member number normalisation ──────────────────────────────────────────
+// Format: 1 uppercase letter + 4 zero-padded digits  e.g. b718 → B0718
+function normalizeMemberNumber(raw) {
+  const s = raw.trim().toUpperCase();
+  const m = s.match(/^([A-Z])(\d{1,4})$/);
+  if (!m) return null; // invalid format
+  return m[1] + m[2].padStart(4, '0');
+}
+
 // ── Login ────────────────────────────────────────────────────────────────
 async function continueLogin() {
-  const num = document.getElementById('inp-member').value.trim();
+  const raw = document.getElementById('inp-member').value.trim();
   const err = document.getElementById('login-err');
-  if (!num) { err.textContent = 'Please enter your membership number.'; return; }
+  if (!raw) { err.textContent = 'Please enter your membership number.'; return; }
+  const num = normalizeMemberNumber(raw);
+  if (!num) { err.textContent = 'Invalid format — expected a letter followed by up to 4 digits (e.g. B0718).'; return; }
   err.textContent = 'Checking…';
 
   const { data, error } = await sb.from('shirt_orders')
@@ -386,7 +397,7 @@ async function continueLogin() {
 
 // ── Register ─────────────────────────────────────────────────────────────
 async function registerMember() {
-  const num   = document.getElementById('inp-member').value.trim();
+  const num   = normalizeMemberNumber(document.getElementById('inp-member').value.trim());
   const name  = document.getElementById('inp-name').value.trim();
   const phone = document.getElementById('inp-phone').value.trim();
   const err   = document.getElementById('reg-err');
