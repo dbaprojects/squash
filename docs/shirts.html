@@ -21,6 +21,8 @@
     #view-login {
       background: url('shirts-bg.jpg') center center / cover no-repeat;
       position: relative;
+      justify-content: center;
+      align-items: center;
     }
     #view-login::before {
       content: '';
@@ -37,6 +39,20 @@
     #view-login .app-header {
       background: transparent;
     }
+    #view-login .content {
+      flex: unset;
+      width: 100%;
+      max-width: 440px;
+      padding: 0 20px;
+    }
+    #view-login .app-header {
+      text-align: center;
+      padding: 0 20px 24px;
+    }
+    #view-login .app-header h1 { font-size: 22px; }
+    #view-login .app-header p  { font-size: 14px; opacity: 0.85; }
+    #view-login .login-subtitle,
+    #view-login .cutoff-notice { color: #fff; }
 
     /* ── Header ─────────────────────────────────────────────────────────── */
     .app-header {
