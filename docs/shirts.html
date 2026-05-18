@@ -16,6 +16,7 @@
 
     .view { display: none; min-height: 100vh; flex-direction: column; }
     .view.active { display: flex; }
+    .hidden { display: none !important; }
 
     /* ── Header ─────────────────────────────────────────────────────────── */
     .app-header {
@@ -114,7 +115,7 @@
       text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;
     }
 
-    /* Design + Cut: text option buttons */
+    /* Cut: text option buttons */
     .opt-row { display: flex; gap: 8px; }
     .opt-btn {
       flex: 1; padding: 10px 6px; border: 2px solid #e2e8f0;
@@ -125,6 +126,21 @@
     .opt-btn:hover    { border-color: #1B2A6B; }
     .opt-btn.selected { border-color: #1B2A6B; background: #1B2A6B; color: #fff; }
 
+    /* Design buttons — image + label */
+    .design-row { display: flex; gap: 10px; }
+    .design-btn {
+      flex: 1; border: 2px solid #e2e8f0; border-radius: 10px; overflow: hidden;
+      cursor: pointer; background: #f8fafc; padding: 0;
+      transition: border-color 0.15s; text-align: center;
+    }
+    .design-btn:hover    { border-color: #1B2A6B; }
+    .design-btn.selected { border-color: #1B2A6B; box-shadow: 0 0 0 2px #1B2A6B33; }
+    .design-btn img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
+    .design-btn-label {
+      padding: 8px 4px; font-size: 14px; font-weight: 700; color: #1B2A6B;
+    }
+    .design-btn.selected .design-btn-label { color: #1B2A6B; }
+
     /* Colour: image cards */
     .colour-row { display: flex; gap: 8px; }
     .colour-card {
@@ -133,16 +149,21 @@
     }
     .colour-card:hover    { border-color: #1B2A6B; }
     .colour-card.selected { border-color: #1B2A6B; box-shadow: 0 0 0 2px #1B2A6B33; }
-    .colour-card img {
-      width: 100%; aspect-ratio: 1; object-fit: cover; display: block;
-    }
-    .colour-swatch {
-      width: 100%; aspect-ratio: 1; display: block;
-    }
+    .colour-img-wrap { position: relative; }
+    .colour-card img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
+    .colour-swatch   { width: 100%; aspect-ratio: 1; display: block; }
     .colour-card-label {
       text-align: center; font-size: 12px; font-weight: 600;
       padding: 6px 4px; color: #334155;
     }
+    .btn-zoom {
+      position: absolute; bottom: 5px; right: 5px;
+      background: rgba(0,0,0,0.45); color: #fff; border: none;
+      border-radius: 4px; font-size: 13px; padding: 3px 6px;
+      cursor: pointer; line-height: 1; opacity: 0;
+      transition: opacity 0.15s;
+    }
+    .colour-img-wrap:hover .btn-zoom { opacity: 1; }
 
     /* Size: button grid */
     .size-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
@@ -158,6 +179,26 @@
     .size-btn.selected .sz-in { opacity: 0.85; }
 
     .btn-add-wrap { margin-top: 6px; }
+
+    /* ── Zoom modal ──────────────────────────────────────────────────────── */
+    .zoom-modal {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.88);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1000; cursor: pointer;
+    }
+    .zoom-modal-inner {
+      position: relative; max-width: min(90vw, 520px);
+    }
+    .zoom-modal-inner img {
+      width: 100%; height: auto; border-radius: 10px; display: block;
+    }
+    .zoom-close {
+      position: absolute; top: -14px; right: -14px;
+      width: 30px; height: 30px; background: #fff; border: none;
+      border-radius: 50%; font-size: 20px; line-height: 1;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
 
     /* ── Admin ───────────────────────────────────────────────────────────── */
     .admin-header {
@@ -212,7 +253,7 @@
     <div class="card">
       <div class="form-group">
         <label for="inp-member">Membership Number</label>
-        <input id="inp-member" type="text" inputmode="numeric" placeholder="e.g. 1234"
+        <input id="inp-member" type="text" inputmode="numeric" placeholder="e.g. B0718"
                onkeydown="if(event.key==='Enter')continueLogin()">
       </div>
       <button class="btn-primary" onclick="continueLogin()">Continue</button>
@@ -259,7 +300,7 @@
   <div class="content">
 
     <!-- Cart -->
-    <div class="card" id="cart-card">
+    <div class="card">
       <h2>Your Order</h2>
       <div id="cart-items"></div>
     </div>
@@ -268,35 +309,47 @@
     <div class="card">
       <h2>Add Item</h2>
 
+      <!-- Design — always visible -->
       <div class="picker-group">
         <div class="picker-label">Design</div>
-        <div class="opt-row">
-          <button class="opt-btn" id="btn-d-beatles" onclick="selectDesign('Beatles')">🎵 Beatles</button>
-          <button class="opt-btn" id="btn-d-banksy"  onclick="selectDesign('Banksy')">🎨 Banksy</button>
+        <div class="design-row">
+          <button class="design-btn" id="btn-d-beatles" onclick="selectDesign('Beatles')">
+            <img src="shirt-beatles-blue.jpg" alt="Beatles design">
+            <div class="design-btn-label">Beatles</div>
+          </button>
+          <button class="design-btn" id="btn-d-banksy" onclick="selectDesign('Banksy')">
+            <img src="shirt-banksy-blue.jpg" alt="Banksy design">
+            <div class="design-btn-label">Banksy</div>
+          </button>
         </div>
       </div>
 
-      <div class="picker-group">
-        <div class="picker-label">Cut</div>
-        <div class="opt-row">
-          <button class="opt-btn" id="btn-c-mens"   onclick="selectCut('Mens')">Mens</button>
-          <button class="opt-btn" id="btn-c-womens" onclick="selectCut('Womens')">Womens</button>
+      <!-- Rest of picker — hidden until design selected -->
+      <div id="picker-extra" class="hidden">
+
+        <div class="picker-group">
+          <div class="picker-label">Cut</div>
+          <div class="opt-row">
+            <button class="opt-btn" id="btn-c-mens"   onclick="selectCut('Mens')">Mens</button>
+            <button class="opt-btn" id="btn-c-womens" onclick="selectCut('Womens')">Womens</button>
+          </div>
         </div>
-      </div>
 
-      <div class="picker-group">
-        <div class="picker-label">Colour</div>
-        <div class="colour-row" id="colour-row"></div>
-      </div>
+        <div class="picker-group">
+          <div class="picker-label">Colour</div>
+          <div class="colour-row" id="colour-row"></div>
+        </div>
 
-      <div class="picker-group">
-        <div class="picker-label">Size <span id="size-label-cut" style="font-weight:400;text-transform:none;letter-spacing:0"></span></div>
-        <div class="size-grid" id="size-grid"></div>
-      </div>
+        <div class="picker-group">
+          <div class="picker-label">Size <span id="size-label-cut" style="font-weight:400;text-transform:none;letter-spacing:0"></span></div>
+          <div class="size-grid" id="size-grid"></div>
+        </div>
 
-      <div class="btn-add-wrap">
-        <button class="btn-primary" id="btn-add" onclick="addToCart()" disabled>Add to Order</button>
-      </div>
+        <div class="btn-add-wrap">
+          <button class="btn-primary" id="btn-add" onclick="addToCart()" disabled>Add to Order</button>
+        </div>
+
+      </div><!-- /picker-extra -->
     </div>
 
   </div>
@@ -314,6 +367,14 @@
   </div>
 </div>
 
+<!-- ── ZOOM MODAL ────────────────────────────────────────────────────────── -->
+<div id="zoom-modal" class="zoom-modal hidden" onclick="closeZoom()">
+  <div class="zoom-modal-inner" onclick="event.stopPropagation()">
+    <img id="zoom-img" src="" alt="Shirt preview">
+    <button class="zoom-close" onclick="closeZoom()">×</button>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const { createClient } = supabase;
@@ -324,8 +385,6 @@ const sb = createClient(
 
 const COLOURS = ['Blue', 'White', 'Red'];
 const COLOUR_HEX = { Blue: '#2563eb', White: '#f1f5f9', Red: '#dc2626' };
-const DESIGNS = ['Beatles', 'Banksy'];
-const CUTS    = ['Mens', 'Womens'];
 
 const SIZES = {
   Mens: [
@@ -350,25 +409,25 @@ const SIZES = {
   ],
 };
 
-let currentMember = null; // { member_number, name, phone, orders }
+let currentMember = null;
 let picker = { design: null, cut: null, colour: null, size: null };
 
-// ── Views ───────────────────────────────────────────────────────────────
+// ── Views ────────────────────────────────────────────────────────────────
 function showView(id) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.getElementById('view-' + id).classList.add('active');
 }
 
-// ── Member number normalisation ──────────────────────────────────────────
+// ── Member number normalisation ───────────────────────────────────────────
 // Format: 1 uppercase letter + 4 zero-padded digits  e.g. b718 → B0718
 function normalizeMemberNumber(raw) {
   const s = raw.trim().toUpperCase();
   const m = s.match(/^([A-Z])(\d{1,4})$/);
-  if (!m) return null; // invalid format
+  if (!m) return null;
   return m[1] + m[2].padStart(4, '0');
 }
 
-// ── Login ────────────────────────────────────────────────────────────────
+// ── Login ─────────────────────────────────────────────────────────────────
 async function continueLogin() {
   const raw = document.getElementById('inp-member').value.trim();
   const err = document.getElementById('login-err');
@@ -395,7 +454,7 @@ async function continueLogin() {
   }
 }
 
-// ── Register ─────────────────────────────────────────────────────────────
+// ── Register ──────────────────────────────────────────────────────────────
 async function registerMember() {
   const num   = normalizeMemberNumber(document.getElementById('inp-member').value.trim());
   const name  = document.getElementById('inp-name').value.trim();
@@ -414,7 +473,7 @@ async function registerMember() {
   loadMain();
 }
 
-// ── Logout ───────────────────────────────────────────────────────────────
+// ── Logout ────────────────────────────────────────────────────────────────
 function logout() {
   currentMember = null;
   picker = { design: null, cut: null, colour: null, size: null };
@@ -423,7 +482,7 @@ function logout() {
   showView('login');
 }
 
-// ── Main screen ──────────────────────────────────────────────────────────
+// ── Main screen ───────────────────────────────────────────────────────────
 function loadMain() {
   document.getElementById('main-name').textContent   = currentMember.name;
   document.getElementById('main-member').textContent = currentMember.member_number;
@@ -452,11 +511,15 @@ function renderCart() {
     </div>`).join('');
 }
 
-// ── Picker ───────────────────────────────────────────────────────────────
+// ── Picker ────────────────────────────────────────────────────────────────
 function resetPickerUI() {
   picker = { design: null, cut: null, colour: null, size: null };
-  ['beatles','banksy'].forEach(d => document.getElementById('btn-d-'+d)?.classList.remove('selected'));
-  ['mens','womens'].forEach(c => document.getElementById('btn-c-'+c)?.classList.remove('selected'));
+  document.getElementById('btn-d-beatles').classList.remove('selected');
+  document.getElementById('btn-d-banksy').classList.remove('selected');
+  document.getElementById('picker-extra').classList.add('hidden');
+  document.getElementById('btn-c-mens').classList.remove('selected');
+  document.getElementById('btn-c-womens').classList.remove('selected');
+  document.getElementById('size-label-cut').textContent = '';
   renderColourRow();
   renderSizeGrid();
   checkAddButton();
@@ -467,6 +530,7 @@ function selectDesign(d) {
   picker.colour = null;
   document.getElementById('btn-d-beatles').classList.toggle('selected', d === 'Beatles');
   document.getElementById('btn-d-banksy').classList.toggle('selected',  d === 'Banksy');
+  document.getElementById('picker-extra').classList.remove('hidden');
   renderColourRow();
   checkAddButton();
 }
@@ -476,7 +540,7 @@ function selectCut(c) {
   picker.size = null;
   document.getElementById('btn-c-mens').classList.toggle('selected',   c === 'Mens');
   document.getElementById('btn-c-womens').classList.toggle('selected', c === 'Womens');
-  document.getElementById('size-label-cut').textContent = c ? `— ${c}` : '';
+  document.getElementById('size-label-cut').textContent = `— ${c}`;
   renderSizeGrid();
   checkAddButton();
 }
@@ -503,14 +567,18 @@ function renderColourRow() {
     const imgSrc = picker.design
       ? `shirt-${picker.design.toLowerCase()}-${c.toLowerCase()}.jpg`
       : null;
-    const imgHtml = imgSrc
-      ? `<img src="${imgSrc}" alt="${c}" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">`
-      : '';
-    const swatchStyle = `background:${COLOUR_HEX[c]};border:${c==='White'?'1px solid #d1d5db':'none'}`;
+    const isSelected = picker.colour === c;
     return `
-      <div class="colour-card${picker.colour===c?' selected':''}" data-colour="${c}" onclick="selectColour('${c}')">
-        ${imgHtml}
-        <div class="colour-swatch" style="${imgSrc?'display:none':'display:block'};${swatchStyle}"></div>
+      <div class="colour-card${isSelected ? ' selected' : ''}" data-colour="${c}" onclick="selectColour('${c}')">
+        <div class="colour-img-wrap">
+          ${imgSrc
+            ? `<img src="${imgSrc}" alt="${c}"
+                    onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+               <div class="colour-swatch" style="display:none;background:${COLOUR_HEX[c]};${c==='White'?'border-bottom:1px solid #d1d5db':''}"></div>
+               <button class="btn-zoom" onclick="event.stopPropagation();openZoom('${imgSrc}')" title="View larger">⤢</button>`
+            : `<div class="colour-swatch" style="background:${COLOUR_HEX[c]};${c==='White'?'border-bottom:1px solid #d1d5db':''}"></div>`
+          }
+        </div>
         <div class="colour-card-label">${c}</div>
       </div>`;
   }).join('');
@@ -520,7 +588,7 @@ function renderSizeGrid() {
   const grid = document.getElementById('size-grid');
   const sizes = picker.cut ? SIZES[picker.cut] : SIZES.Mens;
   grid.innerHTML = sizes.map(sz => `
-    <button class="size-btn${picker.size===sz.s?' selected':''}" data-size="${sz.s}" onclick="selectSize('${sz.s}')">
+    <button class="size-btn${picker.size === sz.s ? ' selected' : ''}" data-size="${sz.s}" onclick="selectSize('${sz.s}')">
       <span class="sz-name">${sz.s}</span>
       <span class="sz-in">${sz.in} / ${sz.cm}</span>
     </button>`).join('');
@@ -531,7 +599,17 @@ function checkAddButton() {
   document.getElementById('btn-add').disabled = !ready;
 }
 
-// ── Cart actions ─────────────────────────────────────────────────────────
+// ── Zoom modal ────────────────────────────────────────────────────────────
+function openZoom(src) {
+  document.getElementById('zoom-img').src = src;
+  document.getElementById('zoom-modal').classList.remove('hidden');
+}
+function closeZoom() {
+  document.getElementById('zoom-modal').classList.add('hidden');
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeZoom(); });
+
+// ── Cart actions ──────────────────────────────────────────────────────────
 async function addToCart() {
   const item = {
     id:     Math.random().toString(36).slice(2, 9),
@@ -559,7 +637,7 @@ async function saveOrders(orders) {
   renderCart();
 }
 
-// ── Admin view ───────────────────────────────────────────────────────────
+// ── Admin view ────────────────────────────────────────────────────────────
 async function loadAdmin() {
   const pin = prompt('Admin PIN:');
   if (pin !== 'admin') { alert('Incorrect PIN.'); showView('login'); return; }
@@ -571,7 +649,6 @@ async function loadAdmin() {
     return;
   }
 
-  // Flatten all orders
   const allItems = [];
   for (const row of data) {
     for (const item of (row.orders || [])) {
@@ -579,7 +656,6 @@ async function loadAdmin() {
     }
   }
 
-  // Totals by combo
   const totals = {};
   for (const it of allItems) {
     const key = `${it.design}|${it.cut}|${it.colour}|${it.size}`;
@@ -590,14 +666,9 @@ async function loadAdmin() {
     .sort(([a],[b]) => a.localeCompare(b))
     .map(([key, count]) => {
       const [design, cut, colour, size] = key.split('|');
-      return `<tr>
-        <td>${design}</td><td>${cut}</td>
-        <td>${colour}</td><td>${size}</td>
-        <td class="count">${count}</td>
-      </tr>`;
+      return `<tr><td>${design}</td><td>${cut}</td><td>${colour}</td><td>${size}</td><td class="count">${count}</td></tr>`;
     }).join('');
 
-  // All orders table
   const orderRows = data.map(row => {
     const items = (row.orders || []).map(it =>
       `<span class="tag tag-${it.design.toLowerCase()}">${it.design}</span>`+
@@ -606,16 +677,13 @@ async function loadAdmin() {
       `<strong>${it.size}</strong>`
     ).join('<br>');
     return `<tr>
-      <td>${row.member_number}</td>
-      <td>${row.name}</td>
-      <td>${row.phone || '—'}</td>
+      <td>${row.member_number}</td><td>${row.name}</td><td>${row.phone || '—'}</td>
       <td>${items || '<span style="color:#94a3b8">No items</span>'}</td>
     </tr>`;
   }).join('');
 
   document.getElementById('admin-content').innerHTML = `
     <button class="btn-export" onclick="exportCSV()">⬇ Export CSV</button>
-
     <h2 style="margin-bottom:12px">Order Totals (${allItems.length} items)</h2>
     <div style="overflow-x:auto;margin-bottom:24px">
       <table class="totals-table">
@@ -623,7 +691,6 @@ async function loadAdmin() {
         <tbody>${totalRows || '<tr><td colspan="5" style="color:#94a3b8;text-align:center">No orders yet</td></tr>'}</tbody>
       </table>
     </div>
-
     <h2 style="margin-bottom:12px">All Members (${data.length})</h2>
     <div style="overflow-x:auto">
       <table class="all-orders-table">
@@ -649,7 +716,7 @@ function exportCSV() {
   });
 }
 
-// ── Init ─────────────────────────────────────────────────────────────────
+// ── Init ──────────────────────────────────────────────────────────────────
 if (new URLSearchParams(location.search).get('admin') === '1') {
   loadAdmin();
 }
