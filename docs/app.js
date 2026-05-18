@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.74';
+const APP_VERSION = '4.75';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -3070,6 +3070,7 @@ async function renderTemplatesTab() {
     .select('*').eq('active', true).order('day_of_week');
   ST.templates = data || [];
   const el = document.getElementById('templates-list');
+  document.getElementById('btn-add-template').onclick = openAddTemplateForm;
   if (!ST.templates.length) { el.innerHTML = '<p style="color:#666">No templates yet.</p>'; return; }
   el.innerHTML = ST.templates.map(t => `
     <div class="admin-event-row">
