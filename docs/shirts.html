@@ -408,7 +408,7 @@
           </div>
         </div>
 
-        <div class="picker-group">
+        <div class="picker-group hidden" id="picker-size-group">
           <div class="picker-label">Size <span id="size-label-cut" style="font-weight:400;text-transform:none;letter-spacing:0"></span></div>
           <div class="size-grid" id="size-grid"></div>
         </div>
@@ -939,6 +939,7 @@ function resetPickerUI() {
   document.getElementById('btn-c-mens').classList.remove('selected');
   document.getElementById('btn-c-womens').classList.remove('selected');
   document.getElementById('size-label-cut').textContent = '';
+  document.getElementById('picker-size-group').classList.add('hidden');
   renderColourRow();
   renderSizeGrid();
   checkAddButton();
@@ -960,6 +961,7 @@ function selectCut(c) {
   document.getElementById('btn-c-mens').classList.toggle('selected',   c === 'Mens');
   document.getElementById('btn-c-womens').classList.toggle('selected', c === 'Womens');
   document.getElementById('size-label-cut').textContent = `— ${c}`;
+  document.getElementById('picker-size-group').classList.remove('hidden');
   renderSizeGrid();
   checkAddButton();
 }
