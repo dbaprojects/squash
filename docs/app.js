@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.76';
+const APP_VERSION = '4.77';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -2233,6 +2233,19 @@ async function promoteFirstReserve(eventId) {
   }
 }
 
+async function demoteOverflowSignups(eventId) {
+  const { data: ev } = await sb.from('events').select('max_signups').eq('id', eventId).single();
+  if (!ev?.max_signups) return;
+  const { data: confirmed } = await sb.from('signups')
+    .select('id').eq('event_id', eventId).eq('is_reserve', false)
+    .order('signed_up_at', { ascending: false });
+  const overflow = (confirmed || []).length - ev.max_signups;
+  if (overflow <= 0) return;
+  for (const s of confirmed.slice(0, overflow)) {
+    await sb.from('signups').update({ is_reserve: true }).eq('id', s.id);
+  }
+}
+
 // ── Event detail ──────────────────────────────────────────────────────────
 async function openEvent(id) {
   const { data: ev, error } = await sb.from('events')
@@ -3048,6 +3061,7 @@ async function submitEditEvent(id) {
   };
   const { error } = await sb.from('events').update(body).eq('id', id);
   if (error) { alert(error.message); return; }
+  await demoteOverflowSignups(id);
   await promoteFirstReserve(id);
   closeFormModal();
   await renderAdminEvents();
