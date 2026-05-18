@@ -1571,6 +1571,7 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 .pc-row2 { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .pc-name  { font-weight: 600; font-size: 15px; flex: 1; min-width: 0; }
 .pc-phone { font-size: 12px; color: var(--bc-text-dim); flex: 1; min-width: 0; }
+.pc-logins { font-size: 12px; color: var(--bc-text-dim); white-space: nowrap; }
 
 /* Sortable column headers */
 .th-sort { cursor: pointer; user-select: none; }
