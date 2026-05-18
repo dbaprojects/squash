@@ -795,15 +795,19 @@ function renderAdmin(filterQ) {
     row.member_number.toLowerCase().includes(q)
   );
   const orderRows = filtered.map(row => {
-    const items = (row.orders || []).map(it =>
-      `<span class="tag tag-${it.design.toLowerCase()}">${it.design}</span>`+
-      `<span class="tag tag-${it.cut.toLowerCase()}">${it.cut}</span>`+
-      `<span class="tag tag-${it.colour.toLowerCase()}">${it.colour}</span>`+
-      `<strong>${it.size}</strong>${(it.qty || 1) > 1 ? ` ×${it.qty}` : ''}`
-    ).join('<br>');
+    const grouped = {};
+    for (const it of (row.orders || [])) {
+      const key = `${it.design}|${it.cut}|${it.colour}|${it.size}`;
+      grouped[key] = (grouped[key] || 0) + (it.qty || 1);
+    }
+    const items = Object.entries(grouped)
+      .map(([key, qty]) => {
+        const [design, cut, colour, size] = key.split('|');
+        return `${design} ${cut} ${colour} ${size}${qty > 1 ? ` ×${qty}` : ''}`;
+      }).join('<br>');
     return `<tr>
       <td>${row.member_number}</td><td>${row.name}</td><td>${row.phone || '—'}</td>
-      <td>${items || '<span style="color:#94a3b8">No items</span>'}</td>
+      <td style="font-size:13px">${items || '<span style="color:#94a3b8">No items</span>'}</td>
     </tr>`;
   }).join('');
 
