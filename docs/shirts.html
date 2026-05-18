@@ -439,6 +439,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 const { createClient } = supabase;
 const sb = createClient(
@@ -825,7 +826,7 @@ function renderAdmin(filterQ) {
   }).join('');
 
   document.getElementById('admin-content').innerHTML = `
-    <button class="btn-export" onclick="exportCSV()">⬇ Export CSV</button>
+    <button class="btn-export" onclick="exportExcel()">⬇ Export Excel</button>
 
     <h2 style="margin-bottom:10px">Summary</h2>
     <div class="summary-grid">
@@ -866,19 +867,35 @@ function renderAdmin(filterQ) {
   document.getElementById('admin-members-card').style.display = '';
 }
 
-function exportCSV() {
+function exportExcel() {
   sb.from('shirt_orders').select('*').order('name').then(({ data }) => {
-    const rows = [['Member','Name','Phone','Design','Cut','Colour','Size','Qty']];
+    const wb = XLSX.utils.book_new();
+
+    // Sheet 1: By Member
+    const memberRows = [['Member', 'Name', 'Phone', 'Design', 'Cut', 'Colour', 'Size', 'Qty']];
     for (const row of (data || [])) {
       for (const item of (row.orders || [])) {
-        rows.push([row.member_number, row.name, row.phone || '', item.design, item.cut, item.colour, item.size, item.qty || 1]);
+        memberRows.push([row.member_number, row.name, row.phone || '', item.design, item.cut, item.colour, item.size, item.qty || 1]);
       }
     }
-    const csv = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n');
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-    a.download = 'shirt-orders.csv';
-    a.click();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(memberRows), 'By Member');
+
+    // Sheet 2: Totals by Design/Cut/Colour/Size
+    const totals = {};
+    for (const row of (data || [])) {
+      for (const item of (row.orders || [])) {
+        const key = `${item.design}|${item.cut}|${item.colour}|${item.size}`;
+        totals[key] = (totals[key] || 0) + (item.qty || 1);
+      }
+    }
+    const totalsRows = [['Design', 'Cut', 'Colour', 'Size', 'Qty']];
+    Object.entries(totals).sort(([a], [b]) => a.localeCompare(b)).forEach(([key, qty]) => {
+      const [design, cut, colour, size] = key.split('|');
+      totalsRows.push([design, cut, colour, size, qty]);
+    });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(totalsRows), 'Totals');
+
+    XLSX.writeFile(wb, 'shirt-orders.xlsx');
   });
 }
 
