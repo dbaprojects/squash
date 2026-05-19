@@ -180,7 +180,7 @@ function renderAdmin(filterQ) {
     const key = `${it.design}|${it.colour}`;
     dcTotals[key] = (dcTotals[key] || 0) + (it.qty || 1);
   }
-  const DC_ORDER = ['Beatles|Blue', 'Banksy|Blue', 'Banksy|White'];
+  const DC_ORDER = ['Beatles|Blue', 'Beatles|White', 'Banksy|Blue', 'Banksy|White', 'Banksy|Red'];
   const dcCards = DC_ORDER.map(key => {
     const [design, colour] = key.split('|');
     const count = dcTotals[key] || 0;
