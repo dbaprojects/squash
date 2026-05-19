@@ -207,7 +207,8 @@ function renderAdmin(filterQ) {
     }).join('');
 
   const filtered = data.filter(row =>
-    !q || row.name.toLowerCase().includes(q) || row.member_number.toLowerCase().includes(q)
+    (row.orders || []).length > 0 &&
+    (!q || row.name.toLowerCase().includes(q) || row.member_number.toLowerCase().includes(q))
   );
   const orderRows = filtered.map(row => {
     const grouped = {};
@@ -266,6 +267,7 @@ function exportExcel() {
 
     const memberRows = [['Member', 'Name', 'Phone', 'Design', 'Cut', 'Colour', 'Size', 'Qty']];
     for (const row of (data || [])) {
+      if (!(row.orders || []).length) continue;
       const grouped = {};
       for (const item of (row.orders || [])) {
         const key = `${item.design}|${item.cut}|${item.colour}|${item.size}`;
