@@ -249,8 +249,9 @@ function renderAdmin(filterQ) {
       </table>
     </div>`;
 
+  const withOrders = data.filter(row => (row.orders || []).length > 0);
   document.getElementById('admin-members-heading').textContent =
-    `All Members (${filtered.length}${filtered.length !== data.length ? ` of ${data.length}` : ''})`;
+    `All Members (${filtered.length}${filtered.length !== withOrders.length ? ` of ${withOrders.length}` : ''})`;
   document.getElementById('admin-members-table').innerHTML = `
     <div style="overflow-x:auto">
       <table class="all-orders-table">
