@@ -175,6 +175,11 @@ function renderAdmin(filterQ) {
   const pricePerShirt = totalShirts >= 50 ? 40 : 45;
   const estTotal = totalShirts * pricePerShirt;
 
+  const designTotals = {};
+  for (const it of allItems) {
+    designTotals[it.design] = (designTotals[it.design] || 0) + (it.qty || 1);
+  }
+
   const dcTotals = {};
   for (const it of allItems) {
     const key = `${it.design}|${it.colour}`;
@@ -238,6 +243,10 @@ function renderAdmin(filterQ) {
         <div class="stat-lbl">Per Shirt${totalShirts >= 50 ? ' (50+ rate)' : ' (<50 rate)'}</div>
       </div>
       <div class="stat-box"><div class="stat-val">$${estTotal.toLocaleString()}</div><div class="stat-lbl">Est. Total</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">
+      <div class="stat-box"><div class="stat-val">${designTotals['Beatles'] || 0}</div><div class="stat-lbl">Beatles</div></div>
+      <div class="stat-box"><div class="stat-val">${designTotals['Banksy'] || 0}</div><div class="stat-lbl">Banksy</div></div>
     </div>
     <h2 style="margin-bottom:10px">By Design &amp; Colour <span style="font-weight:400;font-size:11px;color:#64748b">(min 10 each)</span></h2>
     <div class="dc-grid" style="margin-bottom:20px">${dcCards}</div>
