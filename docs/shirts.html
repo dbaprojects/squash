@@ -930,6 +930,10 @@ function selectDesign(d) {
   checkAddButton();
 }
 
+function shirtImgSrc(design, cut, colour) {
+  return `${(cut || 'mens').toLowerCase()}-${design.toLowerCase()}-${colour.toLowerCase()}.jpg`;
+}
+
 function selectCut(c) {
   picker.cut  = c;
   picker.size = null;
@@ -937,6 +941,11 @@ function selectCut(c) {
   document.getElementById('btn-c-womens').classList.toggle('selected', c === 'Womens');
   document.getElementById('size-label-cut').textContent = `— ${c}`;
   document.getElementById('picker-size-group').classList.remove('hidden');
+  renderColourRow();
+  if (picker.colour && picker.design) {
+    const btn = document.getElementById('btn-view-larger');
+    btn.onclick = () => openZoom(shirtImgSrc(picker.design, c, picker.colour));
+  }
   renderSizeGrid();
   checkAddButton();
 }
@@ -947,7 +956,7 @@ function selectColour(c) {
     el.classList.toggle('selected', el.dataset.colour === c);
   });
   if (picker.design) {
-    const imgSrc = `shirt-${picker.design.toLowerCase()}-${c.toLowerCase()}.jpg`;
+    const imgSrc = shirtImgSrc(picker.design, picker.cut, c);
     const btn = document.getElementById('btn-view-larger');
     btn.onclick = () => openZoom(imgSrc);
     btn.classList.remove('hidden');
@@ -968,7 +977,7 @@ function renderColourRow() {
   const available = COLOURS_ENABLED[picker.design] || COLOURS;
   row.innerHTML = available.map(c => {
     const imgSrc = picker.design
-      ? `shirt-${picker.design.toLowerCase()}-${c.toLowerCase()}.jpg`
+      ? shirtImgSrc(picker.design, picker.cut, c)
       : null;
     const isSelected = picker.colour === c;
     return `
