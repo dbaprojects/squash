@@ -16,6 +16,8 @@ CREATE TABLE IF NOT EXISTS ladder_config (
 ALTER TABLE ladder_config ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "ladder_config_open" ON ladder_config FOR ALL USING (TRUE) WITH CHECK (TRUE);
 
--- Default division size (9 players per division = 4 divisions for ~36 players)
+-- Default config
 INSERT INTO ladder_config (key, value) VALUES ('division_size', '9')
+  ON CONFLICT (key) DO NOTHING;
+INSERT INTO ladder_config (key, value) VALUES ('challenge_range', '3')
   ON CONFLICT (key) DO NOTHING;

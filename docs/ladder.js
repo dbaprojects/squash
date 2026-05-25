@@ -46,6 +46,7 @@
     ]);
     const cfg = (cfgRes.data || []).find(r => r.key === 'division_size');
     _ladderDivSize   = cfg ? parseInt(cfg.value, 10) : 9;
+    _applyConfig(cfgRes.data);
     _ladderPositions = posRes.data || [];
     _injectLadderHomeCard();
   };
@@ -65,15 +66,21 @@
   };
 })();
 
-// ── Config ─────────────────────────────────────────────────────────────────
-const CHALLENGE_RANGE = 3; // number of positions above a player they can challenge
-
 // ── State ──────────────────────────────────────────────────────────────────
 let _ladderPositions = [];   // [{position, player_id, players:{first_name,last_name,current_handicap}}]
 let _ladderDivSize   = 9;
+let _challengeRange  = 3;    // positions above a player they can challenge
 let _ladderInList    = [];   // ordered array of player_id (admin reorder)
 let _ladderPool      = [];   // unranked player objects (admin reorder)
 let _ladderAllPlayers= [];   // all active players [{id,first_name,last_name,current_handicap}]
+
+function _applyConfig(cfgData) {
+  const rows = cfgData || [];
+  const ds = rows.find(r => r.key === 'division_size');
+  const cr = rows.find(r => r.key === 'challenge_range');
+  if (ds) _ladderDivSize  = parseInt(ds.value, 10);
+  if (cr) _challengeRange = parseInt(cr.value, 10);
+}
 
 // ── Home tile injection ────────────────────────────────────────────────────
 function _injectLadderHomeCard() {
@@ -125,6 +132,7 @@ async function loadDivisionLadder() {
 
   const cfg = (cfgRes.data || []).find(r => r.key === 'division_size');
   _ladderDivSize    = cfg ? parseInt(cfg.value, 10) : 9;
+  _applyConfig(cfgRes.data);
   _ladderPositions  = posRes.data || [];
 
   renderDivisionLadder();
@@ -155,10 +163,10 @@ function renderDivisionLadder() {
       if (myPos !== null) {
         if (p.player_id === myId) {
           cls = ' div-row-me';
-        } else if (p.position < myPos && p.position >= myPos - CHALLENGE_RANGE) {
+        } else if (p.position < myPos && p.position >= myPos - _challengeRange) {
           cls = ' div-row-can-challenge';
           badge = '<span class="div-row-badge badge-up">▲</span>';
-        } else if (p.position > myPos && p.position <= myPos + CHALLENGE_RANGE) {
+        } else if (p.position > myPos && p.position <= myPos + _challengeRange) {
           cls = '';
           badge = '';
         }
@@ -186,11 +194,12 @@ async function loadLadderAdmin() {
   if (!wrap) return;
   wrap.innerHTML = '<p style="color:#888;padding:16px">Loading…</p>';
 
-  const [posRes, playersRes] = await Promise.all([
+  const [posRes, playersRes, cfgRes] = await Promise.all([
     sb.from('ladder_positions')
       .select('position, player_id, players(id, first_name, last_name, current_handicap)')
       .order('position'),
-    sb.from('players').select('id,first_name,last_name,current_handicap').eq('active', true).order('first_name')
+    sb.from('players').select('id,first_name,last_name,current_handicap').eq('active', true).order('first_name'),
+    sb.from('ladder_config').select('key,value')
   ]);
 
   if (posRes.error || playersRes.error) {
@@ -198,6 +207,7 @@ async function loadLadderAdmin() {
     return;
   }
 
+  _applyConfig(cfgRes.data);
   _ladderAllPlayers = playersRes.data || [];
   _ladderPositions  = posRes.data || [];
 
@@ -249,6 +259,16 @@ function renderLadderAdmin() {
     <div class="panel-header" style="margin-bottom:16px">
       <h3>Division Ladder — Reorder</h3>
       <button class="btn-primary" onclick="saveLadderOrder()">Save Order</button>
+    </div>
+    <div class="ladder-config-row">
+      <label class="ladder-cfg-label">Division size
+        <input type="number" id="cfg-div-size" class="ladder-cfg-input" value="${_ladderDivSize}" min="1" max="20">
+      </label>
+      <label class="ladder-cfg-label">Challenge range
+        <input type="number" id="cfg-challenge-range" class="ladder-cfg-input" value="${_challengeRange}" min="1" max="10">
+      </label>
+      <button class="btn-secondary" onclick="saveAdminConfig()" style="align-self:flex-end">Save Settings</button>
+      <span id="cfg-save-msg" style="font-size:12px;color:#15803d;align-self:flex-end"></span>
     </div>
     <div id="ladder-save-msg" style="margin-bottom:12px;font-size:13px;color:#15803d;min-height:18px"></div>
     <div class="ladder-admin-wrap">
@@ -332,6 +352,25 @@ function ladderRemove(inIdx) {
 }
 
 // ── Save ───────────────────────────────────────────────────────────────────
+async function saveAdminConfig() {
+  const ds  = parseInt(document.getElementById('cfg-div-size')?.value, 10);
+  const cr  = parseInt(document.getElementById('cfg-challenge-range')?.value, 10);
+  const msg = document.getElementById('cfg-save-msg');
+  if (!ds || !cr || ds < 1 || cr < 1) { if (msg) msg.textContent = 'Invalid values'; return; }
+
+  const rows = [
+    { key: 'division_size',  value: String(ds) },
+    { key: 'challenge_range', value: String(cr) }
+  ];
+  const { error } = await sb.from('ladder_config').upsert(rows, { onConflict: 'key' });
+  if (error) { if (msg) { msg.style.color = '#dc2626'; msg.textContent = error.message; } return; }
+
+  _ladderDivSize  = ds;
+  _challengeRange = cr;
+  if (msg) { msg.style.color = '#15803d'; msg.textContent = 'Saved'; setTimeout(() => { msg.textContent = ''; }, 2000); }
+  renderLadderAdmin();
+}
+
 async function saveLadderOrder() {
   const msg = document.getElementById('ladder-save-msg');
   if (msg) msg.textContent = 'Saving…';
