@@ -124,8 +124,8 @@ function renderDivisionLadder() {
   const numDivisions = 4;
   const ranked = _ladderPositions; // already sorted by position
 
-  // Build set of ranked player ids for unranked list
-  const rankedIds = new Set(ranked.map(p => p.player_id));
+  const myId  = ST?.player?.id;
+  const myPos = ranked.find(p => p.player_id === myId)?.position ?? null;
 
   const divCards = [];
   for (let d = 1; d <= numDivisions; d++) {
@@ -139,7 +139,13 @@ function renderDivisionLadder() {
     const rows = players.map(p => {
       const first = p.players.first_name;
       const last  = p.players.last_name ? p.players.last_name[0].toUpperCase() : '';
-      return `<div class="div-player-row">
+      let cls = '';
+      if (myPos !== null) {
+        if (p.player_id === myId)                          cls = ' div-row-me';
+        else if (p.position < myPos && p.position >= myPos - 3) cls = ' div-row-can-challenge';
+        else if (p.position > myPos && p.position <= myPos + 3) cls = ' div-row-challenger';
+      }
+      return `<div class="div-player-row${cls}">
         <span class="div-pos">${p.position}</span>
         <span class="div-player-name">${first} ${last}</span>
       </div>`;

@@ -50,6 +50,15 @@
     .div-player-row:last-child { border-bottom: none; }
     .div-pos { width: 18px; text-align: right; color: #bbb; font-size: 10px; flex-shrink: 0; }
     .div-player-name { flex: 1; }
+    /* Me */
+    .div-row-me { background: #1B2A6B; color: #fff; font-weight: 700; }
+    .div-row-me .div-pos { color: rgba(255,255,255,0.5); }
+    /* Players I can challenge (above me) */
+    .div-row-can-challenge { background: #fef9c3; }
+    .div-row-can-challenge .div-player-name::after { content: ' ↑'; color: #ca8a04; font-size: 10px; }
+    /* Players who can challenge me (below me) */
+    .div-row-challenger { background: #fce7f3; }
+    .div-row-challenger .div-player-name::after { content: ' ↓'; color: #be185d; font-size: 10px; }
 
     /* Home tile */
     .home-card-divladder { background: linear-gradient(135deg, #1e3a5f 0%, #2d5a9e 100%); color: #fff; }
