@@ -69,7 +69,7 @@ let _ladderInList     = [];
 let _ladderPool       = [];
 let _ladderAllPlayers = [];
 let _activeChallenges = [];
-let _challengesNotified = false; // reset each page load; prevents repeat popup on goHome()
+const _notifiedChallengeIds = new Set();
 
 // ── Challenge messages ─────────────────────────────────────────────────────
 const CHALLENGE_MESSAGES = [
@@ -383,20 +383,24 @@ async function submitChallenge(targetId) {
   _injectLadderHomeCard();
 }
 
-// ── Pending challenge popup (shown once per session on home load) ───────────
+// ── Pending challenge popup — fires on every loadHome for any unseen challenge ─
 function _checkPendingChallenges() {
-  if (_challengesNotified || !ST?.player) return;
-  _challengesNotified = true;
+  if (!ST?.player) return;
+  // If a modal is already open, don't stack another on top
+  if (!document.getElementById('form-overlay')?.classList.contains('hidden')) return;
   const myId = ST.player.id;
-  const pending = _activeChallenges.filter(c => c.challenged_id === myId && c.status === 'pending');
-  if (pending.length === 0) return;
-  const c = pending[0];
+  const unseen = _activeChallenges.filter(
+    c => c.challenged_id === myId && c.status === 'pending' && !_notifiedChallengeIds.has(c.id)
+  );
+  if (unseen.length === 0) return;
+  const c = unseen[0];
+  _notifiedChallengeIds.add(c.id);
   const challengerName = `${c.challenger?.first_name || ''} ${c.challenger?.last_name || ''}`.trim();
   const issuedDate = c.issued_at
     ? new Date(c.issued_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
     : '';
-  const moreNote = pending.length > 1
-    ? `<p style="font-size:12px;color:#64748b;margin-top:8px">+${pending.length - 1} more challenge${pending.length > 2 ? 's' : ''} — view in Ladders</p>`
+  const moreNote = unseen.length > 1
+    ? `<p style="font-size:12px;color:#64748b;margin-top:8px">+${unseen.length - 1} more challenge${unseen.length > 2 ? 's' : ''} — view in Ladders</p>`
     : '';
   showFormModal('⚔️ You\'ve Been Challenged!', `
     <div style="text-align:center;padding:4px 0">
