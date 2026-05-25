@@ -265,6 +265,15 @@ SUPABASE_SERVICE_ROLE_KEY=... node db/reseed.js
 
 `sed 's/v4\.XX/v4.YY/g'` misses `APP_VERSION` and the `?v=` query strings. Update all explicitly.
 
+**iOS PWA cache — MUST do on every push:**
+version.json now has a `build` timestamp field. The app compares this against `localStorage._app_build` on startup and forces a reload if they differ. This means **even without a version bump, a build timestamp update will force iOS to reload**.
+
+Run before every commit:
+```bash
+echo "{\"version\":\"4.XX\",\"build\":\"$(date +%s)\"}" > docs/version.json
+```
+This is the fix for iOS PWA not picking up changes. Never push without updating version.json.
+
 | Version | Description |
 |---|---|
 | v1.0 | Initial build — SQLite backend, all core features |
