@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.81';
+const APP_VERSION = '4.82';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -123,7 +123,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const buildMismatch   = build && build !== storedBuild;
     if (versionMismatch || buildMismatch) {
       if (build) localStorage.setItem('_app_build', build);
-      location.replace(location.pathname + '?_cb=' + (version || APP_VERSION));
+      location.replace(location.pathname + '?_cb=' + (build || version || APP_VERSION));
       return;
     }
   } catch (e) { /* offline or fetch failed — continue normally */ }
