@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DOOM — BC Squash</title>
+    <script src="https://js-dos.com/v7/build/releases/latest/js-dos/js-dos.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #0a0a0a;
+            color: #fff;
+            font-family: 'Courier New', monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        #header {
+            width: 100%;
+            background: #1B2A6B;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 2px solid #C9A84C;
+        }
+
+        #header h1 {
+            font-size: 20px;
+            font-weight: 900;
+            color: #C9A84C;
+            letter-spacing: 8px;
+            text-shadow: 0 0 12px rgba(201,168,76,0.5);
+        }
+
+        #header a {
+            color: #aaa;
+            text-decoration: none;
+            font-size: 13px;
+            transition: color 0.2s;
+        }
+
+        #header a:hover { color: #fff; }
+
+        #game-wrap {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            gap: 14px;
+            width: 100%;
+        }
+
+        #canvas-container {
+            position: relative;
+            border: 2px solid #333;
+            box-shadow: 0 0 40px rgba(201,168,76,0.15);
+        }
+
+        #jsdos {
+            display: block;
+            max-width: 100%;
+            width: 640px;
+            height: 400px;
+        }
+
+        #loading {
+            position: absolute;
+            inset: 0;
+            background: #111;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+        }
+
+        #loading .skull {
+            font-size: 48px;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        #loading .msg {
+            color: #C9A84C;
+            font-size: 14px;
+            letter-spacing: 2px;
+        }
+
+        #loading .sub {
+            color: #555;
+            font-size: 11px;
+        }
+
+        #loading .progress-bar {
+            width: 200px;
+            height: 4px;
+            background: #222;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        #loading .progress-fill {
+            height: 100%;
+            background: #C9A84C;
+            width: 0%;
+            animation: load 3s ease-in-out forwards;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.7; }
+        }
+
+        @keyframes load {
+            0% { width: 0%; }
+            60% { width: 70%; }
+            80% { width: 85%; }
+            100% { width: 92%; }
+        }
+
+        #error-msg {
+            display: none;
+            background: #1a0000;
+            border: 1px solid #500;
+            color: #f66;
+            padding: 16px 20px;
+            font-size: 13px;
+            line-height: 1.6;
+            max-width: 640px;
+            text-align: center;
+        }
+
+        #error-msg a { color: #f99; }
+
+        #controls {
+            display: none;
+            color: #555;
+            font-size: 12px;
+            text-align: center;
+            line-height: 1.8;
+        }
+
+        #controls span { color: #888; margin: 0 6px; }
+
+        #controls .key {
+            background: #222;
+            border: 1px solid #444;
+            border-radius: 3px;
+            padding: 1px 6px;
+            color: #ccc;
+            font-size: 11px;
+        }
+
+        #secret-note {
+            color: #333;
+            font-size: 10px;
+            letter-spacing: 1px;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="header">
+    <h1>D O O M</h1>
+    <a href="index.html">← Back to Squash</a>
+</div>
+
+<div id="game-wrap">
+
+    <div id="canvas-container">
+        <canvas id="jsdos" width="640" height="400"></canvas>
+        <div id="loading">
+            <div class="skull">💀</div>
+            <div class="msg">LOADING DOOM<span id="dots"></span></div>
+            <div class="progress-bar"><div class="progress-fill"></div></div>
+            <div class="sub">Doom Shareware Episode 1 — Knee-Deep in the Dead</div>
+        </div>
+    </div>
+
+    <div id="error-msg" id="error-box">
+        <strong>Failed to load Doom.</strong><br>
+        The shareware archive may have moved. Try:<br>
+        1. Check the URL constant in this file and update <code>DOOM_ZIP_URL</code>.<br>
+        2. Download the Doom shareware zip from
+        <a href="https://archive.org/search?query=doom+shareware" target="_blank">archive.org</a>
+        and place it alongside this file, then set <code>DOOM_ZIP_URL = 'doom1.zip'</code>.
+    </div>
+
+    <div id="controls">
+        <span><span class="key">↑↓←→</span> or <span class="key">WASD</span> Move</span>
+        <span><span class="key">Ctrl</span> Shoot</span>
+        <span><span class="key">Space</span> Use / Open</span>
+        <span><span class="key">Shift</span> Run</span>
+        <span><span class="key">Alt+↑↓</span> Look</span>
+        <span><span class="key">Esc</span> Menu</span>
+    </div>
+
+    <div id="secret-note">[ you found it ]</div>
+
+</div>
+
+<script>
+    // ── Doom Shareware source ────────────────────────────────────────────────
+    // id Software released Doom Episode 1 as freely-distributable shareware.
+    // Update this URL if the archive moves. You can also host doom1.zip locally
+    // in docs/ and set this to just 'doom1.zip'.
+    const DOOM_ZIP_URL = 'https://archive.org/download/DoomsharewareEpisode/doom.ZIP';
+    // ─────────────────────────────────────────────────────────────────────────
+
+    const canvas   = document.getElementById('jsdos');
+    const loading  = document.getElementById('loading');
+    const errorBox = document.getElementById('error-msg');
+    const controls = document.getElementById('controls');
+
+    // Animate the loading dots
+    let dotCount = 0;
+    const dotsEl = document.getElementById('dots');
+    const dotTimer = setInterval(() => {
+        dotCount = (dotCount + 1) % 4;
+        dotsEl.textContent = '.'.repeat(dotCount);
+    }, 400);
+
+    function onError(err) {
+        clearInterval(dotTimer);
+        loading.style.display = 'none';
+        errorBox.style.display = 'block';
+        console.error('Doom load error:', err);
+    }
+
+    Dos(canvas).ready(function(fs, main) {
+        fs.extract(DOOM_ZIP_URL).then(function() {
+            clearInterval(dotTimer);
+            loading.style.display = 'none';
+            controls.style.display = 'block';
+            // DOOM.EXE is the standard executable in the shareware zip
+            main(['-c', 'DOOM.EXE']);
+        }).catch(onError);
+    });
+</script>
+
+</body>
+</html>
