@@ -76,7 +76,8 @@ let _ladderAllPlayers= [];   // all active players [{id,first_name,last_name,cur
 function _injectLadderHomeCard() {
   const grid = document.getElementById('home-grid');
   if (!grid) return;
-  if (document.getElementById('home-card-division-ladder')) return; // already injected
+  // Always remove stale card so it re-renders with current data
+  document.getElementById('home-card-division-ladder')?.remove();
 
   const card = document.createElement('div');
   card.id = 'home-card-division-ladder';
@@ -88,7 +89,10 @@ function _injectLadderHomeCard() {
       ${[1,2,3,4].map(d => {
         const start = (d - 1) * _ladderDivSize + 1;
         const top3  = _ladderPositions.filter(p => p.position >= start && p.position <= start + 2);
-        const names = top3.map(p => `${p.players.first_name} ${p.players.last_name[0]}`).join(', ') || '—';
+        const names = top3
+          .filter(p => p.players)
+          .map(p => `${p.players.first_name} ${(p.players.last_name || '')[0] || ''}`)
+          .join(', ') || '—';
         return `<div class="divladder-home-div"><span class="divladder-home-div-label">Div ${d}</span><span class="divladder-home-div-name">${names}</span></div>`;
       }).join('')}
     </div>`;
@@ -141,8 +145,9 @@ function renderDivisionLadder() {
       : p.position >= start && p.position <= end);
 
     const rows = players.map(p => {
-      const first = p.players.first_name;
-      const last  = p.players.last_name ? p.players.last_name[0].toUpperCase() : '';
+      if (!p.players) return '';
+      const first = p.players.first_name || '';
+      const last  = (p.players.last_name || '')[0]?.toUpperCase() || '';
       let cls = '', badge = '';
       if (myPos !== null) {
         if (p.player_id === myId) {
