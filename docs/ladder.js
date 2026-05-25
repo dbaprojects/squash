@@ -69,23 +69,18 @@ function _injectLadderHomeCard() {
   if (!grid) return;
   if (document.getElementById('home-card-division-ladder')) return; // already injected
 
-  const totalInLadder = _ladderPositions.length;
-  const numDivisions  = totalInLadder ? Math.ceil(totalInLadder / _ladderDivSize) : 4;
-
   const card = document.createElement('div');
   card.id = 'home-card-division-ladder';
   card.className = 'home-card home-card-divladder';
   card.onclick = () => navTo('division-ladder');
   card.innerHTML = `
-    <div class="home-card-label">Division Ladder</div>
-    <div class="home-card-sublabel">${numDivisions} Divisions · ${totalInLadder} Ranked</div>
+    <div class="home-card-label">Ladders</div>
     <div class="divladder-home-body">
       ${[1,2,3,4].map(d => {
         const start = (d - 1) * _ladderDivSize + 1;
-        const end   = d * _ladderDivSize;
-        const top   = _ladderPositions.find(p => p.position === start);
-        const name  = top ? `${top.players.first_name} ${top.players.last_name}` : '—';
-        return `<div class="divladder-home-div"><span class="divladder-home-div-label">Div ${d}</span><span class="divladder-home-div-name">${name}</span></div>`;
+        const top3  = _ladderPositions.filter(p => p.position >= start && p.position <= start + 2);
+        const names = top3.map(p => `${p.players.first_name} ${p.players.last_name[0]}`).join(', ') || '—';
+        return `<div class="divladder-home-div"><span class="divladder-home-div-label">Div ${d}</span><span class="divladder-home-div-name">${names}</span></div>`;
       }).join('')}
     </div>`;
 
