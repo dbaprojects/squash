@@ -14,6 +14,115 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="BC Squash">
   <link rel="apple-touch-icon" href="bcss.png">
+  <style>
+    /* ── Division Ladder ───────────────────────────────────────────────── */
+    .div-ladder-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      padding: 16px;
+      max-width: 760px;
+      margin: 0 auto;
+    }
+    @media (max-width: 480px) {
+      .div-ladder-grid { grid-template-columns: 1fr; }
+    }
+    .div-card {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.10);
+      overflow: hidden;
+    }
+    .div-card-header {
+      background: #1B2A6B;
+      color: #fff;
+      font-weight: 700;
+      font-size: 13px;
+      padding: 8px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .div-card-range { font-size: 11px; font-weight: 400; opacity: 0.8; }
+    .div-player-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-bottom: 1px solid #f1f5f9;
+      font-size: 13px;
+    }
+    .div-player-row:last-child { border-bottom: none; }
+    .div-pos { width: 24px; text-align: right; color: #94a3b8; font-size: 11px; flex-shrink: 0; }
+    .div-player-name { flex: 1; font-weight: 500; }
+    .div-player-hc { color: #1B2A6B; font-weight: 700; font-size: 12px; }
+
+    /* Home tile */
+    .home-card-divladder { background: linear-gradient(135deg, #1e3a5f 0%, #2d5a9e 100%); color: #fff; }
+    .home-card-divladder .home-card-label { color: #fff; }
+    .home-card-divladder .home-card-sublabel { color: rgba(255,255,255,0.75); }
+    .divladder-home-body { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
+    .divladder-home-div { background: rgba(255,255,255,0.12); border-radius: 6px; padding: 5px 8px; }
+    .divladder-home-div-label { font-size: 10px; font-weight: 700; display: block; opacity: 0.8; }
+    .divladder-home-div-name { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+
+    /* Admin reorder */
+    .ladder-admin-wrap {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      padding: 0 0 24px;
+    }
+    @media (max-width: 600px) {
+      .ladder-admin-wrap { grid-template-columns: 1fr; }
+    }
+    .ladder-admin-panel { display: flex; flex-direction: column; }
+    .ladder-panel-header { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; padding-bottom: 8px; }
+    .ladder-in-list, .ladder-pool-list {
+      border: 1.5px solid #e2e8f0;
+      border-radius: 8px;
+      min-height: 60px;
+      background: #fafafa;
+      overflow-y: auto;
+      max-height: 600px;
+    }
+    .ladder-in-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 10px;
+      border-bottom: 1px solid #e2e8f0;
+      background: #fff;
+      cursor: grab;
+      font-size: 13px;
+    }
+    .ladder-in-row:last-child { border-bottom: none; }
+    .ladder-div-end { border-bottom: 2px solid #1B2A6B !important; }
+    .ladder-drag-handle { color: #cbd5e1; font-size: 16px; cursor: grab; flex-shrink: 0; }
+    .ladder-in-pos { width: 22px; text-align: right; font-size: 11px; color: #94a3b8; flex-shrink: 0; }
+    .ladder-in-name { flex: 1; font-weight: 500; }
+    .ladder-in-div { font-size: 10px; font-weight: 700; color: #1B2A6B; background: #e8ecf8; border-radius: 4px; padding: 1px 5px; flex-shrink: 0; }
+    .ladder-remove-btn { border: none; background: none; color: #94a3b8; cursor: pointer; font-size: 14px; padding: 0 4px; flex-shrink: 0; }
+    .ladder-remove-btn:hover { color: #dc2626; }
+    .ladder-pool-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 7px 10px;
+      border-bottom: 1px solid #e2e8f0;
+      background: #fff;
+      font-size: 13px;
+      cursor: grab;
+    }
+    .ladder-pool-row:last-child { border-bottom: none; }
+    .ladder-pool-name { font-weight: 500; }
+    .ladder-add-btn {
+      border: 1px solid #1B2A6B; background: none; color: #1B2A6B;
+      border-radius: 6px; font-size: 12px; font-weight: 600;
+      padding: 3px 8px; cursor: pointer;
+    }
+    .ladder-add-btn:hover { background: #1B2A6B; color: #fff; }
+  </style>
 </head>
 <body>
 
@@ -151,6 +260,11 @@
     <div id="audit-log-wrap"></div>
   </main>
 
+  <!-- ── Division Ladder view ─────────────────────────────────────────────── -->
+  <main id="view-division-ladder" class="section hidden">
+    <div id="division-ladder-wrap"></div>
+  </main>
+
   <!-- ── Admin view ───────────────────────────────────────────────────────── -->
   <main id="view-admin" class="section hidden admin-only">
     <div class="tabs">
@@ -159,6 +273,7 @@
       <button class="tab-btn" data-tab="tab-templates">Template</button>
       <button class="tab-btn" data-tab="tab-hof">HoF</button>
       <button class="tab-btn" data-tab="tab-reports">Reports</button>
+      <button class="tab-btn" id="tab-btn-ladder" data-tab="tab-ladder" style="display:none">Ladder</button>
     </div>
 
     <!-- Players tab -->
@@ -203,6 +318,9 @@
       <div id="hof-admin-list"></div>
     </div>
 
+    <!-- Ladder admin tab (super_admin only) -->
+    <div id="tab-ladder" class="tab-panel hidden"></div>
+
   </main>
 
   <div id="app-footer" class="app-footer"><button class="app-footer-link" onclick="openTermsModal()">Terms of Use</button></div>
@@ -245,5 +363,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script src="app.js?v=4.79"></script>
+<script src="ladder.js?v=1"></script>
 </body>
 </html>
