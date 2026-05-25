@@ -7,7 +7,7 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>BC Squash Section</title>
-  <link rel="stylesheet" href="style.css?v=4.86">
+  <link rel="stylesheet" href="style.css?v=4.87">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#1B2A6B">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -170,6 +170,13 @@
 
     .divladder-challenges { margin-top: 6px; border-top: 1px solid #e2e8f0; padding-top: 5px; }
     .divladder-challenge-row { font-size: 10px; color: #475569; padding: 1px 0; }
+
+    /* Me-tile challenge rows */
+    .me-challenges-wrap { margin-top: 8px; border-top: 1px solid rgba(255,255,255,.15); padding-top: 6px; cursor: pointer; }
+    .me-challenge-row { font-size: 11px; color: rgba(255,255,255,.75); padding: 1px 0; line-height: 1.4; }
+
+    /* Injury badge in challenge list */
+    .challenge-status-badge.injury { background: #ffedd5; color: #c2410c; }
   </style>
 </head>
 <body>
@@ -187,7 +194,7 @@
     </div>
     <div id="login-phone-error" class="error-msg" style="margin-bottom:8px"></div>
     <button class="btn-google-full" onclick="submitLoginPhone()">Sign In</button>
-    <p class="login-version">v4.86</p>
+    <p class="login-version">v4.87</p>
     <p class="login-terms"><button class="login-terms-link" onclick="openTermsModal()">Terms of Use</button></p>
   </div>
 </div>
@@ -251,7 +258,7 @@
       <img src="bcss.png" class="header-logo" alt="BC">
       <div class="header-title">
         <span class="logo">British Club</span>
-        <span class="logo-sub">Squash Section <span class="version">v4.86</span></span>
+        <span class="logo-sub">Squash Section <span class="version">v4.87</span></span>
       </div>
     </div>
     <div id="header-page-title" class="header-page-title"></div>
@@ -410,7 +417,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
-<script src="app.js?v=4.86"></script>
-<script src="ladder.js?v=4.86"></script>
+<script src="app.js?v=4.87"></script>
+<script src="ladder.js?v=4.87"></script>
 </body>
 </html>

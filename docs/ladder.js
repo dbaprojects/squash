@@ -40,12 +40,21 @@
         .select('position, player_id, players(id, first_name, last_name, current_handicap)')
         .order('position'),
       sb.from('ladder_config').select('key,value'),
-      _loadChallenges()
+      _loadChallenges(),
+      _loadMyChallenges()
     ]);
     _applyConfig(cfgRes.data);
     _ladderPositions = posRes.data || [];
     _injectLadderHomeCard();
+    _injectMyChallenges();
     _checkPendingChallenges();
+  };
+
+  // ── Patch closeFormModal — block close when modal is locked ───────────
+  const _origCloseFormModal = closeFormModal;
+  closeFormModal = function () {
+    if (_formModalLocked) return;
+    _origCloseFormModal();
   };
 
   // ── Patch loadAdminTab ─────────────────────────────────────────────────
@@ -69,6 +78,8 @@ let _ladderInList     = [];
 let _ladderPool       = [];
 let _ladderAllPlayers = [];
 let _activeChallenges = [];
+let _myChallenges     = [];
+let _formModalLocked  = false;
 const _notifiedChallengeIds = new Set();
 
 // ── Challenge messages ─────────────────────────────────────────────────────
@@ -194,6 +205,19 @@ async function _loadChallenges() {
   _activeChallenges = data || [];
 }
 
+async function _loadMyChallenges() {
+  if (!ST?.player?.id) return;
+  const myId = ST.player.id;
+  const { data } = await sb.from('ladder_challenges')
+    .select(`id, challenger_id, challenged_id, status, issued_at, winner_id,
+             challenger:players!challenger_id(first_name, last_name),
+             challenged:players!challenged_id(first_name, last_name)`)
+    .or(`challenger_id.eq.${myId},challenged_id.eq.${myId}`)
+    .order('issued_at', { ascending: false })
+    .limit(6);
+  _myChallenges = data || [];
+}
+
 // ── Home tile injection ────────────────────────────────────────────────────
 function _injectLadderHomeCard() {
   const grid = document.getElementById('home-grid');
@@ -233,6 +257,48 @@ function _injectLadderHomeCard() {
   const adminCard = grid.querySelector('.home-card-admin');
   if (adminCard) grid.insertBefore(card, adminCard);
   else grid.appendChild(card);
+}
+
+// ── Me tile: inject my personal challenges ─────────────────────────────────
+function _myChallengeStatusLabel(c, myId) {
+  const isMe = id => id === myId;
+  switch (c.status) {
+    case 'pending':          return '<span style="color:#fbbf24;font-weight:700">Pending</span>';
+    case 'accepted':         return '<span style="color:#86efac;font-weight:700">Accepted</span>';
+    case 'declined':         return '<span style="color:#fca5a5;font-weight:700">Declined ↓</span>';
+    case 'declined_injury':  return '<span style="color:#fdba74;font-weight:700">Injury</span>';
+    case 'completed':
+      return isMe(c.winner_id)
+        ? '<span style="color:#86efac;font-weight:700">Won 🏆</span>'
+        : '<span style="color:rgba(255,255,255,.5);font-weight:700">Lost</span>';
+    case 'forfeited':
+      return isMe(c.winner_id)
+        ? '<span style="color:#86efac;font-weight:700">Won (forfeit)</span>'
+        : '<span style="color:rgba(255,255,255,.5);font-weight:700">Forfeited</span>';
+    default: return `<span style="color:rgba(255,255,255,.5)">${c.status}</span>`;
+  }
+}
+
+function _injectMyChallenges() {
+  if (!ST?.player?.id) return;
+  const meCard = document.querySelector('#home-grid .home-card-me');
+  if (!meCard) return;
+  meCard.querySelector('.me-challenges-wrap')?.remove();
+  if (_myChallenges.length === 0) return;
+  const myId = ST.player.id;
+  const rows = _myChallenges.slice(0, 3).map(c => {
+    const opp = c.challenger_id === myId ? c.challenged : c.challenger;
+    const oppName = `${opp?.first_name || ''} ${(opp?.last_name || '')[0] || ''}`.trim();
+    const statusHtml = _myChallengeStatusLabel(c, myId);
+    return `<div class="me-challenge-row">vs ${oppName} · ${statusHtml}</div>`;
+  }).join('');
+  const wrap = document.createElement('div');
+  wrap.className = 'me-challenges-wrap';
+  wrap.innerHTML = rows;
+  wrap.onclick = e => { e.stopPropagation(); navTo('division-ladder'); };
+  const link = meCard.querySelector('.home-card-link');
+  if (link) meCard.insertBefore(wrap, link);
+  else meCard.appendChild(wrap);
 }
 
 // ── Public view: load + render ─────────────────────────────────────────────
@@ -311,7 +377,7 @@ function renderDivisionLadder() {
           const cn = (c.challenger?.first_name || '') + ' ' + ((c.challenger?.last_name || '')[0] || '');
           const dn = (c.challenged?.first_name || '') + ' ' + ((c.challenged?.last_name || '')[0] || '');
           const canAct = myId && (c.challenger_id === myId || c.challenged_id === myId || myIsAdmin);
-          const statusCls = c.status === 'accepted' ? ' accepted' : '';
+          const statusCls   = c.status === 'accepted' ? ' accepted' : '';
           const statusLabel = c.status === 'accepted' ? 'Accepted' : 'Pending';
           const issuedDate = c.issued_at ? new Date(c.issued_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
           return `<div class="challenge-row${canAct ? '' : ' display-only'}"
@@ -370,6 +436,25 @@ function _shuffleChallengeMsg() {
 async function submitChallenge(targetId) {
   const msg = document.getElementById('challenge-msg')?.value.trim();
   const err = document.getElementById('challenge-form-error');
+
+  // Max 3 active (pending/accepted) challenges per player
+  const myId = ST.player.id;
+  const { data: active } = await sb.from('ladder_challenges')
+    .select('id, challenger_id, challenged_id')
+    .in('status', ['pending', 'accepted']);
+  if (active) {
+    const myCount     = active.filter(c => c.challenger_id === myId    || c.challenged_id === myId).length;
+    const theirCount  = active.filter(c => c.challenger_id === targetId || c.challenged_id === targetId).length;
+    if (myCount >= 3) {
+      if (err) err.textContent = 'You already have 3 active challenges — complete or wait for those first.';
+      return;
+    }
+    if (theirCount >= 3) {
+      if (err) err.textContent = 'That player already has 3 active challenges — try again later.';
+      return;
+    }
+  }
+
   const { error } = await sb.from('ladder_challenges').insert({
     challenger_id: ST.player.id,
     challenged_id: targetId,
@@ -379,14 +464,15 @@ async function submitChallenge(targetId) {
   if (error) { if (err) err.textContent = error.message; return; }
   closeFormModal();
   await _loadChallenges();
+  await _loadMyChallenges();
   renderDivisionLadder();
   _injectLadderHomeCard();
+  _injectMyChallenges();
 }
 
 // ── Pending challenge popup — fires on every loadHome for any unseen challenge ─
 function _checkPendingChallenges() {
   if (!ST?.player) return;
-  // If a modal is already open, don't stack another on top
   if (!document.getElementById('form-overlay')?.classList.contains('hidden')) return;
   const myId = ST.player.id;
   const unseen = _activeChallenges.filter(
@@ -407,34 +493,43 @@ function _checkPendingChallenges() {
       <p style="font-size:15px;margin-bottom:8px"><strong>${challengerName}</strong> has challenged you!</p>
       ${c.message ? `<p style="color:#64748b;font-style:italic;margin-bottom:10px">"${c.message}"</p>` : ''}
       <p style="font-size:12px;color:#94a3b8;margin-bottom:16px">Issued ${issuedDate}</p>
-      <div style="display:flex;gap:8px;justify-content:center">
-        <button class="btn-primary" style="flex:1" onclick="respondToChallenge('${c.id}', true)">Accept</button>
-        <button class="btn-secondary" style="flex:1" onclick="respondToChallenge('${c.id}', false)">Decline</button>
+      <div style="display:flex;gap:8px;justify-content:center;margin-bottom:8px">
+        <button class="btn-primary" style="flex:1" onclick="respondToChallenge('${c.id}','accept')">Accept</button>
+        <button class="btn-secondary" style="flex:1" onclick="respondToChallenge('${c.id}','decline')">Decline</button>
       </div>
-      <p style="font-size:11px;color:#ef4444;margin-top:10px">⚠️ Declining costs you one place on the ladder</p>
+      <button class="btn-secondary" style="width:100%;font-size:12px" onclick="respondToChallenge('${c.id}','injury')">Decline — Injury (no penalty)</button>
+      <p style="font-size:11px;color:#ef4444;margin-top:8px">⚠️ Declining costs you one place on the ladder</p>
       ${moreNote}
     </div>
   `);
+  // Lock the modal so it can't be dismissed without making a choice
+  _formModalLocked = true;
+  document.getElementById('form-close').style.visibility = 'hidden';
 }
 
-async function respondToChallenge(challengeId, accept) {
-  if (!accept) {
+async function respondToChallenge(challengeId, response) {
+  // response: 'accept' | 'decline' | 'injury'
+  if (response === 'decline') {
     const ok = confirm('Are you sure you want to decline? You will lose one place on the ladder.');
     if (!ok) return;
   }
+  // Unlock modal before any async work so user isn't stuck if an error occurs
+  _formModalLocked = false;
+  document.getElementById('form-close').style.visibility = '';
   const now = new Date().toISOString();
+  const statusMap = { accept: 'accepted', decline: 'declined', injury: 'declined_injury' };
   const { error } = await sb.from('ladder_challenges')
-    .update({ status: accept ? 'accepted' : 'declined', responded_at: now })
+    .update({ status: statusMap[response], responded_at: now })
     .eq('id', challengeId);
   if (error) { alert(error.message); return; }
-
-  if (!accept) {
+  if (response === 'decline') {
     await _applyOnePlaceDrop(ST.player.id);
   }
-
   closeFormModal();
   await _loadChallenges();
+  await _loadMyChallenges();
   _injectLadderHomeCard();
+  _injectMyChallenges();
 }
 
 // ── Record match result ────────────────────────────────────────────────────
@@ -476,8 +571,10 @@ async function submitChallengeResult(challengeId, winnerId) {
   if (error) { alert(error.message); return; }
   await _applyLadderResult(winnerId, loserId);
   closeFormModal();
+  await _loadMyChallenges();
   await loadDivisionLadder();
   _injectLadderHomeCard();
+  _injectMyChallenges();
 }
 
 // ── Position update helpers ────────────────────────────────────────────────
