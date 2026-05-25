@@ -37,7 +37,16 @@
   // ── Patch loadHome ─────────────────────────────────────────────────────
   const _origLoadHome = loadHome;
   loadHome = async function () {
-    await _origLoadHome();
+    const [, posRes, cfgRes] = await Promise.all([
+      _origLoadHome(),
+      sb.from('ladder_positions')
+        .select('position, player_id, players(id, first_name, last_name, current_handicap)')
+        .order('position'),
+      sb.from('ladder_config').select('key,value')
+    ]);
+    const cfg = (cfgRes.data || []).find(r => r.key === 'division_size');
+    _ladderDivSize   = cfg ? parseInt(cfg.value, 10) : 9;
+    _ladderPositions = posRes.data || [];
     _injectLadderHomeCard();
   };
 
