@@ -736,6 +736,10 @@ function renderLadderAdmin() {
   const wrap = document.getElementById('tab-ladder');
   if (!wrap) return;
 
+  // Preserve scroll positions across re-render
+  const prevWindowY  = window.scrollY;
+  const prevListScroll = document.getElementById('ladder-in-list')?.scrollTop || 0;
+
   const inRows = _ladderInList.map((pid, idx) => {
     const p = _playerById(pid);
     if (!p) return '';
@@ -746,7 +750,8 @@ function renderLadderAdmin() {
                  data-idx="${idx}"
                  ondragstart="ladderDragStart(event)"
                  ondragover="ladderDragOver(event)"
-                 ondrop="ladderDrop(event)">
+                 ondrop="ladderDrop(event)"
+                 ondragend="ladderDragEnd(event)">
       <span class="ladder-drag-handle">⠿</span>
       <span class="ladder-in-pos">${idx + 1}</span>
       <span class="ladder-in-name">${name}</span>
@@ -797,9 +802,23 @@ function renderLadderAdmin() {
         </div>
       </div>
     </div>`;
+
+  // Restore scroll after DOM settles
+  requestAnimationFrame(() => {
+    window.scrollTo(0, prevWindowY);
+    const list = document.getElementById('ladder-in-list');
+    if (list) list.scrollTop = prevListScroll;
+  });
+
+  // Attach touch listeners (non-passive touchmove needed to preventDefault page scroll)
+  document.querySelectorAll('#ladder-in-list .ladder-in-row').forEach(row => {
+    row.addEventListener('touchstart',  _ladderTouchStart, { passive: true });
+    row.addEventListener('touchmove',   _ladderTouchMove,  { passive: false });
+    row.addEventListener('touchend',    _ladderTouchEnd,   { passive: false });
+  });
 }
 
-// ── Drag and drop ──────────────────────────────────────────────────────────
+// ── Drag and drop (mouse) + touch drag (iOS/mobile) ───────────────────────
 let _ladderDragSrcIdx  = null;
 let _ladderPoolDragIdx = null;
 
@@ -807,6 +826,7 @@ function ladderDragStart(e) {
   _ladderDragSrcIdx  = parseInt(e.currentTarget.dataset.idx, 10);
   _ladderPoolDragIdx = null;
   e.dataTransfer.effectAllowed = 'move';
+  e.currentTarget.classList.add('ladder-dragging');
 }
 
 function ladderPoolDragStart(e) {
@@ -818,6 +838,15 @@ function ladderPoolDragStart(e) {
 function ladderDragOver(e) {
   e.preventDefault();
   e.dataTransfer.dropEffect = 'move';
+  document.querySelectorAll('.ladder-in-row').forEach(r => r.classList.remove('ladder-drag-over'));
+  e.currentTarget.classList.add('ladder-drag-over');
+}
+
+function ladderDragEnd(e) {
+  document.querySelectorAll('.ladder-in-row').forEach(r => {
+    r.classList.remove('ladder-dragging');
+    r.classList.remove('ladder-drag-over');
+  });
 }
 
 function ladderDrop(e) {
@@ -842,6 +871,44 @@ function ladderDropOnEmpty(e) {
     _ladderPoolDragIdx = null;
     renderLadderAdmin();
   }
+}
+
+// ── Touch drag (iOS Safari doesn't support HTML5 drag-and-drop) ───────────
+let _ladderTouchSrcIdx = null;
+
+function _ladderTouchStart(e) {
+  _ladderTouchSrcIdx = parseInt(e.currentTarget.dataset.idx, 10);
+  e.currentTarget.classList.add('ladder-dragging');
+}
+
+function _ladderTouchMove(e) {
+  if (_ladderTouchSrcIdx === null) return;
+  e.preventDefault(); // block page scroll while dragging
+  const touch = e.touches[0];
+  document.querySelectorAll('.ladder-in-row').forEach(r => r.classList.remove('ladder-drag-over'));
+  const el  = document.elementFromPoint(touch.clientX, touch.clientY);
+  const row = el?.closest?.('.ladder-in-row');
+  if (row && parseInt(row.dataset.idx, 10) !== _ladderTouchSrcIdx) {
+    row.classList.add('ladder-drag-over');
+  }
+}
+
+function _ladderTouchEnd(e) {
+  if (_ladderTouchSrcIdx === null) return;
+  const touch = e.changedTouches[0];
+  document.querySelectorAll('.ladder-in-row').forEach(r => {
+    r.classList.remove('ladder-dragging');
+    r.classList.remove('ladder-drag-over');
+  });
+  const el  = document.elementFromPoint(touch.clientX, touch.clientY);
+  const row = el?.closest?.('.ladder-in-row');
+  const targetIdx = row ? parseInt(row.dataset.idx, 10) : NaN;
+  if (!isNaN(targetIdx) && targetIdx !== _ladderTouchSrcIdx) {
+    const [moved] = _ladderInList.splice(_ladderTouchSrcIdx, 1);
+    _ladderInList.splice(targetIdx, 0, moved);
+  }
+  _ladderTouchSrcIdx = null;
+  renderLadderAdmin();
 }
 
 // ── Add / Remove ───────────────────────────────────────────────────────────
