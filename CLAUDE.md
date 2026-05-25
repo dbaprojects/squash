@@ -5,7 +5,7 @@
 - **Owner:** David Barkess — personal project, unrelated to SAP/DealSensAI work
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `C:\Users\I061437\OneDrive\Projects\Squash`
-- **Current version:** v4.80
+- **Current version:** v4.81
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -350,3 +350,4 @@ SUPABASE_SERVICE_ROLE_KEY=... node db/reseed.js
 | v4.71 | Audit log: name filter input, Unique users toggle, Today period button, default period changed to 7d |
 | v4.72 | Audit log: "Delete my test logs" button removes only super admin entries; "Delete all logs" remains for full wipe |
 | v4.80 | Division Ladder Phase 1: ladder_positions + ladder_config tables; docs/ladder.js patches showSection/navTo/loadHome/loadAdminTab; 2×2 grid public view with logged-in player highlight + green ▲ challenge zone (3 above); super-admin drag-and-drop reorder in Admin → Ladder tab; home tile "Ladders" shows top 3 per division; dev.html only |
+| v4.81 | Promote ladder feature to production (index.html); force iOS cache refresh via version bump |
