@@ -65,6 +65,9 @@
   };
 })();
 
+// ── Config ─────────────────────────────────────────────────────────────────
+const CHALLENGE_RANGE = 3; // number of positions above a player they can challenge
+
 // ── State ──────────────────────────────────────────────────────────────────
 let _ladderPositions = [];   // [{position, player_id, players:{first_name,last_name,current_handicap}}]
 let _ladderDivSize   = 9;
@@ -152,10 +155,10 @@ function renderDivisionLadder() {
       if (myPos !== null) {
         if (p.player_id === myId) {
           cls = ' div-row-me';
-        } else if (p.position < myPos && p.position >= myPos - 3) {
+        } else if (p.position < myPos && p.position >= myPos - CHALLENGE_RANGE) {
           cls = ' div-row-can-challenge';
           badge = '<span class="div-row-badge badge-up">▲</span>';
-        } else if (p.position > myPos && p.position <= myPos + 3) {
+        } else if (p.position > myPos && p.position <= myPos + CHALLENGE_RANGE) {
           cls = '';
           badge = '';
         }
