@@ -334,9 +334,12 @@ function renderDivisionLadder() {
 
   // Build map of challenges I've issued: challenged_id → challenge
   const myOutgoingMap = {};
+  // Build map of challenges issued TO me: challenger_id → challenge
+  const myIncomingMap = {};
   if (myId) {
     for (const c of _activeChallenges) {
       if (c.challenger_id === myId) myOutgoingMap[c.challenged_id] = c;
+      else if (c.challenged_id === myId) myIncomingMap[c.challenger_id] = c;
     }
   }
 
@@ -369,6 +372,16 @@ function renderDivisionLadder() {
             badge = `<button class="div-challenge-btn"
               onclick="event.stopPropagation();_issueChallengeForm('${p.player_id}','${first} ${last}',${p.position})"
               title="Challenge ${first}">⚔️</button>`;
+          }
+        } else {
+          // Player is below me — show icon if they have an active challenge against me
+          const incoming = myIncomingMap[p.player_id];
+          if (incoming) {
+            const icon  = incoming.status === 'accepted' ? '🎾' : '⏳';
+            const title = incoming.status === 'accepted' ? 'Game on! — tap to record result' : 'Challenge from them — tap to manage';
+            badge = `<button class="div-challenge-btn"
+              onclick="event.stopPropagation();openChallengeResult('${incoming.id}')"
+              title="${title}">${icon}</button>`;
           }
         }
       }
