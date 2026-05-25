@@ -103,7 +103,7 @@ function _injectLadderHomeCard() {
           .filter(p => p.players)
           .map(p => `${p.players.first_name} ${(p.players.last_name || '')[0] || ''}`)
           .join(', ') || '—';
-        return `<div class="divladder-home-div"><span class="divladder-home-div-label">Division ${d}</span><span class="divladder-home-div-name">${names}</span></div>`;
+        return `<div class="divladder-home-div"><span class="divladder-home-div-label">D${d}</span> ${names}</div>`;
       }).join('')}
     </div>`;
 
