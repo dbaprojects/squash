@@ -17,7 +17,7 @@
       const appFooter = document.getElementById('app-footer');
       if (appFooter) appFooter.classList.remove('hidden');
       const titleEl = document.getElementById('header-page-title');
-      if (titleEl) titleEl.textContent = 'Division Ladder';
+      if (titleEl) titleEl.textContent = 'Ladders';
       const backBtn = document.getElementById('btn-back-home');
       if (backBtn) { backBtn.textContent = '← Home'; backBtn.onclick = goHome; }
     }
