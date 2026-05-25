@@ -147,8 +147,8 @@ function renderDivisionLadder() {
           cls = ' div-row-can-challenge';
           badge = '<span class="div-row-badge badge-up">▲</span>';
         } else if (p.position > myPos && p.position <= myPos + 3) {
-          cls = ' div-row-challenger';
-          badge = '<span class="div-row-badge badge-dn">▼</span>';
+          cls = '';
+          badge = '';
         }
       }
       return `<div class="div-player-row${cls}">
