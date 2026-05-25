@@ -7,7 +7,7 @@ DELETE FROM ladder_positions;
 WITH placements (pos, fn, ln) AS (VALUES
   -- Division 1
   ( 1, 'Ben',       'C%'),
-  ( 2, 'Terence',   'T%'),
+  ( 2, 'Terr%',    'T%'),
   ( 3, 'James',     'B%'),
   ( 4, 'Showbihk',  'Kalra'),
   ( 5, 'Jamie',     'S%'),
@@ -18,7 +18,7 @@ WITH placements (pos, fn, ln) AS (VALUES
   -- Division 2
   (10, 'Kenzie',    'W%'),
   (11, 'Leo',       'P%'),
-  (12, 'Raymond',   'K%'),
+  (12, 'Ray%',     'K%'),
   (13, 'Kevin',     'W%'),
   (14, 'Nick',      'F%'),
   (15, 'Sander',    'H%'),

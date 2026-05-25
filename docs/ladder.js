@@ -137,23 +137,18 @@ function renderDivisionLadder() {
       : p.position >= start && p.position <= end);
 
     const rows = players.map(p => {
-      const hc   = p.players.current_handicap;
-      const hcStr= hc != null ? (hc > 0 ? `+${hc}` : `${hc}`) : '—';
-      const name = `${p.players.first_name} ${p.players.last_name}`;
+      const first = p.players.first_name;
+      const last  = p.players.last_name ? p.players.last_name[0].toUpperCase() : '';
       return `<div class="div-player-row">
         <span class="div-pos">${p.position}</span>
-        <span class="div-player-name">${name}</span>
-        <span class="div-player-hc">${hcStr}</span>
+        <span class="div-player-name">${first} ${last}</span>
       </div>`;
     }).join('');
 
     divCards.push(`
       <div class="div-card">
-        <div class="div-card-header">
-          <span>Division ${d}</span>
-          <span class="div-card-range">${start}–${end}</span>
-        </div>
-        ${rows || '<div style="color:#aaa;font-size:12px;padding:8px 0">No players ranked</div>'}
+        <div class="div-card-header">Division ${d}</div>
+        ${rows || '<div style="color:#aaa;font-size:12px;padding:6px 0">No players ranked</div>'}
       </div>`);
   }
 
