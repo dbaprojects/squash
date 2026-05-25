@@ -40,14 +40,20 @@ Update this file after every non-trivial change. Record new patterns, gotchas, a
 
 ```
 docs/
-  index.html          — SPA shell; nav: Sign-Up | Handicaps | HoF | Admin▾
-  app.js              — all frontend logic (~2500 lines)
+  index.html          — SPA shell (production)
+  dev.html            — SPA shell (development/staging — ladder.js loaded here first)
+  app.js              — all frontend logic (~2700 lines)
+  ladder.js           — Division Ladder feature; patches showSection/navTo/loadHome/loadAdminTab
   style.css           — mobile-first styles, BC navy/gold palette
-  bcss-transparent.png — BC crest logo
+  bcss.png            — BC crest logo
   manifest.json       — PWA manifest
+  version.json        — {"version":"X.Y","build":"TIMESTAMP"} — remote version check for PWA cache bust
 db/
   schema-supabase.sql — Postgres DDL for core tables
   schema-hof.sql      — DDL for hof_results table + RLS
+  schema-audit.sql    — DDL for audit_log table + RLS
+  schema-ladder.sql   — DDL for ladder_positions + ladder_config tables + RLS
+  seed-ladder.sql     — One-time seed of initial ladder order from whiteboard
   load-hof.js         — seeds hof_results from hof.xlsx (run once with service role key)
   reseed.js           — rebuilds historical signups/handicap data
 hof.xlsx              — source data for Hall of Fame (53 records, 2019–2026)
@@ -66,6 +72,9 @@ names and hcs.xlsx    — player name/HC reference data
 | `events` | id, title, event_date, start_time, end_time, max_signups, template_id |
 | `signups` | id, event_id, signed_up_by, player_id (nullable), guest_name (nullable), is_reserve, signed_up_at, notes |
 | `hof_results` | id, event_month (DATE, unique, always 1st), winner_name, winner_hc, winner_score, runner_up_name, runner_up_hc, runner_up_score, not_played, notes, created_by, created_at |
+| `audit_log` | id, player_id, event_type, metadata (JSONB), created_at |
+| `ladder_positions` | player_id (UUID PK → players), position (INTEGER UNIQUE), updated_at |
+| `ladder_config` | key (TEXT PK), value (TEXT) — stores division_size and challenge_range |
 
 **Signup constraint (app-level):** exactly one of `player_id` or `guest_name` must be set.
 `signed_up_by` = who performed the action; `player_id` = who is attending (may differ).
@@ -108,7 +117,10 @@ HoF CRUD (add/edit/delete) is restricted to `is_super_admin` only — regular ad
 | Sign-Up | `view-schedule` | `loadSchedule()` | Upcoming events with Join/Cancel and attendance chips |
 | Handicaps | `view-ladder` | `loadLadder()` | Player HC list, grid, movers, distribution; player HC modal |
 | HoF | `view-hof` | `loadHof()` | Hall of Fame — leaderboards + year-grouped results table |
-| Admin | `view-admin` | tabs | Players, Events, Templates, HoF, Reports |
+| Division Ladder | `view-division-ladder` | `loadDivisionLadder()` | 2×2 grid of 4 divisions; player highlight + challenge zone; defined in ladder.js |
+| Player detail | `view-player` | `openPlayerView()` | Full player profile — HC chart + attendance tabs |
+| Audit log | `view-audit` | loaded inline | Super-admin only; event log with type/period filters |
+| Admin | `view-admin` | tabs | Players, Events, Templates, HoF, Reports, Ladder (super_admin) |
 
 ---
 
@@ -118,12 +130,20 @@ HoF CRUD (add/edit/delete) is restricted to `is_super_admin` only — regular ad
 // Global
 ST = { player, players, events, templates, currentEvent }
 
-// Ladder
+// Ladder (HC)
 ladderPlayers, ladderSearch, ladderStatusFilter ('active'|'inactive'|'all')
 playerHistoryArr, ladderMonths, ladderYearMode ('last12'|'YYYY')
 ladderAllYears, ladderSectionView ('list'|'grid'|'movers'|'dist')
 _playerHcChart, _distChart
 _playerHcSeries, _playerHcPeriod, _playerSignupCount12m
+
+// Division Ladder (ladder.js globals)
+_ladderPositions  // [{position, player_id, players:{first_name,last_name,current_handicap}}]
+_ladderDivSize    // from ladder_config.division_size (default 9)
+_challengeRange   // from ladder_config.challenge_range (default 3)
+_ladderInList     // admin reorder: ordered array of player_id
+_ladderPool       // admin reorder: unranked player objects
+_ladderAllPlayers // all active players
 
 // HoF
 hofResults, hofNameFilter, hofStatusFilter ('all'|'active'|'inactive')
@@ -241,6 +261,28 @@ SUPABASE_SERVICE_ROLE_KEY=... node db/reseed.js
 
 ---
 
+## Division Ladder (ladder.js)
+
+The division ladder is implemented entirely in `docs/ladder.js`, loaded after `app.js`. It uses monkey-patching to extend app behaviour without modifying `app.js` directly — useful for feature development before promotion to production.
+
+**Monkey-patches applied (IIFE at top of ladder.js):**
+- `showSection` — adds `view-division-ladder` to the hidden-section list; sets header title to "Ladders"
+- `navTo` — intercepts `'division-ladder'` route and calls `loadDivisionLadder()`
+- `loadHome` — fetches ladder data in parallel with the original call; injects Ladders home tile
+- `loadAdminTab` — handles `'tab-ladder'`; shows Ladder tab button for super_admin
+
+**Division derivation:** always computed as `ceil(position / _ladderDivSize)` — no division column. Changing `division_size` in `ladder_config` re-bands all players automatically.
+
+**Home tile** (`#home-card-division-ladder`): always removed and re-created in `_injectLadderHomeCard()` to prevent stale data. Shows top 3 per division (first name + last initial). Must be inserted before the admin card.
+
+**Public view:** 2×2 grid of 4 division cards. Logged-in player row highlighted amber. Players within `_challengeRange` positions above show green ▲ badge. Last division shows all remaining players (may exceed `_ladderDivSize`). Banner above grid; Rules of Engagement below.
+
+**Admin reorder** (super_admin, Admin → Ladder tab): HTML5 drag-and-drop within "In Ladder" list; drag from "Not in Ladder" pool. Save does DELETE all + INSERT new positions (not upsert) to handle removals cleanly. Division size and challenge range configurable via `saveAdminConfig()` which upserts to `ladder_config`.
+
+**Null guard:** Supabase FK join can return `players: null` if player was deleted. Always guard with `p.players &&` or `.filter(p => p.players)`.
+
+---
+
 ## Gotchas & decisions
 
 - **`is_admin_user()` SQL function does NOT work** in Supabase SQL editor — inline the check directly in each policy
@@ -258,21 +300,27 @@ SUPABASE_SERVICE_ROLE_KEY=... node db/reseed.js
 
 ## Versioning
 
-**Version bump checklist** — two distinct string forms, both must be updated:
-- `APP_VERSION = '4.XX'` in app.js (no `v` prefix — used for cache-bust logic)
-- `v4.XX` display strings in app.js, index.html (×2), version.json
-- `style.css?v=4.XX` and `app.js?v=4.XX` query strings in index.html (not matched by `s/v4.XX/...`)
+**Version bump checklist** — update all of these on every push:
+- `APP_VERSION = '4.XX'` in `docs/app.js` (no `v` prefix)
+- `v4.XX` display strings in `docs/index.html` (×2: login + header)
+- `v4.XX` display strings in `docs/dev.html` (×2: login + header)
+- `style.css?v=4.XX`, `app.js?v=4.XX`, `ladder.js?v=4.XX` query strings in `docs/index.html`
+- `style.css?v=4.XX`, `app.js?v=4.XX`, `ladder.js?v=4.XX` query strings in `docs/dev.html`
+- `docs/version.json` — run: `echo "{\"version\":\"4.XX\",\"build\":\"$(date +%s)\"}" > docs/version.json`
 
-`sed 's/v4\.XX/v4.YY/g'` misses `APP_VERSION` and the `?v=` query strings. Update all explicitly.
+`sed 's/v4\.XX/v4.YY/g'` misses `APP_VERSION` and the `?v=` query strings. Use `sed` for `dev.html` bulk-replace but update `app.js` and `index.html` explicitly.
 
 **iOS PWA cache — MUST do on every push:**
-version.json now has a `build` timestamp field. The app compares this against `localStorage._app_build` on startup and forces a reload if they differ. This means **even without a version bump, a build timestamp update will force iOS to reload**.
+`version.json` has a `build` timestamp field. On startup, `app.js` fetches it with `cache:'no-store'` and compares against `localStorage._app_build`. If either the version or build differs, it does:
+```js
+location.replace(location.pathname + '?_cb=' + build);
+```
+Using the **build timestamp** (not version) as the cache-bust parameter means `index.html?_cb=BUILD_TS` is always a URL iOS has never cached → forces fresh HTML → fresh HTML has new `?v=` query strings → fresh assets.
 
-Run before every commit:
+Always update `version.json` before every push:
 ```bash
 echo "{\"version\":\"4.XX\",\"build\":\"$(date +%s)\"}" > docs/version.json
 ```
-This is the fix for iOS PWA not picking up changes. Never push without updating version.json.
 
 | Version | Description |
 |---|---|
