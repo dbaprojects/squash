@@ -131,7 +131,10 @@ function renderDivisionLadder() {
   for (let d = 1; d <= numDivisions; d++) {
     const start = (d - 1) * _ladderDivSize + 1;
     const end   = d * _ladderDivSize;
-    const players = ranked.filter(p => p.position >= start && p.position <= end);
+    // Last division shows all remaining players (may be more than division_size)
+    const players = ranked.filter(p => d === numDivisions
+      ? p.position >= start
+      : p.position >= start && p.position <= end);
 
     const rows = players.map(p => {
       const hc   = p.players.current_handicap;
