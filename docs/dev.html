@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>BC Squash Section</title>
+  <link rel="stylesheet" href="style.css?v=4.79">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1B2A6B">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="BC Squash">
+  <link rel="apple-touch-icon" href="bcss.png">
+</head>
+<body>
+
+<!-- ── Login ─────────────────────────────────────────────────────────────── -->
+<div id="view-login" class="view hidden">
+  <div class="login-box">
+    <img src="bcss.png" class="login-logo" alt="BC Squash Section">
+    <p>Enter your phone number to sign in.</p>
+    <div class="phone-input-row" style="margin-bottom:10px">
+      <button type="button" class="dial-code-btn" id="login-dialcode-btn" onclick="openCountryPicker('login-dialcode')">+65 Singapore</button>
+      <input type="hidden" id="login-dialcode" value="65">
+      <input type="tel" id="login-phone" class="phone-local" placeholder="9123 4567"
+        inputmode="numeric" autocomplete="off">
+    </div>
+    <div id="login-phone-error" class="error-msg" style="margin-bottom:8px"></div>
+    <button class="btn-google-full" onclick="submitLoginPhone()">Sign In</button>
+    <p class="login-version">v4.79</p>
+    <p class="login-terms"><button class="login-terms-link" onclick="openTermsModal()">Terms of Use</button></p>
+  </div>
+</div>
+
+<!-- ── Onboarding (post-auth, pre-app) ──────────────────────────────────── -->
+<div id="view-onboard" class="view hidden">
+  <div class="login-box">
+    <img src="bcss.png" class="login-logo" alt="BC Squash Section">
+
+    <!-- Step: confirm match -->
+    <div id="onboard-confirm" class="hidden">
+      <p id="ob-confirm-msg" style="margin-bottom:14px">We found a matching account. Is this you?</p>
+      <div class="ob-match-card">
+        <div class="ob-match-name" id="ob-confirm-name"></div>
+        <div class="ob-match-meta" id="ob-confirm-phone"></div>
+      </div>
+      <div class="btn-row" style="margin-top:14px">
+        <button class="btn-primary" id="ob-confirm-yes" style="flex:1;padding:10px">Yes, that's me</button>
+        <button class="btn-secondary" id="ob-confirm-no" style="flex:1;padding:10px">Not me</button>
+      </div>
+      <button class="btn-name-fix" id="ob-confirm-name-fix">Yes, but my name needs updating</button>
+      <div id="ob-name-fix-form" class="hidden" style="margin-top:14px;text-align:left">
+        <div class="form-group"><label>First name</label><input type="text" id="ob-fix-first" autocomplete="given-name"></div>
+        <div class="form-group"><label>Last name</label><input type="text" id="ob-fix-last" autocomplete="family-name"></div>
+        <div id="ob-fix-error" class="error-msg" style="margin-bottom:8px"></div>
+        <button class="btn-google-full" onclick="submitNameFix()">Save &amp; Sign In</button>
+      </div>
+    </div>
+
+    <!-- Step: register -->
+    <div id="onboard-register" class="hidden">
+      <p style="margin-bottom:14px">You're not in our system yet. Confirm your details and the admin will be notified.</p>
+      <div class="form-group"><label>First name</label><input type="text" id="ob-reg-first" autocomplete="given-name"></div>
+      <div class="form-group"><label>Last name</label><input type="text" id="ob-reg-last" autocomplete="family-name"></div>
+      <div class="form-group">
+        <label>Phone</label>
+        <div class="ob-match-card" id="ob-reg-phone-display" style="text-align:left;padding:8px 12px"></div>
+        <input type="hidden" id="ob-reg-phone-stored">
+      </div>
+      <div id="ob-reg-error" class="error-msg" style="margin-bottom:8px"></div>
+      <button class="btn-google-full" onclick="submitRegistration()">Submit Registration</button>
+      <p style="font-size:12px;color:#999;margin-top:10px">Your request will be reviewed by the club admin.</p>
+    </div>
+
+    <!-- Step: pending approval -->
+    <div id="onboard-pending" class="hidden">
+      <div class="ob-pending-icon"></div>
+      <h2 style="font-size:18px;color:var(--bc-navy);margin-bottom:8px">Awaiting Approval</h2>
+      <p>Your registration has been submitted and is awaiting admin approval.</p>
+      <p style="font-size:13px;color:#999;margin-top:8px">You'll be able to access the app once the admin approves your account.</p>
+      <button class="btn-secondary" style="margin-top:16px;width:100%;padding:10px" onclick="signOutAndReset()">Sign out</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── App shell (shown after login) ─────────────────────────────────────── -->
+<div id="view-app" class="view hidden">
+
+  <header>
+    <div class="header-left" id="header-home-btn" onclick="goHome()" style="cursor:pointer">
+      <img src="bcss.png" class="header-logo" alt="BC">
+      <div class="header-title">
+        <span class="logo">British Club</span>
+        <span class="logo-sub">Squash Section <span class="version">v4.79</span></span>
+      </div>
+    </div>
+    <div id="header-page-title" class="header-page-title"></div>
+    <div class="header-actions">
+      <button id="btn-back-home" class="btn-back-home hidden" onclick="goHome()">← Home</button>
+    </div>
+  </header>
+
+  <!-- ── PWA install banner ──────────────────────────────────────────────── -->
+  <div id="pwa-banner" class="pwa-banner hidden"></div>
+
+  <!-- ── Home dashboard ───────────────────────────────────────────────────── -->
+  <main id="view-home" class="section hidden">
+    <div id="home-grid" class="home-grid"></div>
+    <div class="home-footer">
+      <div id="home-user-switcher-wrap" class="hidden" style="position:relative">
+        <button class="home-footer-link" id="btn-home-switch">⇄ Switch user</button>
+        <div id="home-switcher-dropdown" class="home-switcher-dropdown hidden"></div>
+      </div>
+      <button class="home-footer-link" onclick="signOutAndReset()">Sign out</button>
+      <button class="home-footer-link hidden" id="btn-install-footer" onclick="footerInstall()">Install as App</button>
+      <button class="home-footer-link" onclick="openTermsModal()">Terms of Use</button>
+    </div>
+  </main>
+
+  <!-- ── Hall of Fame view ──────────────────────────────────────────────────── -->
+  <main id="view-hof" class="section hidden">
+    <div id="hof-wrap"></div>
+  </main>
+
+  <!-- ── Players / Ladder view ───────────────────────────────────────────── -->
+  <main id="view-ladder" class="section hidden">
+    <div id="ladder-wrap"></div>
+  </main>
+
+  <!-- ── Schedule view ────────────────────────────────────────────────────── -->
+  <main id="view-schedule" class="section">
+    <div id="event-list"></div>
+  </main>
+
+  <!-- ── Event detail view ────────────────────────────────────────────────── -->
+  <main id="view-event" class="section hidden">
+    <button class="btn-back" id="btn-back-schedule">← Back to Schedule</button>
+    <div id="event-detail"></div>
+  </main>
+
+  <!-- ── Player detail view ───────────────────────────────────────────────── -->
+  <main id="view-player" class="section hidden">
+    <div id="player-view-wrap"></div>
+  </main>
+
+  <!-- ── Audit log view ────────────────────────────────────────────────────── -->
+  <main id="view-audit" class="section hidden">
+    <div id="audit-log-wrap"></div>
+  </main>
+
+  <!-- ── Admin view ───────────────────────────────────────────────────────── -->
+  <main id="view-admin" class="section hidden admin-only">
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="tab-players">Players</button>
+      <button class="tab-btn" data-tab="tab-events">Events</button>
+      <button class="tab-btn" data-tab="tab-templates">Template</button>
+      <button class="tab-btn" data-tab="tab-hof">HoF</button>
+      <button class="tab-btn" data-tab="tab-reports">Reports</button>
+    </div>
+
+    <!-- Players tab -->
+    <div id="tab-players" class="tab-panel">
+      <div class="panel-header">
+        <h3>Players</h3>
+        <button class="btn-primary" id="btn-add-player">+ Add Player</button>
+      </div>
+      <div id="players-table-wrap"></div>
+    </div>
+
+    <!-- Events tab -->
+    <div id="tab-events" class="tab-panel hidden">
+      <div class="panel-header">
+        <h3>Events</h3>
+        <div class="btn-row">
+          <button class="btn-primary" id="btn-generate-week">Generate Next Week</button>
+          <button class="btn-primary" id="btn-add-event">+ Add Event</button>
+        </div>
+      </div>
+      <div id="admin-event-list"></div>
+    </div>
+
+    <!-- Templates tab -->
+    <div id="tab-templates" class="tab-panel hidden">
+      <div class="panel-header">
+        <h3>Weekly Session Template</h3>
+        <button class="btn-primary" id="btn-add-template">+ Add Template</button>
+      </div>
+      <div id="templates-list"></div>
+    </div>
+
+    <!-- Reports tab -->
+    <div id="tab-reports" class="tab-panel hidden"></div>
+
+    <!-- HoF admin tab -->
+    <div id="tab-hof" class="tab-panel hidden">
+      <div class="panel-header">
+        <h3>Hall of Fame</h3>
+        <button class="btn-primary" id="btn-add-hof">+ Add Result</button>
+      </div>
+      <div id="hof-admin-list"></div>
+    </div>
+
+  </main>
+
+  <div id="app-footer" class="app-footer"><button class="app-footer-link" onclick="openTermsModal()">Terms of Use</button></div>
+
+</div><!-- /#view-app -->
+
+<!-- ── Handicap history modal ──────────────────────────────────────────────── -->
+<div id="modal-overlay" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header">
+      <span id="modal-title">Handicap History</span>
+      <button class="modal-close" id="modal-close">✕</button>
+    </div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<!-- ── Generic form modal ──────────────────────────────────────────────────── -->
+<div id="form-overlay" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header">
+      <span id="form-title">Form</span>
+      <button class="modal-close" id="form-close">✕</button>
+    </div>
+    <div id="form-body"></div>
+  </div>
+</div>
+
+<!-- ── Country picker ──────────────────────────────────────────────────────── -->
+<div id="country-picker" class="country-picker-overlay hidden" onclick="closeCountryPickerOutside(event)">
+  <div class="country-picker-box">
+    <div class="country-picker-header">
+      <input type="text" id="country-picker-search" placeholder="Search country…" autocomplete="off" inputmode="text">
+      <button class="country-picker-cancel" onclick="closeCountryPicker()">Cancel</button>
+    </div>
+    <div id="country-picker-list" class="country-picker-list"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script src="app.js?v=4.79"></script>
+</body>
+</html>
