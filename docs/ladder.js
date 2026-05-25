@@ -275,6 +275,7 @@ function _myChallengeStatusLabel(c, myId) {
       return isMe(c.winner_id)
         ? '<span style="color:#86efac;font-weight:700">Won (forfeit)</span>'
         : '<span style="color:rgba(255,255,255,.5);font-weight:700">Forfeited</span>';
+    case 'withdrawn':         return '<span style="color:rgba(255,255,255,.4);font-weight:700">Withdrawn</span>';
     default: return `<span style="color:rgba(255,255,255,.5)">${c.status}</span>`;
   }
 }
@@ -331,6 +332,14 @@ function renderDivisionLadder() {
   const myId  = ST?.player?.id;
   const myPos = ranked.find(p => p.player_id === myId)?.position ?? null;
 
+  // Build map of challenges I've issued: challenged_id → challenge
+  const myOutgoingMap = {};
+  if (myId) {
+    for (const c of _activeChallenges) {
+      if (c.challenger_id === myId) myOutgoingMap[c.challenged_id] = c;
+    }
+  }
+
   const divCards = [];
   for (let d = 1; d <= numDivisions; d++) {
     const start = (d - 1) * _ladderDivSize + 1;
@@ -349,9 +358,18 @@ function renderDivisionLadder() {
           cls = ' div-row-me';
         } else if (p.position < myPos && p.position >= myPos - _challengeRange) {
           cls = ' div-row-can-challenge';
-          badge = `<button class="div-challenge-btn"
-            onclick="event.stopPropagation();_issueChallengeForm('${p.player_id}','${first} ${last}',${p.position})"
-            title="Challenge ${first}">⚔️</button>`;
+          const existing = myOutgoingMap[p.player_id];
+          if (existing) {
+            const icon  = existing.status === 'accepted' ? '🎾' : '⏳';
+            const title = existing.status === 'accepted' ? 'Game on! — tap to record result' : 'Challenge pending — tap to manage';
+            badge = `<button class="div-challenge-btn"
+              onclick="event.stopPropagation();openChallengeResult('${existing.id}')"
+              title="${title}">${icon}</button>`;
+          } else {
+            badge = `<button class="div-challenge-btn"
+              onclick="event.stopPropagation();_issueChallengeForm('${p.player_id}','${first} ${last}',${p.position})"
+              title="Challenge ${first}">⚔️</button>`;
+          }
         }
       }
       return `<div class="div-player-row${cls}">
@@ -532,30 +550,49 @@ async function respondToChallenge(challengeId, response) {
   _injectMyChallenges();
 }
 
-// ── Record match result ────────────────────────────────────────────────────
+// ── Challenge resolution modal (record result + optional withdraw) ─────────
 function openChallengeResult(challengeId) {
   const c = _activeChallenges.find(x => x.id === challengeId);
   if (!c) return;
+  const myId    = ST?.player?.id;
+  const isAdmin = ST?.player?.is_admin || ST?.player?.is_super_admin;
   const cn = `${c.challenger?.first_name || ''} ${c.challenger?.last_name || ''}`.trim();
   const dn = `${c.challenged?.first_name || ''} ${c.challenged?.last_name || ''}`.trim();
+  const isPending  = c.status === 'pending';
+  const isMine     = c.challenger_id === myId;
+  const canWithdraw = isPending && (isMine || isAdmin);
+  const title      = isPending ? `⏳ vs ${isMine ? dn : cn}` : `🎾 Game on! vs ${isMine ? dn : cn}`;
   const issuedDate = c.issued_at
     ? new Date(c.issued_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
     : '';
-  showFormModal('Record Challenge Result', `
-    <p style="text-align:center;margin-bottom:16px;color:#64748b;font-size:13px">
-      ⚔️ ${cn} vs ${dn} &nbsp;·&nbsp; ${issuedDate}
-    </p>
-    <p style="text-align:center;font-weight:700;margin-bottom:12px">Who won?</p>
-    <div style="display:flex;gap:8px">
+  showFormModal(title, `
+    <p style="text-align:center;color:#64748b;font-size:13px;margin-bottom:4px">⚔️ ${cn} vs ${dn} · ${issuedDate}</p>
+    ${c.message ? `<p style="text-align:center;color:#94a3b8;font-size:12px;font-style:italic;margin-bottom:12px">"${c.message}"</p>` : '<div style="margin-bottom:12px"></div>'}
+    <p style="text-align:center;font-weight:700;margin-bottom:10px">Who won?</p>
+    <div style="display:flex;gap:8px;margin-bottom:${canWithdraw ? '12' : '0'}px">
       <button class="btn-primary" style="flex:1;padding:12px 8px"
         onclick="submitChallengeResult('${challengeId}','${c.challenger_id}')">🏆 ${cn}</button>
       <button class="btn-primary" style="flex:1;padding:12px 8px"
         onclick="submitChallengeResult('${challengeId}','${c.challenged_id}')">🏆 ${dn}</button>
     </div>
-    <p style="font-size:11px;color:#94a3b8;text-align:center;margin-top:12px">
-      This will update ladder positions immediately.
-    </p>
+    ${canWithdraw ? `<button class="btn-secondary" style="width:100%;color:#dc2626;border-color:#dc2626;margin-bottom:0"
+      onclick="withdrawChallenge('${challengeId}')">Withdraw Challenge</button>` : ''}
+    <p style="font-size:11px;color:#94a3b8;text-align:center;margin-top:10px">Recording a result updates ladder positions immediately.</p>
   `);
+}
+
+async function withdrawChallenge(challengeId) {
+  if (!confirm('Withdraw this challenge?')) return;
+  const { error } = await sb.from('ladder_challenges')
+    .update({ status: 'withdrawn', responded_at: new Date().toISOString() })
+    .eq('id', challengeId);
+  if (error) { alert(error.message); return; }
+  closeFormModal();
+  await _loadChallenges();
+  await _loadMyChallenges();
+  renderDivisionLadder();
+  _injectLadderHomeCard();
+  _injectMyChallenges();
 }
 
 async function submitChallengeResult(challengeId, winnerId) {
