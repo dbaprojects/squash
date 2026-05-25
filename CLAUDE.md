@@ -5,7 +5,7 @@
 - **Owner:** David Barkess — personal project, unrelated to SAP/DealSensAI work
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `C:\Users\I061437\OneDrive\Projects\Squash`
-- **Current version:** v4.82
+- **Current version:** v4.83
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -409,3 +409,4 @@ echo "{\"version\":\"4.XX\",\"build\":\"$(date +%s)\"}" > docs/version.json
 | v4.80 | Division Ladder Phase 1: ladder_positions + ladder_config tables; docs/ladder.js patches showSection/navTo/loadHome/loadAdminTab; 2×2 grid public view with logged-in player highlight + green ▲ challenge zone (3 above); super-admin drag-and-drop reorder in Admin → Ladder tab; home tile "Ladders" shows top 3 per division; dev.html only |
 | v4.81 | Promote ladder feature to production (index.html); force iOS cache refresh via version bump |
 | v4.82 | Fix iOS PWA cache: bump version to escape stuck v4.81 cache; reload URL now uses build timestamp (?_cb=BUILD) so iOS always fetches fresh HTML+assets |
+| v4.83 | Challenge system (Phase 2, dev.html only): ladder_challenges table; ⚔️ button on challengeable rows; issue form with 20 random messages; login popup for pending challenges; accept/decline (decline = lose 1 place); record match result; cascade position update on challenger win; single-drop on challenger loss or decline; auto-forfeit after 7 days; active challenges on home tile and ladder page |

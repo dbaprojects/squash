@@ -1,4 +1,4 @@
-// ── Division Ladder (Phase 1) ─────────────────────────────────────────────
+// ── Division Ladder (Phase 1 + 2) ────────────────────────────────────────────
 // Loaded after app.js in dev.html only.
 // Patches showSection, navTo, loadHome, and loadAdminTab to add ladder support.
 
@@ -6,13 +6,10 @@
   // ── Patch showSection ──────────────────────────────────────────────────
   const _origShowSection = showSection;
   showSection = function (id) {
-    // Add view-division-ladder to the hide list
     document.getElementById('view-division-ladder')?.classList.add('hidden');
     _origShowSection(id);
-    // Override title for division ladder
     if (id === 'view-division-ladder') {
       document.getElementById('view-division-ladder').classList.remove('hidden');
-      // btn-back-home visibility
       document.getElementById('btn-back-home')?.classList.remove('hidden');
       const appFooter = document.getElementById('app-footer');
       if (appFooter) appFooter.classList.remove('hidden');
@@ -42,13 +39,13 @@
       sb.from('ladder_positions')
         .select('position, player_id, players(id, first_name, last_name, current_handicap)')
         .order('position'),
-      sb.from('ladder_config').select('key,value')
+      sb.from('ladder_config').select('key,value'),
+      _loadChallenges()
     ]);
-    const cfg = (cfgRes.data || []).find(r => r.key === 'division_size');
-    _ladderDivSize   = cfg ? parseInt(cfg.value, 10) : 9;
     _applyConfig(cfgRes.data);
     _ladderPositions = posRes.data || [];
     _injectLadderHomeCard();
+    _checkPendingChallenges();
   };
 
   // ── Patch loadAdminTab ─────────────────────────────────────────────────
@@ -56,23 +53,47 @@
   loadAdminTab = async function (tabId) {
     await _origLoadAdminTab(tabId);
     if (tabId === 'tab-ladder') {
-      // Show the tab panel (origLoadAdminTab hid it since it doesn't know about it)
       document.getElementById('tab-ladder')?.classList.remove('hidden');
       await loadLadderAdmin();
     }
-    // Show Ladder tab button only for super_admin
     const ladderTabBtn = document.getElementById('tab-btn-ladder');
     if (ladderTabBtn && ST?.player?.is_super_admin) ladderTabBtn.style.display = '';
   };
 })();
 
 // ── State ──────────────────────────────────────────────────────────────────
-let _ladderPositions = [];   // [{position, player_id, players:{first_name,last_name,current_handicap}}]
-let _ladderDivSize   = 9;
-let _challengeRange  = 3;    // positions above a player they can challenge
-let _ladderInList    = [];   // ordered array of player_id (admin reorder)
-let _ladderPool      = [];   // unranked player objects (admin reorder)
-let _ladderAllPlayers= [];   // all active players [{id,first_name,last_name,current_handicap}]
+let _ladderPositions  = [];
+let _ladderDivSize    = 9;
+let _challengeRange   = 3;
+let _ladderInList     = [];
+let _ladderPool       = [];
+let _ladderAllPlayers = [];
+let _activeChallenges = [];
+let _challengesNotified = false; // reset each page load; prevents repeat popup on goHome()
+
+// ── Challenge messages ─────────────────────────────────────────────────────
+const CHALLENGE_MESSAGES = [
+  "Don't be chicken!",
+  "Ready to buy me a beer?",
+  "Time to settle this on court!",
+  "Prepare to be humbled!",
+  "Step up or step aside!",
+  "Your days at the top are numbered.",
+  "Court's booked. You're on.",
+  "I've been watching your game. Big mistake.",
+  "Think you can handle me?",
+  "See you on the squash court!",
+  "Game on. May the best player win!",
+  "Fancy your chances?",
+  "Let's do this the old fashioned way.",
+  "I'm coming for your spot!",
+  "You'd better bring your A game.",
+  "Challenge accepted? It should be!",
+  "No excuses. Court time!",
+  "I've been practising. Have you?",
+  "Put your ranking where your mouth is.",
+  "Let the rackets do the talking."
+];
 
 function _applyConfig(cfgData) {
   const rows = cfgData || [];
@@ -82,17 +103,38 @@ function _applyConfig(cfgData) {
   if (cr) _challengeRange = parseInt(cr.value, 10);
 }
 
+// ── Load challenges ────────────────────────────────────────────────────────
+async function _loadChallenges() {
+  const { data } = await sb.from('ladder_challenges')
+    .select(`id, challenger_id, challenged_id, message, status, issued_at,
+             challenger:players!challenger_id(first_name, last_name),
+             challenged:players!challenged_id(first_name, last_name)`)
+    .in('status', ['pending', 'accepted'])
+    .order('issued_at', { ascending: false });
+  _activeChallenges = data || [];
+}
+
 // ── Home tile injection ────────────────────────────────────────────────────
 function _injectLadderHomeCard() {
   const grid = document.getElementById('home-grid');
   if (!grid) return;
-  // Always remove stale card so it re-renders with current data
   document.getElementById('home-card-division-ladder')?.remove();
 
   const card = document.createElement('div');
   card.id = 'home-card-division-ladder';
   card.className = 'home-card home-card-divladder';
   card.onclick = () => navTo('division-ladder');
+
+  const challengeHtml = _activeChallenges.length > 0
+    ? `<div class="divladder-challenges">
+        ${_activeChallenges.slice(0, 3).map(c => {
+          const cn = (c.challenger?.first_name || '') + ' ' + ((c.challenger?.last_name || '')[0] || '');
+          const dn = (c.challenged?.first_name || '') + ' ' + ((c.challenged?.last_name || '')[0] || '');
+          return `<div class="divladder-challenge-row">⚔️ ${cn} vs ${dn}</div>`;
+        }).join('')}
+      </div>`
+    : '';
+
   card.innerHTML = `
     <div class="home-card-label">Ladders</div>
     <div class="divladder-home-body">
@@ -105,15 +147,12 @@ function _injectLadderHomeCard() {
           .join(', ') || '—';
         return `<div class="divladder-home-div"><span class="divladder-home-div-label">D${d}</span> ${names}</div>`;
       }).join('')}
-    </div>`;
+    </div>
+    ${challengeHtml}`;
 
-  // Insert before admin card (it has grid-column:1/-1 so it sits at the end)
   const adminCard = grid.querySelector('.home-card-admin');
-  if (adminCard) {
-    grid.insertBefore(card, adminCard);
-  } else {
-    grid.appendChild(card);
-  }
+  if (adminCard) grid.insertBefore(card, adminCard);
+  else grid.appendChild(card);
 }
 
 // ── Public view: load + render ─────────────────────────────────────────────
@@ -125,23 +164,23 @@ async function loadDivisionLadder() {
     sb.from('ladder_positions')
       .select('position, player_id, players(id, first_name, last_name, current_handicap)')
       .order('position'),
-    sb.from('ladder_config').select('key,value')
+    sb.from('ladder_config').select('key,value'),
+    _loadChallenges()
   ]);
 
   if (posRes.error) { wrap.innerHTML = `<p style="color:#c00;padding:16px">${posRes.error.message}</p>`; return; }
 
-  const cfg = (cfgRes.data || []).find(r => r.key === 'division_size');
-  _ladderDivSize    = cfg ? parseInt(cfg.value, 10) : 9;
   _applyConfig(cfgRes.data);
-  _ladderPositions  = posRes.data || [];
+  _ladderPositions = posRes.data || [];
 
+  await _processAutoForfeits();
   renderDivisionLadder();
 }
 
 function renderDivisionLadder() {
   const wrap = document.getElementById('division-ladder-wrap');
   const numDivisions = 4;
-  const ranked = _ladderPositions; // already sorted by position
+  const ranked = _ladderPositions;
 
   const myId  = ST?.player?.id;
   const myPos = ranked.find(p => p.player_id === myId)?.position ?? null;
@@ -150,7 +189,6 @@ function renderDivisionLadder() {
   for (let d = 1; d <= numDivisions; d++) {
     const start = (d - 1) * _ladderDivSize + 1;
     const end   = d * _ladderDivSize;
-    // Last division shows all remaining players (may be more than division_size)
     const players = ranked.filter(p => d === numDivisions
       ? p.position >= start
       : p.position >= start && p.position <= end);
@@ -165,10 +203,9 @@ function renderDivisionLadder() {
           cls = ' div-row-me';
         } else if (p.position < myPos && p.position >= myPos - _challengeRange) {
           cls = ' div-row-can-challenge';
-          badge = '<span class="div-row-badge badge-up">▲</span>';
-        } else if (p.position > myPos && p.position <= myPos + _challengeRange) {
-          cls = '';
-          badge = '';
+          badge = `<button class="div-challenge-btn"
+            onclick="event.stopPropagation();_issueChallengeForm('${p.player_id}','${first} ${last}',${p.position})"
+            title="Challenge ${first}">⚔️</button>`;
         }
       }
       return `<div class="div-player-row${cls}">
@@ -185,6 +222,28 @@ function renderDivisionLadder() {
       </div>`);
   }
 
+  // Build challenge list html
+  const myIsAdmin = ST?.player?.is_admin || ST?.player?.is_super_admin;
+  const challengeListHtml = _activeChallenges.length > 0
+    ? `<div class="challenge-list">
+        <div class="challenge-list-header">Active Challenges</div>
+        ${_activeChallenges.map(c => {
+          const cn = (c.challenger?.first_name || '') + ' ' + ((c.challenger?.last_name || '')[0] || '');
+          const dn = (c.challenged?.first_name || '') + ' ' + ((c.challenged?.last_name || '')[0] || '');
+          const canAct = myId && (c.challenger_id === myId || c.challenged_id === myId || myIsAdmin);
+          const statusCls = c.status === 'accepted' ? ' accepted' : '';
+          const statusLabel = c.status === 'accepted' ? 'Accepted' : 'Pending';
+          const issuedDate = c.issued_at ? new Date(c.issued_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
+          return `<div class="challenge-row${canAct ? '' : ' display-only'}"
+            ${canAct ? `onclick="openChallengeResult('${c.id}')"` : ''}>
+            <span class="challenge-row-names">⚔️ ${cn} vs ${dn}</span>
+            <span class="challenge-status-badge${statusCls}">${statusLabel}</span>
+            <span class="challenge-date">${issuedDate}</span>
+          </div>`;
+        }).join('')}
+      </div>`
+    : '';
+
   wrap.innerHTML = `
     <div class="ladder-banner">
       <strong>Throw down a challenge!</strong> Ladders are currently updated by David B., so let him know if any movements.
@@ -198,7 +257,202 @@ function renderDivisionLadder() {
         <li>Not required to do more than 1 challenge per session.</li>
         <li>You can challenge up to <strong>${_challengeRange}</strong> place${_challengeRange !== 1 ? 's' : ''} above you.</li>
       </ol>
-    </div>`;
+    </div>
+    ${challengeListHtml}`;
+}
+
+// ── Issue a challenge ──────────────────────────────────────────────────────
+function _issueChallengeForm(targetId, targetName, targetPos) {
+  const msg = CHALLENGE_MESSAGES[Math.floor(Math.random() * CHALLENGE_MESSAGES.length)];
+  showFormModal(`⚔️ Challenge ${targetName}`, `
+    <p style="margin-bottom:12px">Send a challenge to <strong>${targetName}</strong> (position ${targetPos}).</p>
+    <div class="form-group">
+      <label>Message (editable)</label>
+      <textarea id="challenge-msg" rows="2" style="width:100%;padding:8px;border:1.5px solid #cbd5e1;border-radius:6px;font-size:13px;resize:vertical">${msg}</textarea>
+    </div>
+    <div id="challenge-form-error" class="error-msg" style="margin-bottom:8px"></div>
+    <button class="btn-primary" style="width:100%;margin-top:4px" onclick="submitChallenge('${targetId}')">Send Challenge ⚔️</button>
+  `);
+}
+
+async function submitChallenge(targetId) {
+  const msg = document.getElementById('challenge-msg')?.value.trim();
+  const err = document.getElementById('challenge-form-error');
+  const { error } = await sb.from('ladder_challenges').insert({
+    challenger_id: ST.player.id,
+    challenged_id: targetId,
+    message: msg || null,
+    status: 'pending'
+  });
+  if (error) { if (err) err.textContent = error.message; return; }
+  closeFormModal();
+  await _loadChallenges();
+  renderDivisionLadder();
+  _injectLadderHomeCard();
+}
+
+// ── Pending challenge popup (shown once per session on home load) ───────────
+function _checkPendingChallenges() {
+  if (_challengesNotified || !ST?.player) return;
+  _challengesNotified = true;
+  const myId = ST.player.id;
+  const pending = _activeChallenges.filter(c => c.challenged_id === myId && c.status === 'pending');
+  if (pending.length === 0) return;
+  const c = pending[0];
+  const challengerName = `${c.challenger?.first_name || ''} ${c.challenger?.last_name || ''}`.trim();
+  const issuedDate = c.issued_at
+    ? new Date(c.issued_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+    : '';
+  const moreNote = pending.length > 1
+    ? `<p style="font-size:12px;color:#64748b;margin-top:8px">+${pending.length - 1} more challenge${pending.length > 2 ? 's' : ''} — view in Ladders</p>`
+    : '';
+  showFormModal('⚔️ You\'ve Been Challenged!', `
+    <div style="text-align:center;padding:4px 0">
+      <p style="font-size:15px;margin-bottom:8px"><strong>${challengerName}</strong> has challenged you!</p>
+      ${c.message ? `<p style="color:#64748b;font-style:italic;margin-bottom:10px">"${c.message}"</p>` : ''}
+      <p style="font-size:12px;color:#94a3b8;margin-bottom:16px">Issued ${issuedDate}</p>
+      <div style="display:flex;gap:8px;justify-content:center">
+        <button class="btn-primary" style="flex:1" onclick="respondToChallenge('${c.id}', true)">Accept</button>
+        <button class="btn-secondary" style="flex:1" onclick="respondToChallenge('${c.id}', false)">Decline</button>
+      </div>
+      <p style="font-size:11px;color:#ef4444;margin-top:10px">⚠️ Declining costs you one place on the ladder</p>
+      ${moreNote}
+    </div>
+  `);
+}
+
+async function respondToChallenge(challengeId, accept) {
+  if (!accept) {
+    const ok = confirm('Are you sure you want to decline? You will lose one place on the ladder.');
+    if (!ok) return;
+  }
+  const now = new Date().toISOString();
+  const { error } = await sb.from('ladder_challenges')
+    .update({ status: accept ? 'accepted' : 'declined', responded_at: now })
+    .eq('id', challengeId);
+  if (error) { alert(error.message); return; }
+
+  if (!accept) {
+    await _applyOnePlaceDrop(ST.player.id);
+  }
+
+  closeFormModal();
+  await _loadChallenges();
+  _injectLadderHomeCard();
+}
+
+// ── Record match result ────────────────────────────────────────────────────
+function openChallengeResult(challengeId) {
+  const c = _activeChallenges.find(x => x.id === challengeId);
+  if (!c) return;
+  const cn = `${c.challenger?.first_name || ''} ${c.challenger?.last_name || ''}`.trim();
+  const dn = `${c.challenged?.first_name || ''} ${c.challenged?.last_name || ''}`.trim();
+  const issuedDate = c.issued_at
+    ? new Date(c.issued_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+    : '';
+  showFormModal('Record Challenge Result', `
+    <p style="text-align:center;margin-bottom:16px;color:#64748b;font-size:13px">
+      ⚔️ ${cn} vs ${dn} &nbsp;·&nbsp; ${issuedDate}
+    </p>
+    <p style="text-align:center;font-weight:700;margin-bottom:12px">Who won?</p>
+    <div style="display:flex;gap:8px">
+      <button class="btn-primary" style="flex:1;padding:12px 8px"
+        onclick="submitChallengeResult('${challengeId}','${c.challenger_id}')">🏆 ${cn}</button>
+      <button class="btn-primary" style="flex:1;padding:12px 8px"
+        onclick="submitChallengeResult('${challengeId}','${c.challenged_id}')">🏆 ${dn}</button>
+    </div>
+    <p style="font-size:11px;color:#94a3b8;text-align:center;margin-top:12px">
+      This will update ladder positions immediately.
+    </p>
+  `);
+}
+
+async function submitChallengeResult(challengeId, winnerId) {
+  const c = _activeChallenges.find(x => x.id === challengeId);
+  if (!c) return;
+  const loserId = winnerId === c.challenger_id ? c.challenged_id : c.challenger_id;
+  const { error } = await sb.from('ladder_challenges').update({
+    status: 'completed',
+    winner_id: winnerId,
+    result_recorded_by: ST.player.id,
+    completed_at: new Date().toISOString()
+  }).eq('id', challengeId);
+  if (error) { alert(error.message); return; }
+  await _applyLadderResult(winnerId, loserId);
+  closeFormModal();
+  await loadDivisionLadder();
+  _injectLadderHomeCard();
+}
+
+// ── Position update helpers ────────────────────────────────────────────────
+async function _applyLadderResult(winnerId, loserId) {
+  const { data: pos } = await sb.from('ladder_positions')
+    .select('player_id, position').order('position');
+  if (!pos) return;
+  const winnerRow = pos.find(p => p.player_id === winnerId);
+  const loserRow  = pos.find(p => p.player_id === loserId);
+  if (!winnerRow || !loserRow) return;
+  const winnerPos = winnerRow.position;
+  const loserPos  = loserRow.position;
+
+  let updates;
+  if (winnerPos > loserPos) {
+    // Challenger won: cascade — winner takes loser's spot, everyone between shifts down 1
+    updates = pos.map(p => {
+      if (p.player_id === winnerId) return { player_id: p.player_id, position: loserPos };
+      if (p.position >= loserPos && p.position < winnerPos) return { player_id: p.player_id, position: p.position + 1 };
+      return p;
+    });
+  } else {
+    // Challenged won: loser (challenger) drops 1, player directly below moves up
+    updates = pos.map(p => {
+      if (p.player_id === loserId)       return { player_id: p.player_id, position: loserPos + 1 };
+      if (p.position === loserPos + 1)   return { player_id: p.player_id, position: loserPos };
+      return p;
+    });
+  }
+  await _savePositions(updates);
+}
+
+async function _applyOnePlaceDrop(playerId) {
+  const { data: pos } = await sb.from('ladder_positions')
+    .select('player_id, position').order('position');
+  if (!pos) return;
+  const cur = pos.find(p => p.player_id === playerId);
+  if (!cur) return;
+  const updates = pos.map(p => {
+    if (p.player_id === playerId)          return { player_id: p.player_id, position: cur.position + 1 };
+    if (p.position === cur.position + 1)   return { player_id: p.player_id, position: cur.position };
+    return p;
+  });
+  await _savePositions(updates);
+}
+
+async function _savePositions(updates) {
+  const now = new Date().toISOString();
+  await sb.from('ladder_positions').delete().gte('position', 0);
+  await sb.from('ladder_positions').insert(
+    updates.map(p => ({ player_id: p.player_id, position: p.position, updated_at: now }))
+  );
+  const { data } = await sb.from('ladder_positions')
+    .select('position, player_id, players(id, first_name, last_name, current_handicap)')
+    .order('position');
+  _ladderPositions = data || [];
+}
+
+// ── Auto-forfeit ───────────────────────────────────────────────────────────
+async function _processAutoForfeits() {
+  const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const expired = _activeChallenges.filter(c => c.status === 'pending' && c.issued_at < cutoff);
+  for (const c of expired) {
+    await sb.from('ladder_challenges').update({
+      status: 'forfeited',
+      winner_id: c.challenger_id,
+      completed_at: new Date().toISOString()
+    }).eq('id', c.id);
+    await _applyLadderResult(c.challenger_id, c.challenged_id);
+  }
+  if (expired.length > 0) await _loadChallenges();
 }
 
 // ── Admin reorder ──────────────────────────────────────────────────────────
@@ -303,8 +557,8 @@ function renderLadderAdmin() {
 }
 
 // ── Drag and drop ──────────────────────────────────────────────────────────
-let _ladderDragSrcIdx  = null; // index in _ladderInList
-let _ladderPoolDragIdx = null; // index in _ladderPool
+let _ladderDragSrcIdx  = null;
+let _ladderPoolDragIdx = null;
 
 function ladderDragStart(e) {
   _ladderDragSrcIdx  = parseInt(e.currentTarget.dataset.idx, 10);
@@ -326,9 +580,7 @@ function ladderDragOver(e) {
 function ladderDrop(e) {
   e.preventDefault();
   const targetIdx = parseInt(e.currentTarget.dataset.idx, 10);
-
   if (_ladderPoolDragIdx !== null) {
-    // Dropping from pool into a specific position
     const p = _ladderPool.splice(_ladderPoolDragIdx, 1)[0];
     _ladderInList.splice(targetIdx, 0, p.id);
     _ladderPoolDragIdx = null;
@@ -341,7 +593,6 @@ function ladderDrop(e) {
 }
 
 function ladderDropOnEmpty(e) {
-  // Drop onto the list container when dropped below all rows
   if (_ladderPoolDragIdx !== null) {
     const p = _ladderPool.splice(_ladderPoolDragIdx, 1)[0];
     _ladderInList.push(p.id);
@@ -370,14 +621,12 @@ async function saveAdminConfig() {
   const cr  = parseInt(document.getElementById('cfg-challenge-range')?.value, 10);
   const msg = document.getElementById('cfg-save-msg');
   if (!ds || !cr || ds < 1 || cr < 1) { if (msg) msg.textContent = 'Invalid values'; return; }
-
   const rows = [
-    { key: 'division_size',  value: String(ds) },
+    { key: 'division_size',   value: String(ds) },
     { key: 'challenge_range', value: String(cr) }
   ];
   const { error } = await sb.from('ladder_config').upsert(rows, { onConflict: 'key' });
   if (error) { if (msg) { msg.style.color = '#dc2626'; msg.textContent = error.message; } return; }
-
   _ladderDivSize  = ds;
   _challengeRange = cr;
   if (msg) { msg.style.color = '#15803d'; msg.textContent = 'Saved'; setTimeout(() => { msg.textContent = ''; }, 2000); }
@@ -387,36 +636,28 @@ async function saveAdminConfig() {
 async function saveLadderOrder() {
   const msg = document.getElementById('ladder-save-msg');
   if (msg) msg.textContent = 'Saving…';
-
   const rows = _ladderInList.map((playerId, i) => ({
     player_id: playerId,
     position: i + 1,
     updated_at: new Date().toISOString()
   }));
-
-  // Delete all existing, then upsert new order
   const { error: delErr } = await sb.from('ladder_positions').delete().gte('position', 0);
   if (delErr) {
-    if (msg) msg.style.color = '#dc2626';
-    if (msg) msg.textContent = `Error: ${delErr.message}`;
+    if (msg) { msg.style.color = '#dc2626'; msg.textContent = `Error: ${delErr.message}`; }
     return;
   }
-
   if (rows.length > 0) {
     const { error: insErr } = await sb.from('ladder_positions').insert(rows);
     if (insErr) {
-      if (msg) msg.style.color = '#dc2626';
-      if (msg) msg.textContent = `Error: ${insErr.message}`;
+      if (msg) { msg.style.color = '#dc2626'; msg.textContent = `Error: ${insErr.message}`; }
       return;
     }
   }
-
-  _ladderPositions = rows.map((r, i) => ({
+  _ladderPositions = rows.map(r => ({
     position: r.position,
     player_id: r.player_id,
     players: _ladderAllPlayers.find(p => p.id === r.player_id) || {}
   }));
-
   if (msg) { msg.style.color = '#15803d'; msg.textContent = `Saved — ${rows.length} players ranked`; }
   renderLadderAdmin();
 }
