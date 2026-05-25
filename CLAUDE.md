@@ -5,7 +5,7 @@
 - **Owner:** David Barkess — personal project, unrelated to SAP/DealSensAI work
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `C:\Users\I061437\OneDrive\Projects\Squash`
-- **Current version:** v4.87
+- **Current version:** v4.88
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -414,3 +414,4 @@ echo "{\"version\":\"4.XX\",\"build\":\"$(date +%s)\"}" > docs/version.json
 | v4.85 | Challenge form: 🔀 Shuffle button cycles through messages; ladder rules moved below division tables as "Rules of Engagement"; "Throw down a challenge!" stays at top |
 | v4.86 | Fix challenge popup: replace _challengesNotified boolean with _notifiedChallengeIds Set so popup fires on every loadHome() for any challenge not yet shown in this session; guards against stacking modals |
 | v4.87 | Challenge: Decline (Injury) option — no penalty, status 'declined_injury'; popup locked until player responds (X hidden, overlay blocked); Me tile shows last 3 personal challenges with status; max-3 active challenges per player enforced on issue |
+| v4.88 | Challenge row icons: ⏳ (pending) and 🎾 (game on!) replace ⚔️ when a challenge is active; clicking them opens unified resolution modal with record-result + Withdraw button (pending only); Withdraw sets status='withdrawn' |
