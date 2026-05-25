@@ -5,7 +5,7 @@
 - **Owner:** David Barkess — personal project, unrelated to SAP/DealSensAI work
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `C:\Users\I061437\OneDrive\Projects\Squash`
-- **Current version:** v4.90
+- **Current version:** v4.91
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -417,3 +417,4 @@ echo "{\"version\":\"4.XX\",\"build\":\"$(date +%s)\"}" > docs/version.json
 | v4.88 | Challenge row icons: ⏳ (pending) and 🎾 (game on!) replace ⚔️ when a challenge is active; clicking them opens unified resolution modal with record-result + Withdraw button (pending only); Withdraw sets status='withdrawn' |
 | v4.89 | Fix: inbound challenges now show ⏳/🎾 on the challenger's row (below me) — previously only outgoing challenges (above me) showed the icon |
 | v4.90 | Admin tabs: horizontally scrollable on iOS — overflow-x:auto + scrollbar hidden + white-space:nowrap + flex-shrink:0 so Ladder tab is never clipped |
+| v4.91 | Admin tabs: replace scroll approach with pill-style wrapping tray (grey bg, white active chip, flex-wrap) — no scrolling needed, tabs wrap to second row on narrow screens |

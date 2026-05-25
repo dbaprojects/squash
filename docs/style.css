@@ -772,21 +772,35 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 .btn-row { display: flex; gap: 8px; }
 
 /* ── Admin tabs ────────────────────────────────────────────────────────── */
-.tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 2px solid var(--bc-border); overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  background: #f1f5f9;
+  border-radius: 10px;
+  padding: 4px;
+  margin-bottom: 16px;
+  border-bottom: none;
+}
 .tabs::-webkit-scrollbar { display: none; }
 .tab-btn {
   background: none;
   border: none;
-  padding: 10px 16px;
+  border-radius: 7px;
+  padding: 8px 14px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 600;
   color: var(--bc-text-dim);
-  border-bottom: 2px solid transparent;
-  margin-bottom: -2px;
   white-space: nowrap;
-  flex-shrink: 0;
+  flex: 1 0 auto;
+  text-align: center;
 }
-.tab-btn.active { color: var(--bc-navy); border-bottom-color: var(--bc-gold); font-weight: 700; }
+.tab-btn.active {
+  background: #fff;
+  color: var(--bc-navy);
+  box-shadow: 0 1px 3px rgba(0,0,0,.12);
+}
 
 .panel-header {
   display: flex;
