@@ -185,7 +185,11 @@ function renderDivisionLadder() {
       </div>`);
   }
 
-  wrap.innerHTML = `<div class="div-ladder-grid">${divCards.join('')}</div>`;
+  wrap.innerHTML = `
+    <div class="ladder-banner">
+      <strong>Throw down a challenge!</strong> Ladders are currently updated by David B., so let him know if any movements.
+    </div>
+    <div class="div-ladder-grid">${divCards.join('')}</div>`;
 }
 
 // ── Admin reorder ──────────────────────────────────────────────────────────
