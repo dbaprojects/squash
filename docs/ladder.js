@@ -186,6 +186,7 @@ function renderDivisionLadder() {
   }
 
   wrap.innerHTML = `
+    <div class="div-ladder-grid">${divCards.join('')}</div>
     <div class="ladder-banner">
       <strong>Throw down a challenge!</strong> Ladders are currently updated by David B., so let him know if any movements.
       <ol class="ladder-rules">
@@ -194,8 +195,7 @@ function renderDivisionLadder() {
         <li>Not required to do more than 1 challenge per session.</li>
         <li>You can challenge up to <strong>${_challengeRange}</strong> place${_challengeRange !== 1 ? 's' : ''} above you.</li>
       </ol>
-    </div>
-    <div class="div-ladder-grid">${divCards.join('')}</div>`;
+    </div>`;
 }
 
 // ── Admin reorder ──────────────────────────────────────────────────────────
