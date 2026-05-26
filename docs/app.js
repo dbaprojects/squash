@@ -113,8 +113,7 @@ const ST = {
 };
 
 // ── Init ──────────────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', async () => {
-  // Remote version check — detects when PWA is serving a stale cached app.js
+async function _checkRemoteVersion() {
   try {
     const res = await fetch('version.json?_t=' + Date.now(), { cache: 'no-store' });
     const { version, build } = await res.json();
@@ -124,9 +123,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (versionMismatch || buildMismatch) {
       if (build) localStorage.setItem('_app_build', build);
       location.replace(location.pathname + '?_cb=' + (build || version || APP_VERSION));
-      return;
+      return true;
     }
   } catch (e) { /* offline or fetch failed — continue normally */ }
+  return false;
+}
+
+// Re-check version whenever app comes back to foreground (iOS PWA suspension fix)
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') _checkRemoteVersion();
+});
+
+document.addEventListener('DOMContentLoaded', async () => {
+  const redirecting = await _checkRemoteVersion();
+  if (redirecting) return;
 
   setupNav();
   setupModalClose();
