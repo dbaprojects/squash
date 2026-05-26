@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.96';;;
+const APP_VERSION = '4.97';;;
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -3719,7 +3719,20 @@ function openHcCalculator() {
       <label>Player B handicap</label>
       <input type="number" id="hcc-b" placeholder="e.g. -5" oninput="calcHcResult()" style="text-align:center;font-size:18px;font-weight:700;width:100%">
     </div>
-    <div id="hcc-result" class="hc-calc-result" style="display:none"></div>
+    <div class="hc-calc-result">
+      <div style="display:flex;gap:12px;justify-content:center;margin-top:4px">
+        <div class="hc-calc-player-box">
+          <div class="hc-calc-label">Player A starts</div>
+          <div class="hc-calc-score" id="hcc-score-a">--</div>
+        </div>
+        <div style="align-self:center;font-size:18px;color:#94a3b8">vs</div>
+        <div class="hc-calc-player-box">
+          <div class="hc-calc-label">Player B starts</div>
+          <div class="hc-calc-score" id="hcc-score-b">--</div>
+        </div>
+      </div>
+      <div class="hc-calc-note" id="hcc-note"></div>
+    </div>
     <div class="hc-calc-rules">
       <p>If both players are on the same side of zero (both negative or both positive), the weaker player's handicap is removed from both — so they start at 0. This is called netting off.</p>
       <p>If one player is negative and the other positive, no netting applies.</p>
@@ -3727,35 +3740,28 @@ function openHcCalculator() {
       <p>Starting scores are capped at +7.</p>
     </div>
   `);
+  calcHcResult();
 }
 
 function calcHcResult() {
-  const valA = parseFloat(document.getElementById('hcc-a').value);
-  const valB = parseFloat(document.getElementById('hcc-b').value);
-  const el = document.getElementById('hcc-result');
+  const valA = parseFloat(document.getElementById('hcc-a')?.value);
+  const valB = parseFloat(document.getElementById('hcc-b')?.value);
+  const scoreA = document.getElementById('hcc-score-a');
+  const scoreB = document.getElementById('hcc-score-b');
+  const note   = document.getElementById('hcc-note');
+  if (!scoreA) return;
   if (isNaN(valA) || isNaN(valB)) {
-    el.style.display = 'none';
+    scoreA.textContent = '--';
+    scoreB.textContent = '--';
+    note.textContent = '';
     return;
   }
   const { startA, startB, netted, shifts } = computeHcStarts(valA, valB);
   const fmt = n => n === 0 ? '0' : (n > 0 ? '+' + n : '−' + Math.abs(n));
   const shiftNote = shifts > 0 ? `, shifted ${shifts} place${shifts > 1 ? 's' : ''}` : '';
-  const noteText = netted
+  scoreA.textContent = fmt(startA);
+  scoreB.textContent = fmt(startB);
+  note.textContent = netted
     ? `Handicaps netted off${shiftNote}`
     : `Handicaps straddle zero — no netting${shiftNote}`;
-  el.style.display = 'block';
-  el.innerHTML = `
-    <div style="display:flex;gap:12px;justify-content:center;margin-top:12px">
-      <div class="hc-calc-player-box">
-        <div class="hc-calc-label">Player A</div>
-        <div class="hc-calc-score">${fmt(startA)}</div>
-      </div>
-      <div style="align-self:center;font-size:18px;color:#94a3b8">vs</div>
-      <div class="hc-calc-player-box">
-        <div class="hc-calc-label">Player B</div>
-        <div class="hc-calc-score">${fmt(startB)}</div>
-      </div>
-    </div>
-    <div class="hc-calc-note">${noteText}</div>
-  `;
 }
