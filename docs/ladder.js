@@ -271,7 +271,7 @@ function _injectLadderHomeCard() {
     const activeRows = _activeChallenges.map(c => {
       const cn = (c.challenger?.first_name || '') + ' ' + ((c.challenger?.last_name || '')[0] || '');
       const dn = (c.challenged?.first_name || '') + ' ' + ((c.challenged?.last_name || '')[0] || '');
-      return _cr('🎾', cn, '🎾', dn);
+      return _cr('⚔️', cn, '⚔️', dn);
     });
     const completedRows = _recentCompleted.map(c => {
       const cr = (c.challenger?.first_name || '') + ' ' + ((c.challenger?.last_name || '')[0] || '');
