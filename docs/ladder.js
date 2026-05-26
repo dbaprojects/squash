@@ -218,7 +218,7 @@ async function _loadChallenges() {
       .select(`id, challenger_id, challenged_id, status, completed_at, winner_id, winner_pos_change,
                challenger:players!challenger_id(first_name, last_name),
                challenged:players!challenged_id(first_name, last_name)`)
-      .in('status', ['completed', 'forfeited'])
+      .in('status', ['completed', 'forfeited', 'declined'])
       .order('completed_at', { ascending: false })
       .limit(4)
   ]);
@@ -270,7 +270,15 @@ function _injectLadderHomeCard() {
       const icon = c.status === 'accepted' ? '🎾' : '⏳';
       return `<div class="divladder-challenge-row">${icon} ${cn} vs ${dn}</div>`;
     });
-    const completedRows = _recentCompleted.slice(0, 3).map(c => {
+    const completedRows = _recentCompleted.slice(0, 4).map(c => {
+      const cr = (c.challenger?.first_name || '') + ' ' + ((c.challenger?.last_name || '')[0] || '');
+      const cd = (c.challenged?.first_name || '') + ' ' + ((c.challenged?.last_name || '')[0] || '');
+      if (c.status === 'declined') {
+        return `<div class="divladder-challenge-row">🐔 <span style="color:#dc2626;font-weight:700">${cd}</span> dodged ${cr}</div>`;
+      }
+      if (c.status === 'forfeited') {
+        return `<div class="divladder-challenge-row">🏳️ <span style="color:#dc2626;font-weight:700">${cd}</span> forfeited to ${cr}</div>`;
+      }
       const winner = c.winner_id === c.challenger_id ? c.challenger : c.challenged;
       const loser  = c.winner_id === c.challenger_id ? c.challenged : c.challenger;
       const wn = (winner?.first_name || '') + ' ' + ((winner?.last_name || '')[0] || '');
