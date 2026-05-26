@@ -3713,13 +3713,12 @@ function openHcCalculator() {
   showFormModal('HC Calculator', `
     <div class="form-group">
       <label>Player A handicap</label>
-      <input type="number" id="hcc-a" value="${myHc}" style="text-align:center;font-size:18px;font-weight:700;width:100%">
+      <input type="number" id="hcc-a" value="${myHc}" oninput="calcHcResult()" style="text-align:center;font-size:18px;font-weight:700;width:100%">
     </div>
     <div class="form-group">
       <label>Player B handicap</label>
-      <input type="number" id="hcc-b" placeholder="e.g. -5" style="text-align:center;font-size:18px;font-weight:700;width:100%">
+      <input type="number" id="hcc-b" placeholder="e.g. -5" oninput="calcHcResult()" style="text-align:center;font-size:18px;font-weight:700;width:100%">
     </div>
-    <button class="btn-primary" style="width:100%" onclick="calcHcResult()">Calculate</button>
     <div id="hcc-result" class="hc-calc-result" style="display:none"></div>
     <div class="hc-calc-rules">
       <p>If both players are on the same side of zero (both negative or both positive), the weaker player's handicap is removed from both — so they start at 0. This is called netting off.</p>
@@ -3735,8 +3734,7 @@ function calcHcResult() {
   const valB = parseFloat(document.getElementById('hcc-b').value);
   const el = document.getElementById('hcc-result');
   if (isNaN(valA) || isNaN(valB)) {
-    el.style.display = 'block';
-    el.innerHTML = `<p style="color:#dc2626;font-size:13px">Please enter valid handicaps for both players.</p>`;
+    el.style.display = 'none';
     return;
   }
   const { startA, startB, netted, shifts } = computeHcStarts(valA, valB);
