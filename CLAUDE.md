@@ -5,7 +5,7 @@
 - **Owner:** David Barkess — personal project, unrelated to SAP/DealSensAI work
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `C:\Users\I061437\OneDrive\Projects\Squash`
-- **Current version:** v5.01
+- **Current version:** v5.02
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -278,7 +278,9 @@ The division ladder is implemented entirely in `docs/ladder.js`, loaded after `a
 
 **Home tile** (`#home-card-division-ladder`): always removed and re-created in `_injectLadderHomeCard()` to prevent stale data. **Dev** shows "🍺 LADDERS ⚔️" centred title + flat list of active+recent rows (capped at 6) + "View all ladder info →" footer. **Prod** shows "Ladders" title + D1–D4 grid (top 3 per division) + active challenges. Row format: `[icon] winner v loser` — icon carries meaning (⏳ pending, 🎾 accepted, 🍺 completed, 🐔 declined/dodged, 👻 forfeited/ghosted); winner always LHS. Must be inserted before the admin card.
 
-**`winner_pos_change`** column in `ladder_challenges`: stores the winner's position improvement at match completion time (set by `_applyLadderResult()` return value, then written to DB in `submitChallengeResult()` and `_processAutoForfeits()`).
+**`winner_pos_change`** column in `ladder_challenges`: stores winner's position improvement. **`loser_pos_change`** column: places the loser dropped — always 1 for normal results and declines; may be several for forfeits (challenged drops to just below challenger).
+
+**Forfeit logic (`_applyForfeitResult`)**: removes challenged from the sorted list, reinserts after challenger, renumbers all positions. `winner_pos_change = 0` — challenger gets no jump reward. Challenger may shift up by 1 as a natural side-effect of the reshuffling.
 
 **`db/seed-test-challenges.sql`**: inserts 6 test entries (pending, accepted, completed×2, declined, forfeited) using player IDs from `ladder_positions`. Safe — does not modify positions.
 
@@ -437,3 +439,4 @@ echo "{\"version\":\"4.XX\",\"build\":\"$(date +%s)\"}" > docs/version.json
 | v4.99 | Ladder tile rows redesigned as 5-column grid: `[icon] [left-name] v [right-name] [icon]` — icons on far edges, names right/left-aligned toward centre; ⚔️⚔️ pending/accepted (replaced 🎾 tennis racket offensive to squash players), 🍺/😢 result, 🍺/🐔 declined, 🍺/👻 forfeited; no bold/colour on names; `.dlcr-ic/.dlcr-nl/.dlcr-v/.dlcr-nr` CSS classes; `_cr()` helper in ladder.js |
 | v5.00 | Version bump to force iOS PWA cache refresh |
 | v5.01 | Me tile: hcTrendHtml removes 'Handicap has' prefix, '12 months' → '(12m)'; trend + sessions lines right-justified; 'View full history →' → 'Click to view...' centred; all `.home-card-link` elements centred via CSS; ladders tile footer → 'Click to view all →' centred |
+| v5.02 | Forfeit rule change: challenged drops to just below challenger (no big jump for challenger); new `_applyForfeitResult()` — removes challenged, reinserts after challenger, renumbers; `winner_pos_change=0` for forfeits; new `loser_pos_change` column records places dropped (1 for normal/decline, N for forfeit); `db/migration-loser-pos-change.sql` |
