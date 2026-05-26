@@ -240,6 +240,10 @@ async function _loadMyChallenges() {
 }
 
 // ── Home tile injection ────────────────────────────────────────────────────
+function _cr(iconL, nameL, iconR, nameR) {
+  return `<div class="divladder-challenge-row"><span class="dlcr-ic">${iconL}</span><span class="dlcr-nl">${nameL}</span><span class="dlcr-v">v</span><span class="dlcr-nr">${nameR}</span><span class="dlcr-ic">${iconR}</span></div>`;
+}
+
 function _injectLadderHomeCard() {
   const grid = document.getElementById('home-grid');
   if (!grid) return;
@@ -267,25 +271,18 @@ function _injectLadderHomeCard() {
     const activeRows = _activeChallenges.map(c => {
       const cn = (c.challenger?.first_name || '') + ' ' + ((c.challenger?.last_name || '')[0] || '');
       const dn = (c.challenged?.first_name || '') + ' ' + ((c.challenged?.last_name || '')[0] || '');
-      const icon = c.status === 'accepted' ? '🎾' : '⏳';
-      return `<div class="divladder-challenge-row">${icon} ${cn} v ${dn}</div>`;
+      return _cr('🎾', cn, '🎾', dn);
     });
     const completedRows = _recentCompleted.map(c => {
       const cr = (c.challenger?.first_name || '') + ' ' + ((c.challenger?.last_name || '')[0] || '');
       const cd = (c.challenged?.first_name || '') + ' ' + ((c.challenged?.last_name || '')[0] || '');
-      if (c.status === 'declined') {
-        // challenger wins (challenged dodged) — challenger on LHS
-        return `<div class="divladder-challenge-row">🐔 <span style="color:#16a34a;font-weight:700">${cr}</span> v ${cd}</div>`;
-      }
-      if (c.status === 'forfeited') {
-        // challenger wins (challenged ghosted) — challenger on LHS
-        return `<div class="divladder-challenge-row">👻 <span style="color:#16a34a;font-weight:700">${cr}</span> v ${cd}</div>`;
-      }
+      if (c.status === 'declined')  return _cr('🍺', cr, '🐔', cd);
+      if (c.status === 'forfeited') return _cr('🍺', cr, '👻', cd);
       const winner = c.winner_id === c.challenger_id ? c.challenger : c.challenged;
       const loser  = c.winner_id === c.challenger_id ? c.challenged : c.challenger;
       const wn = (winner?.first_name || '') + ' ' + ((winner?.last_name || '')[0] || '');
       const ln = (loser?.first_name  || '') + ' ' + ((loser?.last_name  || '')[0] || '');
-      return `<div class="divladder-challenge-row">🍺 <span style="color:#16a34a;font-weight:700">${wn}</span> v ${ln}</div>`;
+      return _cr('🍺', wn, '😢', ln);
     });
     const allRows = [...activeRows, ...completedRows].slice(0, 6);
     if (allRows.length > 0) {
@@ -298,7 +295,7 @@ function _injectLadderHomeCard() {
         ${_activeChallenges.slice(0, 6).map(c => {
           const cn = (c.challenger?.first_name || '') + ' ' + ((c.challenger?.last_name || '')[0] || '');
           const dn = (c.challenged?.first_name || '') + ' ' + ((c.challenged?.last_name || '')[0] || '');
-          return `<div class="divladder-challenge-row">⚔️ ${cn} vs ${dn}</div>`;
+          return _cr('⚔️', cn, '⚔️', dn);
         }).join('')}
       </div>`;
     }

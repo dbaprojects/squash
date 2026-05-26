@@ -7,7 +7,7 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>BC Squash Section</title>
-  <link rel="stylesheet" href="style.css?v=4.98">
+  <link rel="stylesheet" href="style.css?v=4.99">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="bcss.png">
   <meta name="theme-color" content="#1B2A6B">
@@ -173,7 +173,19 @@
     .challenge-date { font-size: 11px; color: #94a3b8; flex-shrink: 0; }
 
     .divladder-challenges { margin-top: 6px; padding-top: 5px; }
-    .divladder-challenge-row { font-size: 13px; color: #475569; padding: 2px 0; }
+    .divladder-challenge-row {
+      display: grid;
+      grid-template-columns: 1.4em 1fr auto 1fr 1.4em;
+      align-items: center;
+      gap: 3px;
+      font-size: 12px;
+      color: #475569;
+      padding: 2px 0;
+    }
+    .dlcr-ic { text-align: center; }
+    .dlcr-nl { text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .dlcr-v  { text-align: center; color: #94a3b8; font-size: 10px; padding: 0 2px; }
+    .dlcr-nr { text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .divladder-section-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8; margin-bottom: 2px; }
 
     /* Me-tile challenge rows */
@@ -199,7 +211,7 @@
     </div>
     <div id="login-phone-error" class="error-msg" style="margin-bottom:8px"></div>
     <button class="btn-google-full" onclick="submitLoginPhone()">Sign In</button>
-    <p class="login-version">v4.98</p>
+    <p class="login-version">v4.99</p>
     <p class="login-terms"><button class="login-terms-link" onclick="openTermsModal()">Terms of Use</button></p>
   </div>
 </div>
@@ -263,7 +275,7 @@
       <img src="bcss.png" class="header-logo" alt="BC">
       <div class="header-title">
         <span class="logo">British Club</span>
-        <span class="logo-sub">Squash Section <span class="version">v4.98</span></span>
+        <span class="logo-sub">Squash Section <span class="version">v4.99</span></span>
       </div>
     </div>
     <div id="header-page-title" class="header-page-title"></div>
@@ -422,7 +434,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
-<script src="app.js?v=4.98"></script>
-<script src="ladder.js?v=4.98"></script>
+<script src="app.js?v=4.99"></script>
+<script src="ladder.js?v=4.99"></script>
 </body>
 </html>
