@@ -5,7 +5,7 @@
 - **Owner:** David Barkess — personal project, unrelated to SAP/DealSensAI work
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `C:\Users\I061437\OneDrive\Projects\Squash`
-- **Current version:** v5.00
+- **Current version:** v5.01
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -436,3 +436,4 @@ echo "{\"version\":\"4.XX\",\"build\":\"$(date +%s)\"}" > docs/version.json
 | v4.98 | Prod challenge zone: green ▲ highlight rows visible without challenge buttons; dev Ladders home tile: 🍺 LADDERS ⚔️ centred title, flat active+recent rows (⏳ pending, 🎾 accepted, 🍺 won, 🐔 declined, 👻 ghosted/forfeited); winner always LHS; unified "[icon] winner v loser" format; 6-row cap + "View all ladder info →" footer; `winner_pos_change` stored in `ladder_challenges` at match completion; `db/seed-test-challenges.sql` covers all 6 visible status combos |
 | v4.99 | Ladder tile rows redesigned as 5-column grid: `[icon] [left-name] v [right-name] [icon]` — icons on far edges, names right/left-aligned toward centre; ⚔️⚔️ pending/accepted (replaced 🎾 tennis racket offensive to squash players), 🍺/😢 result, 🍺/🐔 declined, 🍺/👻 forfeited; no bold/colour on names; `.dlcr-ic/.dlcr-nl/.dlcr-v/.dlcr-nr` CSS classes; `_cr()` helper in ladder.js |
 | v5.00 | Version bump to force iOS PWA cache refresh |
+| v5.01 | Me tile: hcTrendHtml removes 'Handicap has' prefix, '12 months' → '(12m)'; trend + sessions lines right-justified; 'View full history →' → 'Click to view...' centred; all `.home-card-link` elements centred via CSS; ladders tile footer → 'Click to view all →' centred |
