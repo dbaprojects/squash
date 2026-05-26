@@ -257,6 +257,9 @@ SUPABASE_SERVICE_ROLE_KEY=... node db/load-hof.js
 
 # Rebuild historical signups + handicap history
 SUPABASE_SERVICE_ROLE_KEY=... node db/reseed.js
+
+# Insert 6 test challenges covering all visible status combos (safe — no position changes)
+# Run in Supabase SQL editor: db/seed-test-challenges.sql
 ```
 
 ---
@@ -273,7 +276,11 @@ The division ladder is implemented entirely in `docs/ladder.js`, loaded after `a
 
 **Division derivation:** always computed as `ceil(position / _ladderDivSize)` — no division column. Changing `division_size` in `ladder_config` re-bands all players automatically.
 
-**Home tile** (`#home-card-division-ladder`): always removed and re-created in `_injectLadderHomeCard()` to prevent stale data. Shows top 3 per division (first name + last initial). Must be inserted before the admin card.
+**Home tile** (`#home-card-division-ladder`): always removed and re-created in `_injectLadderHomeCard()` to prevent stale data. **Dev** shows "🍺 LADDERS ⚔️" centred title + flat list of active+recent rows (capped at 6) + "View all ladder info →" footer. **Prod** shows "Ladders" title + D1–D4 grid (top 3 per division) + active challenges. Row format: `[icon] winner v loser` — icon carries meaning (⏳ pending, 🎾 accepted, 🍺 completed, 🐔 declined/dodged, 👻 forfeited/ghosted); winner always LHS. Must be inserted before the admin card.
+
+**`winner_pos_change`** column in `ladder_challenges`: stores the winner's position improvement at match completion time (set by `_applyLadderResult()` return value, then written to DB in `submitChallengeResult()` and `_processAutoForfeits()`).
+
+**`db/seed-test-challenges.sql`**: inserts 6 test entries (pending, accepted, completed×2, declined, forfeited) using player IDs from `ladder_positions`. Safe — does not modify positions.
 
 **Public view:** 2×2 grid of 4 division cards. Logged-in player row highlighted amber. Players within `_challengeRange` positions above show green ▲ badge. Last division shows all remaining players (may exceed `_ladderDivSize`). Banner above grid; Rules of Engagement below.
 
@@ -425,3 +432,5 @@ echo "{\"version\":\"4.XX\",\"build\":\"$(date +%s)\"}" > docs/version.json
 | v4.94 | Show handicap in brackets after each player name in ladder view (both prod+dev): e.g. "Jamie S (-13)"; .div-hc CSS class for grey text |
 | v4.95 | Rules of Engagement rule 2 updated: "Other than injury, you can't refuse a challenge (else you slip a place!)" — prod+dev |
 | v4.96 | HC Calculator: "HC Calc" button in Handicaps filter bar; modal with netting-off algorithm — both negative/positive net off, straddle zero no net, shift +1 per 6-point diff, cap +7; computeHcStarts() pure function |
+| v4.97 | HC Calc moved to full-width amber banner in Handicaps section; always-visible score boxes (show "--" until both inputs valid, live update); PWA: `visibilitychange` listener fires version check on iOS foreground resume (DOMContentLoaded never re-fires on PWA suspend/resume); audit logs `app_version` on every session_start/resume; favicon 404 + deprecated apple-mobile-web-app-capable meta fixed in index.html + dev.html |
+| v4.98 | Prod challenge zone: green ▲ highlight rows visible without challenge buttons; dev Ladders home tile: 🍺 LADDERS ⚔️ centred title, flat active+recent rows (⏳ pending, 🎾 accepted, 🍺 won, 🐔 declined, 👻 ghosted/forfeited); winner always LHS; unified "[icon] winner v loser" format; 6-row cap + "View all ladder info →" footer; `winner_pos_change` stored in `ladder_challenges` at match completion; `db/seed-test-challenges.sql` covers all 6 visible status combos |
