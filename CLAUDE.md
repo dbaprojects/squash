@@ -5,7 +5,7 @@
 - **Owner:** David Barkess — personal project, unrelated to SAP/DealSensAI work
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `C:\Users\I061437\OneDrive\Projects\Squash`
-- **Current version:** v5.03
+- **Current version:** v5.04
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -441,3 +441,4 @@ echo "{\"version\":\"4.XX\",\"build\":\"$(date +%s)\"}" > docs/version.json
 | v5.01 | Me tile: hcTrendHtml removes 'Handicap has' prefix, '12 months' → '(12m)'; trend + sessions lines right-justified; 'View full history →' → 'Click to view...' centred; all `.home-card-link` elements centred via CSS; ladders tile footer → 'Click to view all →' centred |
 | v5.02 | Forfeit rule change: challenged drops to just below challenger (no big jump for challenger); new `_applyForfeitResult()` — removes challenged, reinserts after challenger, renumbers; `winner_pos_change=0` for forfeits; new `loser_pos_change` column records places dropped (1 for normal/decline, N for forfeit); `db/migration-loser-pos-change.sql` |
 | v5.03 | Rules of Engagement rewritten — 8 rules with emoji (🍺😢🐔👻), late-arrival clause ("we're not tennis players"), ghost rule, injury rule; rendered in ladder.js |
+| v5.04 | Rules of Engagement moved to modal — amber ⚔️ button below ladder grid calls `showLadderRules()` → `showFormModal`; 15px font in modal; injury rule updated with doctor's certificate joke |
