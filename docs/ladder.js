@@ -440,7 +440,7 @@ function renderDivisionLadder() {
       <strong>Rules of Engagement</strong>
       <ol class="ladder-rules">
         <li>Winner takes loser's place. Loser goes down 1 place.</li>
-        <li>Can't refuse a challenge (else you slip a place!)</li>
+        <li>Other than injury, you can't refuse a challenge (else you slip a place!)</li>
         <li>Not required to do more than 1 challenge per session.</li>
         <li>You can challenge up to <strong>${_challengeRange}</strong> place${_challengeRange !== 1 ? 's' : ''} above you.</li>
       </ol>
