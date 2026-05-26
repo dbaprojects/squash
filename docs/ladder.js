@@ -479,16 +479,18 @@ function renderDivisionLadder() {
     : '';
 
   wrap.innerHTML = `
-    ${_CHALLENGES_ENABLED ? `<div class="ladder-banner"><strong>Throw down a challenge!</strong> Ladders are currently updated by David B., so let him know if any movements.</div>` : ''}
-    <div class="div-ladder-grid">${divCards.join('')}</div>
-    <div style="max-width:600px;margin:10px auto 0;padding:0 8px">
+    <div style="max-width:600px;margin:0 auto 0;padding:0 8px">
       <button class="hc-calc-banner" onclick="showLadderRules()">⚔️ Rules of Engagement ⚔️</button>
     </div>
+    <div class="div-ladder-grid">${divCards.join('')}</div>
     ${challengeListHtml}`;
 }
 
 function showLadderRules() {
   showFormModal('⚔️ Rules of Engagement ⚔️', `
+    <p style="font-size:13px;color:#92400e;background:#fffbeb;border:1.5px solid #fbbf24;border-radius:6px;padding:8px 12px;margin:0 0 14px">
+      <strong>Note:</strong> Ladders are currently updated by David B. — let him know of any movements.
+    </p>
     <ol style="padding-left:20px;margin:0;font-size:15px;line-height:1.8;color:#1e293b">
       <li><strong>Challenge whenever you like</strong> — agree a time, or find each other at a session. <em>(Rocking up late when your opponent has already been playing for an hour can be respectfully declined — we're not tennis players.)</em></li>
       <li><strong>Winner</strong> 🍺 takes the loser's spot on the ladder — or stays put if they're already higher.</li>
