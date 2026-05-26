@@ -250,18 +250,6 @@ function _injectLadderHomeCard() {
   card.className = 'home-card home-card-divladder';
   card.onclick = () => navTo('division-ladder');
 
-  const divGridHtml = `<div class="divladder-home-body">
-    ${[1,2,3,4].map(d => {
-      const start = (d - 1) * _ladderDivSize + 1;
-      const top3  = _ladderPositions.filter(p => p.position >= start && p.position <= start + 2);
-      const names = top3
-        .filter(p => p.players)
-        .map(p => `${p.players.first_name} ${(p.players.last_name || '')[0] || ''}`)
-        .join(', ') || '—';
-      return `<div class="divladder-home-div"><span class="divladder-home-div-label">D${d}</span> ${names}</div>`;
-    }).join('')}
-  </div>`;
-
   let extraHtml = '';
   if (_CHALLENGES_ENABLED) {
     const activeParts = _activeChallenges.length > 0
@@ -303,7 +291,6 @@ function _injectLadderHomeCard() {
 
   card.innerHTML = `
     <div class="home-card-label">${_CHALLENGES_ENABLED ? 'LADDERS — click for all details' : 'Ladders'}</div>
-    ${divGridHtml}
     ${extraHtml}`;
 
   const adminCard = grid.querySelector('.home-card-admin');
