@@ -366,6 +366,7 @@ function renderDivisionLadder() {
       if (!p.players) return '';
       const first = p.players.first_name || '';
       const last  = (p.players.last_name || '')[0]?.toUpperCase() || '';
+      const hc    = p.players.current_handicap != null ? ` (${p.players.current_handicap})` : '';
       let cls = '', badge = '';
       if (myPos !== null) {
         if (p.player_id === myId) {
@@ -398,7 +399,7 @@ function renderDivisionLadder() {
       }
       return `<div class="div-player-row${cls}">
         <span class="div-pos">${p.position}</span>
-        <span class="div-player-name">${first} ${last}</span>
+        <span class="div-player-name">${first} ${last}<span class="div-hc">${hc}</span></span>
         ${badge}
       </div>`;
     }).join('');
