@@ -295,7 +295,7 @@ function _injectLadderHomeCard() {
   }
 
   card.innerHTML = `
-    <div class="home-card-label" style="${_CHALLENGES_ENABLED ? 'text-align:center' : ''}">${_CHALLENGES_ENABLED ? '<span style="font-size:20px">🍺</span> LADDER ACTION <span style="font-size:20px">⚔️</span>' : 'Ladders'}</div>
+    <div class="home-card-label" style="${_CHALLENGES_ENABLED ? 'text-align:center' : ''}">${_CHALLENGES_ENABLED ? 'LADDERS' : 'Ladders'}</div>
     ${_CHALLENGES_ENABLED ? '' : divGridHtml}
     ${extraHtml}`;
 
