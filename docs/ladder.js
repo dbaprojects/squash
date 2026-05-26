@@ -1,6 +1,9 @@
 // ── Division Ladder (Phase 1 + 2) ────────────────────────────────────────────
-// Loaded after app.js in dev.html only.
-// Patches showSection, navTo, loadHome, and loadAdminTab to add ladder support.
+// Loaded after app.js in both index.html (production) and dev.html.
+// Phase 1 (ladder display + admin reorder) is live in production.
+// Phase 2 (challenge system) is dev-only — gated by _CHALLENGES_ENABLED.
+
+const _CHALLENGES_ENABLED = location.pathname.includes('dev');
 
 (function () {
   // ── Patch showSection ──────────────────────────────────────────────────
@@ -34,28 +37,35 @@
   // ── Patch loadHome ─────────────────────────────────────────────────────
   const _origLoadHome = loadHome;
   loadHome = async function () {
-    const [, posRes, cfgRes] = await Promise.all([
+    const basePromises = [
       _origLoadHome(),
       sb.from('ladder_positions')
         .select('position, player_id, players(id, first_name, last_name, current_handicap)')
         .order('position'),
       sb.from('ladder_config').select('key,value'),
-      _loadChallenges(),
-      _loadMyChallenges()
-    ]);
+    ];
+    if (_CHALLENGES_ENABLED) {
+      basePromises.push(_loadChallenges());
+      basePromises.push(_loadMyChallenges());
+    }
+    const [, posRes, cfgRes] = await Promise.all(basePromises);
     _applyConfig(cfgRes.data);
     _ladderPositions = posRes.data || [];
     _injectLadderHomeCard();
-    _injectMyChallenges();
-    _checkPendingChallenges();
+    if (_CHALLENGES_ENABLED) {
+      _injectMyChallenges();
+      _checkPendingChallenges();
+    }
   };
 
   // ── Patch closeFormModal — block close when modal is locked ───────────
-  const _origCloseFormModal = closeFormModal;
-  closeFormModal = function () {
-    if (_formModalLocked) return;
-    _origCloseFormModal();
-  };
+  if (_CHALLENGES_ENABLED) {
+    const _origCloseFormModal = closeFormModal;
+    closeFormModal = function () {
+      if (_formModalLocked) return;
+      _origCloseFormModal();
+    };
+  }
 
   // ── Patch loadAdminTab ─────────────────────────────────────────────────
   const _origLoadAdminTab = loadAdminTab;
@@ -307,20 +317,22 @@ async function loadDivisionLadder() {
   const wrap = document.getElementById('division-ladder-wrap');
   wrap.innerHTML = '<p style="color:#888;padding:16px">Loading…</p>';
 
-  const [posRes, cfgRes] = await Promise.all([
+  const promises = [
     sb.from('ladder_positions')
       .select('position, player_id, players(id, first_name, last_name, current_handicap)')
       .order('position'),
     sb.from('ladder_config').select('key,value'),
-    _loadChallenges()
-  ]);
+  ];
+  if (_CHALLENGES_ENABLED) promises.push(_loadChallenges());
+
+  const [posRes, cfgRes] = await Promise.all(promises);
 
   if (posRes.error) { wrap.innerHTML = `<p style="color:#c00;padding:16px">${posRes.error.message}</p>`; return; }
 
   _applyConfig(cfgRes.data);
   _ladderPositions = posRes.data || [];
 
-  await _processAutoForfeits();
+  if (_CHALLENGES_ENABLED) await _processAutoForfeits();
   renderDivisionLadder();
 }
 
@@ -332,11 +344,10 @@ function renderDivisionLadder() {
   const myId  = ST?.player?.id;
   const myPos = ranked.find(p => p.player_id === myId)?.position ?? null;
 
-  // Build map of challenges I've issued: challenged_id → challenge
+  // Build challenge maps (dev/challenges only)
   const myOutgoingMap = {};
-  // Build map of challenges issued TO me: challenger_id → challenge
   const myIncomingMap = {};
-  if (myId) {
+  if (_CHALLENGES_ENABLED && myId) {
     for (const c of _activeChallenges) {
       if (c.challenger_id === myId) myOutgoingMap[c.challenged_id] = c;
       else if (c.challenged_id === myId) myIncomingMap[c.challenger_id] = c;
@@ -359,7 +370,7 @@ function renderDivisionLadder() {
       if (myPos !== null) {
         if (p.player_id === myId) {
           cls = ' div-row-me';
-        } else if (p.position < myPos && p.position >= myPos - _challengeRange) {
+        } else if (_CHALLENGES_ENABLED && p.position < myPos && p.position >= myPos - _challengeRange) {
           cls = ' div-row-can-challenge';
           const existing = myOutgoingMap[p.player_id];
           if (existing) {
@@ -373,7 +384,7 @@ function renderDivisionLadder() {
               onclick="event.stopPropagation();_issueChallengeForm('${p.player_id}','${first} ${last}',${p.position})"
               title="Challenge ${first}">⚔️</button>`;
           }
-        } else {
+        } else if (_CHALLENGES_ENABLED) {
           // Player is below me — show icon if they have an active challenge against me
           const incoming = myIncomingMap[p.player_id];
           if (incoming) {
@@ -401,7 +412,7 @@ function renderDivisionLadder() {
 
   // Build challenge list html
   const myIsAdmin = ST?.player?.is_admin || ST?.player?.is_super_admin;
-  const challengeListHtml = _activeChallenges.length > 0
+  const challengeListHtml = (_CHALLENGES_ENABLED && _activeChallenges.length > 0)
     ? `<div class="challenge-list">
         <div class="challenge-list-header">Active Challenges</div>
         ${_activeChallenges.map(c => {
@@ -422,9 +433,7 @@ function renderDivisionLadder() {
     : '';
 
   wrap.innerHTML = `
-    <div class="ladder-banner">
-      <strong>Throw down a challenge!</strong> Ladders are currently updated by David B., so let him know if any movements.
-    </div>
+    ${_CHALLENGES_ENABLED ? `<div class="ladder-banner"><strong>Throw down a challenge!</strong> Ladders are currently updated by David B., so let him know if any movements.</div>` : ''}
     <div class="div-ladder-grid">${divCards.join('')}</div>
     <div class="ladder-banner">
       <strong>Rules of Engagement</strong>
