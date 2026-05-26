@@ -34,7 +34,8 @@ CREATE TABLE IF NOT EXISTS ladder_challenges (
   responded_at       TIMESTAMPTZ,
   completed_at       TIMESTAMPTZ,
   winner_id          UUID REFERENCES players(id),
-  result_recorded_by UUID REFERENCES players(id)
+  result_recorded_by UUID REFERENCES players(id),
+  winner_pos_change  INTEGER   -- positions moved up by winner (positive = moved up)
 );
 ALTER TABLE ladder_challenges ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "challenges_open" ON ladder_challenges FOR ALL USING (TRUE) WITH CHECK (TRUE);

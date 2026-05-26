@@ -215,7 +215,7 @@ async function _loadChallenges() {
       .in('status', ['pending', 'accepted'])
       .order('issued_at', { ascending: false }),
     sb.from('ladder_challenges')
-      .select(`id, challenger_id, challenged_id, status, completed_at, winner_id,
+      .select(`id, challenger_id, challenged_id, status, completed_at, winner_id, winner_pos_change,
                challenger:players!challenger_id(first_name, last_name),
                challenged:players!challenged_id(first_name, last_name)`)
       .in('status', ['completed', 'forfeited'])
@@ -283,7 +283,8 @@ function _injectLadderHomeCard() {
             const loser  = c.winner_id === c.challenger_id ? c.challenged : c.challenger;
             const wn = (winner?.first_name || '') + ' ' + ((winner?.last_name || '')[0] || '');
             const ln = (loser?.first_name  || '') + ' ' + ((loser?.last_name  || '')[0] || '');
-            return `<div class="divladder-challenge-row">${wn} beat ${ln}</div>`;
+            const badge = c.winner_pos_change ? ` <span style="color:#16a34a;font-weight:700">▲${c.winner_pos_change}</span>` : '';
+            return `<div class="divladder-challenge-row">${wn}${badge} beat ${ln}</div>`;
           }).join('')}
         </div>`
       : '';
@@ -666,14 +667,15 @@ async function submitChallengeResult(challengeId, winnerId) {
   const c = _activeChallenges.find(x => x.id === challengeId);
   if (!c) return;
   const loserId = winnerId === c.challenger_id ? c.challenged_id : c.challenger_id;
+  const posChange = await _applyLadderResult(winnerId, loserId);
   const { error } = await sb.from('ladder_challenges').update({
     status: 'completed',
     winner_id: winnerId,
     result_recorded_by: ST.player.id,
-    completed_at: new Date().toISOString()
+    completed_at: new Date().toISOString(),
+    winner_pos_change: posChange ?? null
   }).eq('id', challengeId);
   if (error) { alert(error.message); return; }
-  await _applyLadderResult(winnerId, loserId);
   closeFormModal();
   await _loadMyChallenges();
   await loadDivisionLadder();
@@ -685,16 +687,17 @@ async function submitChallengeResult(challengeId, winnerId) {
 async function _applyLadderResult(winnerId, loserId) {
   const { data: pos } = await sb.from('ladder_positions')
     .select('player_id, position').order('position');
-  if (!pos) return;
+  if (!pos) return null;
   const winnerRow = pos.find(p => p.player_id === winnerId);
   const loserRow  = pos.find(p => p.player_id === loserId);
-  if (!winnerRow || !loserRow) return;
+  if (!winnerRow || !loserRow) return null;
   const winnerPos = winnerRow.position;
   const loserPos  = loserRow.position;
 
-  let updates;
+  let updates, posChange;
   if (winnerPos > loserPos) {
     // Challenger won: cascade — winner takes loser's spot, everyone between shifts down 1
+    posChange = winnerPos - loserPos;
     updates = pos.map(p => {
       if (p.player_id === winnerId) return { player_id: p.player_id, position: loserPos };
       if (p.position >= loserPos && p.position < winnerPos) return { player_id: p.player_id, position: p.position + 1 };
@@ -702,6 +705,7 @@ async function _applyLadderResult(winnerId, loserId) {
     });
   } else {
     // Challenged won: loser (challenger) drops 1, player directly below moves up
+    posChange = 1;
     updates = pos.map(p => {
       if (p.player_id === loserId)       return { player_id: p.player_id, position: loserPos + 1 };
       if (p.position === loserPos + 1)   return { player_id: p.player_id, position: loserPos };
@@ -709,6 +713,7 @@ async function _applyLadderResult(winnerId, loserId) {
     });
   }
   await _savePositions(updates);
+  return posChange;
 }
 
 async function _applyOnePlaceDrop(playerId) {
@@ -742,12 +747,13 @@ async function _processAutoForfeits() {
   const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
   const expired = _activeChallenges.filter(c => c.status === 'pending' && c.issued_at < cutoff);
   for (const c of expired) {
+    const posChange = await _applyLadderResult(c.challenger_id, c.challenged_id);
     await sb.from('ladder_challenges').update({
       status: 'forfeited',
       winner_id: c.challenger_id,
-      completed_at: new Date().toISOString()
+      completed_at: new Date().toISOString(),
+      winner_pos_change: posChange ?? null
     }).eq('id', c.id);
-    await _applyLadderResult(c.challenger_id, c.challenged_id);
   }
   if (expired.length > 0) await _loadChallenges();
 }
