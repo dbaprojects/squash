@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '5.00';;;
+const APP_VERSION = '5.01';;;
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -628,10 +628,10 @@ function computeHcTrendFromArr(currentHc, hist) {
 
 // Render HC trend span from {delta, months}
 function hcTrendHtml(delta, months) {
-  const lbl = `${months} month${months !== 1 ? 's' : ''}`;
-  if (delta < 0) return `<span class="myhc-trend improved">Handicap has improved ${Math.abs(delta)} in ${lbl}</span>`;
-  if (delta > 0) return `<span class="myhc-trend worsened">Handicap has worsened ${delta} in ${lbl}</span>`;
-  return `<span class="myhc-trend flat">Handicap unchanged in ${lbl}</span>`;
+  const lbl = `(${months}m)`;
+  if (delta < 0) return `<span class="myhc-trend improved">Improved ${Math.abs(delta)} ${lbl}</span>`;
+  if (delta > 0) return `<span class="myhc-trend worsened">Worsened ${delta} ${lbl}</span>`;
+  return `<span class="myhc-trend flat">Unchanged ${lbl}</span>`;
 }
 
 function hasActualEntry(playerId, month) {
@@ -1873,9 +1873,9 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
           <div style="font-size:10px;color:rgba(255,255,255,.45)">handicap</div>
         </div>
       </div>
-      ${commentHtml ? `<div style="margin-top:6px;font-size:13px;font-weight:700">${commentHtml}</div>` : ''}
-      <div style="font-size:13px;font-weight:700;color:rgba(255,255,255,.55);margin-top:2px">Played ${myAttendance12m} sessions (12m)</div>
-      <div class="home-card-link">View full history →</div>
+      ${commentHtml ? `<div style="margin-top:6px;font-size:13px;font-weight:700;text-align:right">${commentHtml}</div>` : ''}
+      <div style="font-size:13px;font-weight:700;color:rgba(255,255,255,.55);margin-top:2px;text-align:right">Played ${myAttendance12m} sessions (12m)</div>
+      <div class="home-card-link">Click to view...</div>
     </div>`;
 
   // ── Card 2: Sign-Up ──────────────────────────────────────────────────────
