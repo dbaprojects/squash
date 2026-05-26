@@ -371,19 +371,21 @@ function renderDivisionLadder() {
       if (myPos !== null) {
         if (p.player_id === myId) {
           cls = ' div-row-me';
-        } else if (_CHALLENGES_ENABLED && p.position < myPos && p.position >= myPos - _challengeRange) {
+        } else if (p.position < myPos && p.position >= myPos - _challengeRange) {
           cls = ' div-row-can-challenge';
-          const existing = myOutgoingMap[p.player_id];
-          if (existing) {
-            const icon  = existing.status === 'accepted' ? '🎾' : '⏳';
-            const title = existing.status === 'accepted' ? 'Game on! — tap to record result' : 'Challenge pending — tap to manage';
-            badge = `<button class="div-challenge-btn"
-              onclick="event.stopPropagation();openChallengeResult('${existing.id}')"
-              title="${title}">${icon}</button>`;
-          } else {
-            badge = `<button class="div-challenge-btn"
-              onclick="event.stopPropagation();_issueChallengeForm('${p.player_id}','${first} ${last}',${p.position})"
-              title="Challenge ${first}">⚔️</button>`;
+          if (_CHALLENGES_ENABLED) {
+            const existing = myOutgoingMap[p.player_id];
+            if (existing) {
+              const icon  = existing.status === 'accepted' ? '🎾' : '⏳';
+              const title = existing.status === 'accepted' ? 'Game on! — tap to record result' : 'Challenge pending — tap to manage';
+              badge = `<button class="div-challenge-btn"
+                onclick="event.stopPropagation();openChallengeResult('${existing.id}')"
+                title="${title}">${icon}</button>`;
+            } else {
+              badge = `<button class="div-challenge-btn"
+                onclick="event.stopPropagation();_issueChallengeForm('${p.player_id}','${first} ${last}',${p.position})"
+                title="Challenge ${first}">⚔️</button>`;
+            }
           }
         } else if (_CHALLENGES_ENABLED) {
           // Player is below me — show icon if they have an active challenge against me
