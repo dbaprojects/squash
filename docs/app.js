@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '4.95';;;
+const APP_VERSION = '4.96';;;
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -705,6 +705,7 @@ function renderFilterBar() {
       <div class="players-role-btns">
         <button class="role-btn${ladderStatusFilter === 'active' ? ' active' : ''}" onclick="setLadderStatus('active')">Active</button>
         <button class="role-btn${ladderStatusFilter === 'all'    ? ' active' : ''}" onclick="setLadderStatus('all')">All</button>
+        <button class="role-btn" onclick="openHcCalculator()">HC Calc</button>
       </div>
     </div>`;
   document.getElementById('ladder-search').addEventListener('input', e => {
@@ -3683,4 +3684,74 @@ function getMondayOfDate(d) {
   const mon  = new Date(d);
   mon.setDate(d.getDate() + diff);
   return mon;
+}
+
+// ── HC Calculator ─────────────────────────────────────────────────────────
+function computeHcStarts(hcA, hcB) {
+  let nettedA = hcA, nettedB = hcB;
+  let netted = false;
+  if (hcA < 0 && hcB < 0) {
+    const worst = Math.max(hcA, hcB);
+    nettedA = hcA - worst;
+    nettedB = hcB - worst;
+    netted = true;
+  } else if (hcA > 0 && hcB > 0) {
+    const best = Math.min(hcA, hcB);
+    nettedA = hcA - best;
+    nettedB = hcB - best;
+    netted = true;
+  }
+  const diff = Math.abs(nettedA - nettedB);
+  const shifts = Math.floor(diff / 6);
+  const startA = Math.min(nettedA + shifts, 7);
+  const startB = Math.min(nettedB + shifts, 7);
+  return { startA, startB, netted, shifts };
+}
+
+function openHcCalculator() {
+  const myHc = ST.player?.current_handicap ?? '';
+  showFormModal('HC Calculator', `
+    <div class="form-group">
+      <label>Player A handicap</label>
+      <input type="number" id="hcc-a" value="${myHc}" style="text-align:center;font-size:18px;font-weight:700;width:100%">
+    </div>
+    <div class="form-group">
+      <label>Player B handicap</label>
+      <input type="number" id="hcc-b" placeholder="e.g. -5" style="text-align:center;font-size:18px;font-weight:700;width:100%">
+    </div>
+    <button class="btn-primary" style="width:100%" onclick="calcHcResult()">Calculate</button>
+    <div id="hcc-result" class="hc-calc-result" style="display:none"></div>
+  `);
+}
+
+function calcHcResult() {
+  const valA = parseFloat(document.getElementById('hcc-a').value);
+  const valB = parseFloat(document.getElementById('hcc-b').value);
+  const el = document.getElementById('hcc-result');
+  if (isNaN(valA) || isNaN(valB)) {
+    el.style.display = 'block';
+    el.innerHTML = `<p style="color:#dc2626;font-size:13px">Please enter valid handicaps for both players.</p>`;
+    return;
+  }
+  const { startA, startB, netted, shifts } = computeHcStarts(valA, valB);
+  const fmt = n => n === 0 ? '0' : (n > 0 ? '+' + n : '−' + Math.abs(n));
+  const shiftNote = shifts > 0 ? `, shifted ${shifts} place${shifts > 1 ? 's' : ''}` : '';
+  const noteText = netted
+    ? `Handicaps netted off${shiftNote}`
+    : `Handicaps straddle zero — no netting${shiftNote}`;
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div style="display:flex;gap:12px;justify-content:center;margin-top:12px">
+      <div class="hc-calc-player-box">
+        <div class="hc-calc-label">Player A</div>
+        <div class="hc-calc-score">${fmt(startA)}</div>
+      </div>
+      <div style="align-self:center;font-size:18px;color:#94a3b8">vs</div>
+      <div class="hc-calc-player-box">
+        <div class="hc-calc-label">Player B</div>
+        <div class="hc-calc-score">${fmt(startB)}</div>
+      </div>
+    </div>
+    <div class="hc-calc-note">${noteText}</div>
+  `;
 }

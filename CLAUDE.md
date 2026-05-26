@@ -5,7 +5,7 @@
 - **Owner:** David Barkess — personal project, unrelated to SAP/DealSensAI work
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `C:\Users\I061437\OneDrive\Projects\Squash`
-- **Current version:** v4.93
+- **Current version:** v4.96
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -420,3 +420,6 @@ echo "{\"version\":\"4.XX\",\"build\":\"$(date +%s)\"}" > docs/version.json
 | v4.91 | Admin tabs: replace scroll approach with pill-style wrapping tray (grey bg, white active chip, flex-wrap) — no scrolling needed, tabs wrap to second row on narrow screens |
 | v4.92 | Ladder admin drag: add touch drag (iOS Safari) via touchstart/touchmove/touchend with non-passive listener; fix PC scroll-to-top on drop by saving/restoring window.scrollY + list scrollTop via requestAnimationFrame; visual dragging/hover states |
 | v4.93 | Gate Phase 2 challenge system behind _CHALLENGES_ENABLED flag (true only on dev.html) — production shows Phase 1 ladder only; no challenge buttons, banners, popups, or auto-forfeit |
+| v4.94 | Show handicap in brackets after each player name in ladder view (both prod+dev): e.g. "Jamie S (-13)"; .div-hc CSS class for grey text |
+| v4.95 | Rules of Engagement rule 2 updated: "Other than injury, you can't refuse a challenge (else you slip a place!)" — prod+dev |
+| v4.96 | HC Calculator: "HC Calc" button in Handicaps filter bar; modal with netting-off algorithm — both negative/positive net off, straddle zero no net, shift +1 per 6-point diff, cap +7; computeHcStarts() pure function |

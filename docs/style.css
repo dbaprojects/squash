@@ -1894,3 +1894,10 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
   /* Home grid */
   .home-grid { grid-template-columns: repeat(3, 1fr); gap: 16px; }
 }
+
+/* ── HC Calculator ──────────────────────────────────────────────────────── */
+.hc-calc-result { margin-top: 12px; text-align: center; }
+.hc-calc-player-box { background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 10px 20px; }
+.hc-calc-label { font-size: 11px; color: #94a3b8; font-weight: 600; text-transform: uppercase; }
+.hc-calc-score { font-size: 28px; font-weight: 800; color: #1B2A6B; }
+.hc-calc-note { font-size: 12px; color: #64748b; margin-top: 10px; }
