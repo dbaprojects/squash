@@ -683,6 +683,7 @@ function renderLadder() {
       <div id="ladder-my-card" class="home-card home-card-me"></div>
       <div id="ladder-section-card" class="home-card home-card-ladder"></div>
     </div>
+    <button class="hc-calc-banner" onclick="openHcCalculator()">Calculate your starting scores →</button>
     <div id="ladder-view-toggle"></div>
     <div id="ladder-filter-bar"></div>
     <div id="ladder-section-history"></div>`;
@@ -705,7 +706,6 @@ function renderFilterBar() {
       <div class="players-role-btns">
         <button class="role-btn${ladderStatusFilter === 'active' ? ' active' : ''}" onclick="setLadderStatus('active')">Active</button>
         <button class="role-btn${ladderStatusFilter === 'all'    ? ' active' : ''}" onclick="setLadderStatus('all')">All</button>
-        <button class="role-btn" onclick="openHcCalculator()">HC Calc</button>
       </div>
     </div>`;
   document.getElementById('ladder-search').addEventListener('input', e => {
