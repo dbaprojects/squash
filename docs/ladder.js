@@ -264,31 +264,24 @@ function _injectLadderHomeCard() {
 
   let extraHtml = '';
   if (_CHALLENGES_ENABLED) {
-    const activeParts = _activeChallenges.length > 0
-      ? `<div class="divladder-challenges">
-          <div class="divladder-section-label">⚔️ Active</div>
-          ${_activeChallenges.slice(0, 3).map(c => {
-            const cn = (c.challenger?.first_name || '') + ' ' + ((c.challenger?.last_name || '')[0] || '');
-            const dn = (c.challenged?.first_name || '') + ' ' + ((c.challenged?.last_name || '')[0] || '');
-            const icon = c.status === 'accepted' ? '🎾' : '⏳';
-            return `<div class="divladder-challenge-row">${icon} ${cn} vs ${dn}</div>`;
-          }).join('')}
-        </div>`
-      : '';
-    const completedParts = _recentCompleted.length > 0
-      ? `<div class="divladder-challenges">
-          <div class="divladder-section-label">🏆 Recent</div>
-          ${_recentCompleted.slice(0, 3).map(c => {
-            const winner = c.winner_id === c.challenger_id ? c.challenger : c.challenged;
-            const loser  = c.winner_id === c.challenger_id ? c.challenged : c.challenger;
-            const wn = (winner?.first_name || '') + ' ' + ((winner?.last_name || '')[0] || '');
-            const ln = (loser?.first_name  || '') + ' ' + ((loser?.last_name  || '')[0] || '');
-            const badge = c.winner_pos_change ? ` <span style="color:#16a34a;font-weight:700">▲${c.winner_pos_change}</span>` : '';
-            return `<div class="divladder-challenge-row">${wn}${badge} beat ${ln} <span style="color:#dc2626;font-weight:700">▼1</span></div>`;
-          }).join('')}
-        </div>`
-      : '';
-    extraHtml = activeParts + completedParts;
+    const activeRows = _activeChallenges.slice(0, 3).map(c => {
+      const cn = (c.challenger?.first_name || '') + ' ' + ((c.challenger?.last_name || '')[0] || '');
+      const dn = (c.challenged?.first_name || '') + ' ' + ((c.challenged?.last_name || '')[0] || '');
+      const icon = c.status === 'accepted' ? '🎾' : '⏳';
+      return `<div class="divladder-challenge-row">${icon} ${cn} vs ${dn}</div>`;
+    });
+    const completedRows = _recentCompleted.slice(0, 3).map(c => {
+      const winner = c.winner_id === c.challenger_id ? c.challenger : c.challenged;
+      const loser  = c.winner_id === c.challenger_id ? c.challenged : c.challenger;
+      const wn = (winner?.first_name || '') + ' ' + ((winner?.last_name || '')[0] || '');
+      const ln = (loser?.first_name  || '') + ' ' + ((loser?.last_name  || '')[0] || '');
+      const badge = c.winner_pos_change ? ` <span style="color:#16a34a;font-weight:700">▲${c.winner_pos_change}</span>` : '';
+      return `<div class="divladder-challenge-row">🏆 ${wn}${badge} beat ${ln} <span style="color:#dc2626;font-weight:700">▼1</span></div>`;
+    });
+    const allRows = [...activeRows, ...completedRows];
+    if (allRows.length > 0) {
+      extraHtml = `<div class="divladder-challenges">${allRows.join('')}</div>`;
+    }
   } else {
     // prod: show active challenges only (no buttons)
     if (_activeChallenges.length > 0) {
@@ -303,7 +296,7 @@ function _injectLadderHomeCard() {
   }
 
   card.innerHTML = `
-    <div class="home-card-label">${_CHALLENGES_ENABLED ? 'LADDERS — click for all details' : 'Ladders'}</div>
+    <div class="home-card-label">${_CHALLENGES_ENABLED ? 'LADDERS' : 'Ladders'}</div>
     ${_CHALLENGES_ENABLED ? '' : divGridHtml}
     ${extraHtml}`;
 
