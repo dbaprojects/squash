@@ -88,6 +88,7 @@ let _ladderInList     = [];
 let _ladderPool       = [];
 let _ladderAllPlayers = [];
 let _activeChallenges = [];
+let _recentCompleted  = [];
 let _myChallenges     = [];
 let _formModalLocked  = false;
 const _notifiedChallengeIds = new Set();
@@ -206,13 +207,23 @@ function _applyConfig(cfgData) {
 
 // ── Load challenges ────────────────────────────────────────────────────────
 async function _loadChallenges() {
-  const { data } = await sb.from('ladder_challenges')
-    .select(`id, challenger_id, challenged_id, message, status, issued_at,
-             challenger:players!challenger_id(first_name, last_name),
-             challenged:players!challenged_id(first_name, last_name)`)
-    .in('status', ['pending', 'accepted'])
-    .order('issued_at', { ascending: false });
-  _activeChallenges = data || [];
+  const [activeRes, completedRes] = await Promise.all([
+    sb.from('ladder_challenges')
+      .select(`id, challenger_id, challenged_id, message, status, issued_at,
+               challenger:players!challenger_id(first_name, last_name),
+               challenged:players!challenged_id(first_name, last_name)`)
+      .in('status', ['pending', 'accepted'])
+      .order('issued_at', { ascending: false }),
+    sb.from('ladder_challenges')
+      .select(`id, challenger_id, challenged_id, status, completed_at, winner_id,
+               challenger:players!challenger_id(first_name, last_name),
+               challenged:players!challenged_id(first_name, last_name)`)
+      .in('status', ['completed', 'forfeited'])
+      .order('completed_at', { ascending: false })
+      .limit(4)
+  ]);
+  _activeChallenges = activeRes.data || [];
+  _recentCompleted  = completedRes.data || [];
 }
 
 async function _loadMyChallenges() {
@@ -239,30 +250,61 @@ function _injectLadderHomeCard() {
   card.className = 'home-card home-card-divladder';
   card.onclick = () => navTo('division-ladder');
 
-  const challengeHtml = _activeChallenges.length > 0
-    ? `<div class="divladder-challenges">
+  const divGridHtml = `<div class="divladder-home-body">
+    ${[1,2,3,4].map(d => {
+      const start = (d - 1) * _ladderDivSize + 1;
+      const top3  = _ladderPositions.filter(p => p.position >= start && p.position <= start + 2);
+      const names = top3
+        .filter(p => p.players)
+        .map(p => `${p.players.first_name} ${(p.players.last_name || '')[0] || ''}`)
+        .join(', ') || '—';
+      return `<div class="divladder-home-div"><span class="divladder-home-div-label">D${d}</span> ${names}</div>`;
+    }).join('')}
+  </div>`;
+
+  let extraHtml = '';
+  if (_CHALLENGES_ENABLED) {
+    const activeParts = _activeChallenges.length > 0
+      ? `<div class="divladder-challenges">
+          <div class="divladder-section-label">⚔️ Active</div>
+          ${_activeChallenges.slice(0, 3).map(c => {
+            const cn = (c.challenger?.first_name || '') + ' ' + ((c.challenger?.last_name || '')[0] || '');
+            const dn = (c.challenged?.first_name || '') + ' ' + ((c.challenged?.last_name || '')[0] || '');
+            const icon = c.status === 'accepted' ? '🎾' : '⏳';
+            return `<div class="divladder-challenge-row">${icon} ${cn} vs ${dn}</div>`;
+          }).join('')}
+        </div>`
+      : '';
+    const completedParts = _recentCompleted.length > 0
+      ? `<div class="divladder-challenges">
+          <div class="divladder-section-label">🏆 Recent</div>
+          ${_recentCompleted.slice(0, 3).map(c => {
+            const winner = c.winner_id === c.challenger_id ? c.challenger : c.challenged;
+            const loser  = c.winner_id === c.challenger_id ? c.challenged : c.challenger;
+            const wn = (winner?.first_name || '') + ' ' + ((winner?.last_name || '')[0] || '');
+            const ln = (loser?.first_name  || '') + ' ' + ((loser?.last_name  || '')[0] || '');
+            return `<div class="divladder-challenge-row">${wn} beat ${ln}</div>`;
+          }).join('')}
+        </div>`
+      : '';
+    extraHtml = activeParts + completedParts;
+  } else {
+    // prod: show active challenges only (no buttons)
+    if (_activeChallenges.length > 0) {
+      extraHtml = `<div class="divladder-challenges">
         ${_activeChallenges.slice(0, 3).map(c => {
           const cn = (c.challenger?.first_name || '') + ' ' + ((c.challenger?.last_name || '')[0] || '');
           const dn = (c.challenged?.first_name || '') + ' ' + ((c.challenged?.last_name || '')[0] || '');
           return `<div class="divladder-challenge-row">⚔️ ${cn} vs ${dn}</div>`;
         }).join('')}
-      </div>`
-    : '';
+      </div>`;
+    }
+  }
 
   card.innerHTML = `
-    <div class="home-card-label">Ladders</div>
-    <div class="divladder-home-body">
-      ${[1,2,3,4].map(d => {
-        const start = (d - 1) * _ladderDivSize + 1;
-        const top3  = _ladderPositions.filter(p => p.position >= start && p.position <= start + 2);
-        const names = top3
-          .filter(p => p.players)
-          .map(p => `${p.players.first_name} ${(p.players.last_name || '')[0] || ''}`)
-          .join(', ') || '—';
-        return `<div class="divladder-home-div"><span class="divladder-home-div-label">D${d}</span> ${names}</div>`;
-      }).join('')}
-    </div>
-    ${challengeHtml}`;
+    <div class="home-card-label">${_CHALLENGES_ENABLED ? 'LADDERS — click for all details' : 'Ladders'}</div>
+    ${divGridHtml}
+    ${extraHtml}`;
 
   const adminCard = grid.querySelector('.home-card-admin');
   if (adminCard) grid.insertBefore(card, adminCard);
