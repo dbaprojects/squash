@@ -604,8 +604,9 @@ async function respondToChallenge(challengeId, response) {
   document.getElementById('form-close').style.visibility = '';
   const now = new Date().toISOString();
   const statusMap = { accept: 'accepted', decline: 'declined', injury: 'declined_injury' };
+  const extra = response === 'decline' ? { loser_pos_change: 1 } : {};
   const { error } = await sb.from('ladder_challenges')
-    .update({ status: statusMap[response], responded_at: now })
+    .update({ status: statusMap[response], responded_at: now, ...extra })
     .eq('id', challengeId);
   if (error) { alert(error.message); return; }
   if (response === 'decline') {
@@ -673,7 +674,8 @@ async function submitChallengeResult(challengeId, winnerId) {
     winner_id: winnerId,
     result_recorded_by: ST.player.id,
     completed_at: new Date().toISOString(),
-    winner_pos_change: posChange ?? null
+    winner_pos_change: posChange ?? null,
+    loser_pos_change: 1
   }).eq('id', challengeId);
   if (error) { alert(error.message); return; }
   closeFormModal();
@@ -716,6 +718,32 @@ async function _applyLadderResult(winnerId, loserId) {
   return posChange;
 }
 
+async function _applyForfeitResult(challengerId, challengedId) {
+  // Forfeit rule: challenged drops to just below challenger; challenger gets no jump reward.
+  // Implementation: remove challenged from list, reinsert after challenger, renumber.
+  // challenger_pos_change = 0 (by rule); loser may drop several places.
+  const { data: pos } = await sb.from('ladder_positions')
+    .select('player_id, position').order('position');
+  if (!pos) return { winnerChange: 0, loserChange: 1 };
+  const challengerRow = pos.find(p => p.player_id === challengerId);
+  const challengedRow = pos.find(p => p.player_id === challengedId);
+  if (!challengerRow || !challengedRow) return { winnerChange: 0, loserChange: 1 };
+
+  const oldChallengedPos = challengedRow.position;
+  const sorted = [...pos].sort((a, b) => a.position - b.position);
+  const challengedIdx = sorted.findIndex(p => p.player_id === challengedId);
+  sorted.splice(challengedIdx, 1);
+  const newChallengerIdx = sorted.findIndex(p => p.player_id === challengerId);
+  sorted.splice(newChallengerIdx + 1, 0, challengedRow);
+
+  const updates = sorted.map((p, i) => ({ player_id: p.player_id, position: i + 1 }));
+  const newChallengedPos = updates.find(u => u.player_id === challengedId).position;
+  const loserChange = newChallengedPos - oldChallengedPos;
+
+  await _savePositions(updates);
+  return { winnerChange: 0, loserChange };
+}
+
 async function _applyOnePlaceDrop(playerId) {
   const { data: pos } = await sb.from('ladder_positions')
     .select('player_id, position').order('position');
@@ -747,12 +775,13 @@ async function _processAutoForfeits() {
   const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
   const expired = _activeChallenges.filter(c => c.status === 'pending' && c.issued_at < cutoff);
   for (const c of expired) {
-    const posChange = await _applyLadderResult(c.challenger_id, c.challenged_id);
+    const { winnerChange, loserChange } = await _applyForfeitResult(c.challenger_id, c.challenged_id);
     await sb.from('ladder_challenges').update({
       status: 'forfeited',
       winner_id: c.challenger_id,
       completed_at: new Date().toISOString(),
-      winner_pos_change: posChange ?? null
+      winner_pos_change: winnerChange,
+      loser_pos_change: loserChange
     }).eq('id', c.id);
   }
   if (expired.length > 0) await _loadChallenges();
