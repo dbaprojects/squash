@@ -1901,3 +1901,6 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 .hc-calc-label { font-size: 11px; color: #94a3b8; font-weight: 600; text-transform: uppercase; }
 .hc-calc-score { font-size: 28px; font-weight: 800; color: #1B2A6B; }
 .hc-calc-note { font-size: 12px; color: #64748b; margin-top: 10px; }
+.hc-calc-rules { margin-top: 16px; padding-top: 12px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #64748b; line-height: 1.5; }
+.hc-calc-rules p { margin: 0 0 6px; }
+.hc-calc-rules p:last-child { margin-bottom: 0; }

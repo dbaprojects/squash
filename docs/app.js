@@ -3721,6 +3721,12 @@ function openHcCalculator() {
     </div>
     <button class="btn-primary" style="width:100%" onclick="calcHcResult()">Calculate</button>
     <div id="hcc-result" class="hc-calc-result" style="display:none"></div>
+    <div class="hc-calc-rules">
+      <p>If both players are on the same side of zero (both negative or both positive), the weaker player's handicap is removed from both — so they start at 0. This is called netting off.</p>
+      <p>If one player is negative and the other positive, no netting applies.</p>
+      <p>Then, for every 6-point gap between the two starting values, both scores rise by 1.</p>
+      <p>Starting scores are capped at +7.</p>
+    </div>
   `);
 }
 
