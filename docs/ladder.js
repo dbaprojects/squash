@@ -497,6 +497,7 @@ function renderDivisionLadder() {
 function _issueChallengeForm(targetId, targetName, targetPos) {
   const msg = CHALLENGE_MESSAGES[Math.floor(Math.random() * CHALLENGE_MESSAGES.length)];
   showFormModal(`⚔️ Challenge ${targetName}`, `
+    <img src="challenge.png" alt="" style="width:100%;border-radius:8px;margin-bottom:12px">
     <p style="margin-bottom:12px">Send a challenge to <strong>${targetName}</strong> (position ${targetPos}).</p>
     <div class="form-group">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
