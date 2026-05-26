@@ -275,8 +275,7 @@ function _injectLadderHomeCard() {
       const loser  = c.winner_id === c.challenger_id ? c.challenged : c.challenger;
       const wn = (winner?.first_name || '') + ' ' + ((winner?.last_name || '')[0] || '');
       const ln = (loser?.first_name  || '') + ' ' + ((loser?.last_name  || '')[0] || '');
-      const badge = c.winner_pos_change ? ` <span style="color:#16a34a;font-weight:700">▲${c.winner_pos_change}</span>` : '';
-      return `<div class="divladder-challenge-row">🏆 ${wn}${badge} beat ${ln} <span style="color:#dc2626;font-weight:700">▼1</span></div>`;
+      return `<div class="divladder-challenge-row">🏆 <span style="color:#16a34a;font-weight:700">${wn}</span> v ${ln}</div>`;
     });
     const allRows = [...activeRows, ...completedRows];
     if (allRows.length > 0) {
