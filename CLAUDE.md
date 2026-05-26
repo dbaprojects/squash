@@ -308,6 +308,8 @@ The division ladder is implemented entirely in `docs/ladder.js`, loaded after `a
 - `style.css?v=4.XX`, `app.js?v=4.XX`, `ladder.js?v=4.XX` query strings in `docs/dev.html`
 - `docs/version.json` — run: `echo "{\"version\":\"4.XX\",\"build\":\"$(date +%s)\"}" > docs/version.json`
 
+**CRITICAL: `version.json` must be updated on EVERY commit that changes any JS or CSS**, even if the version number doesn't change. The PWA detects updates via the build timestamp — if `version.json` is not updated, PWA users will not receive the new code.
+
 `sed 's/v4\.XX/v4.YY/g'` misses `APP_VERSION` and the `?v=` query strings. Use `sed` for `dev.html` bulk-replace but update `app.js` and `index.html` explicitly.
 
 **iOS PWA cache — MUST do on every push:**
