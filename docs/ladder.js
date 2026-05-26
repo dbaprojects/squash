@@ -482,12 +482,16 @@ function renderDivisionLadder() {
     ${_CHALLENGES_ENABLED ? `<div class="ladder-banner"><strong>Throw down a challenge!</strong> Ladders are currently updated by David B., so let him know if any movements.</div>` : ''}
     <div class="div-ladder-grid">${divCards.join('')}</div>
     <div class="ladder-banner">
-      <strong>Rules of Engagement</strong>
+      <strong>Rules of Engagement ⚔️</strong>
       <ol class="ladder-rules">
-        <li>Winner takes loser's place. Loser goes down 1 place.</li>
-        <li>Other than injury, you can't refuse a challenge (else you slip a place!)</li>
-        <li>Not required to do more than 1 challenge per session.</li>
-        <li>You can challenge up to <strong>${_challengeRange}</strong> place${_challengeRange !== 1 ? 's' : ''} above you.</li>
+        <li><strong>Challenge whenever you like</strong> — agree a time, or find each other at a session. <em>(Rocking up late when your opponent has already been playing for an hour can be respectfully declined — we're not tennis players.)</em></li>
+        <li><strong>Winner</strong> 🍺 takes the loser's spot on the ladder — or stays put if they're already higher.</li>
+        <li><strong>Loser</strong> 😢 always drops one place. No exceptions.</li>
+        <li><strong>Refuse a challenge?</strong> You lose a place and earn yourself a 🐔. Cluck cluck.</li>
+        <li><strong>Injured?</strong> Fair enough — decline with injury and no penalty applies.</li>
+        <li><strong>One ladder game per session</strong> is all that's required. No one can demand a rematch the same night.</li>
+        <li><strong>You can challenge up to ${_challengeRange} place${_challengeRange !== 1 ? 's' : ''} above you.</strong> Pick your battles wisely.</li>
+        <li><strong>Ghost rule</strong> 👻 — If you don't accept <em>or</em> decline within 7 days, you automatically drop to the place below the challenger. Don't go quiet.</li>
       </ol>
     </div>
     ${challengeListHtml}`;
