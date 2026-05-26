@@ -411,7 +411,7 @@ async function checkPendingBadge() {
 
 function loginSuccess(player, source = 'session_start') {
   if (!player.active) { showOnboardStep('pending'); return; }
-  auditLog(source, { playerId: player.id, playerName: `${player.first_name} ${player.last_name}` });
+  auditLog(source, { playerId: player.id, playerName: `${player.first_name} ${player.last_name}`, details: { app_version: APP_VERSION } });
   ST.player = player;
   localStorage.setItem('squash_player', JSON.stringify(player));
   showView('app');
@@ -3303,7 +3303,7 @@ function renderAuditLog(rows) {
   const rowsHtml = filtered.length ? filtered.map(r => {
     const tl = AUDIT_TYPE_LABEL[r.event_type] || { text: r.event_type, cls: 'audit-tag-info' };
     const who = r.player_name || r.phone || '---';
-    const detail = r.details?.error || r.details?.stage || '';
+    const detail = r.details?.app_version ? `v${r.details.app_version}` : (r.details?.error || r.details?.stage || '');
     const ua = r.user_agent || '';
     const device = /mobile|android|iphone|ipad/i.test(ua) ? '📱' : '💻';
     const dt = new Date(r.created_at);
