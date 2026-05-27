@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '5.16';;;
+const APP_VERSION = '5.17';;;
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -3712,8 +3712,8 @@ function computeHcStarts(hcA, hcB) {
   }
   const diff = Math.abs(nettedA - nettedB);
   const shifts = Math.floor(diff / 6);
-  const startA = Math.min(nettedA + shifts, 7);
-  const startB = Math.min(nettedB + shifts, 7);
+  const startA = Math.min(nettedA + shifts, 6);
+  const startB = Math.min(nettedB + shifts, 6);
   return { startA, startB, netted, shifts };
 }
 
@@ -3746,7 +3746,7 @@ function openHcCalculator() {
       <p>If both players are on the same side of zero (both negative or both positive), the weaker player's handicap is removed from both — so they start at 0. This is called netting off.</p>
       <p>If one player is negative and the other positive, no netting applies.</p>
       <p>Then, for every 6-point gap between the two starting values, both scores rise by 1.</p>
-      <p>Starting scores are capped at +7.</p>
+      <p>Starting scores are capped at +6.</p>
     </div>
   `);
   calcHcResult();
