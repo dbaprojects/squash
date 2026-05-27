@@ -5,7 +5,7 @@
 - **Owner:** Club admin — personal project
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `[local project directory]`
-- **Current version:** v5.17
+- **Current version:** v5.18
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -455,3 +455,4 @@ echo "{\"version\":\"4.XX\",\"build\":\"$(date +%s)\"}" > docs/version.json
 | v5.15 | Challenges history: ♾️ replaces ⚔️ for All filter; accepted challenge icon 🎾 → 💥 in ladder rows |
 | v5.16 | History rows: declined format — 🐔 dodger + 🍺 challenger who issued the challenge (challenger deserves beer) |
 | v5.17 | HC Calculator: cap starting scores at +6 (was +7); explanatory text updated; CLAUDE.md PII removed |
+| v5.18 | Admin players: WhatsApp button (super_admin only) beside each player — opens wa.me with pre-filled "Squash Section Business: " message |

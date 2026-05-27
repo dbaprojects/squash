@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '5.17';;;
+const APP_VERSION = '5.18';;;
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -2616,11 +2616,15 @@ function renderPlayersTable() {
             ? ' <span class="tag-pending">Pending</span>'
             : !p.active ? ' <span class="tag-inactive">Inactive</span>' : '';
           const logins = playerLoginCounts[p.id] || 0;
+          const waBtn = ST.player?.is_super_admin && p.phone
+            ? `<a class="wa-btn" href="https://wa.me/${normalizePhone(p.phone)}?text=${encodeURIComponent('Squash Section Business: ')}" target="_blank" onclick="event.stopPropagation()" title="WhatsApp">WA</a>`
+            : '';
           return `<div class="player-card" onclick="openEditPlayerForm('${p.id}')" style="cursor:pointer">
             <div class="pc-row1" style="margin-bottom:0">
               <div class="pc-name">${esc(p.first_name)} ${esc(p.last_name)}${statusTag}${roleLabel}</div>
               <span class="pc-phone">${esc(p.phone || '')}</span>
               <span class="pc-logins">${logins > 0 ? logins + '×' : '–'}</span>
+              ${waBtn}
               <span class="pc-hc"><span class="hcap-badge">${p.current_handicap ?? '–'}</span></span>
             </div>
             ${pending ? `<div class="pc-row2"><div class="btn-actions">
