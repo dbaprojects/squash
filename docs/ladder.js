@@ -417,20 +417,24 @@ function _renderResultsList() {
     const date = (c.completed_at || c.responded_at)
       ? new Date(c.completed_at || c.responded_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
       : '';
-    let icon, label;
+    let label;
     switch (c.status) {
       case 'completed': {
         const wn = c.winner_id === c.challenger_id ? cn : dn;
         const ln = c.winner_id === c.challenger_id ? dn : cn;
-        icon = '🍺'; label = `${wn} beat ${ln}`; break;
+        label = `🍺 ${wn} 😢 ${ln}`; break;
       }
-      case 'declined':        icon = '🐔'; label = `${dn} declined ${cn}`; break;
-      case 'declined_injury': icon = '🩹'; label = `${dn} — injury`;       break;
-      case 'forfeited':       icon = '👻'; label = `${dn} forfeited`;       break;
-      default:                icon = '⚔️'; label = `${cn} v ${dn}`;
+      case 'declined':        label = `🐔 ${dn} dodged ${cn}`; break;
+      case 'declined_injury': label = `🩹 ${dn} claimed injury vs ${cn}`; break;
+      case 'forfeited': {
+        const wn = c.winner_id === c.challenger_id ? cn : dn;
+        const ln = c.winner_id === c.challenger_id ? dn : cn;
+        label = `🍺 ${wn} 👻 ${ln} ghosted`; break;
+      }
+      default: label = `⚔️ ${cn} v ${dn}`;
     }
     return `<div class="ch-res-row">
-      <div class="ch-res-names">${icon} ${label}</div>
+      <div class="ch-res-names">${label}</div>
       <div class="challenge-date">${date}</div>
     </div>`;
   }).join('');
