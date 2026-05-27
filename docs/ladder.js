@@ -397,8 +397,7 @@ function _renderResultsList() {
 
   let filtered;
   switch (_resultsFilter) {
-    case 'win':      filtered = _recentCompleted.filter(c => c.status === 'completed' && c.winner_id === myId); break;
-    case 'lose':     filtered = _recentCompleted.filter(c => c.status === 'completed' && c.winner_id !== myId && (c.challenger_id === myId || c.challenged_id === myId)); break;
+    case 'played':   filtered = _recentCompleted.filter(c => c.status === 'completed'); break;
     case 'declined': filtered = _recentCompleted.filter(c => c.status === 'declined'); break;
     case 'forfeit':  filtered = _recentCompleted.filter(c => c.status === 'forfeited'); break;
     case 'injury':   filtered = _recentCompleted.filter(c => c.status === 'declined_injury'); break;
@@ -543,8 +542,7 @@ function renderDivisionLadder() {
           <span class="challenge-list-header" style="padding:0">History</span>
           <select id="results-filter-sel" class="results-filter-sel" onchange="setLadderResultsFilter(this.value)">
             <option value="all">🎾 All</option>
-            <option value="win">🍺 Win</option>
-            <option value="lose">😢 Lose</option>
+            <option value="played">⚔️ Played</option>
             <option value="declined">🐔 Decline</option>
             <option value="forfeit">👻 Forfeit</option>
             <option value="injury">🩹 Injury</option>
