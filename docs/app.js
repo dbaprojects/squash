@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '5.19';;;
+const APP_VERSION = '5.20';;;
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -2623,7 +2623,7 @@ function renderPlayersTable() {
             ? `https://wa.me/${_waNum}?text=${_waText}`
             : `https://web.whatsapp.com/send?phone=${_waNum}&text=${_waText}`;
           const waBtn = ST.player?.is_super_admin && p.phone
-            ? `<a class="wa-btn" href="${_waUrl}" target="_blank" onclick="event.stopPropagation()" title="WhatsApp">WA</a>`
+            ? `<a class="wa-btn" href="${_waUrl}" onclick="event.stopPropagation();window.open('${_waUrl}','whatsapp_web');return false" title="WhatsApp">WA</a>`
             : '';
           return `<div class="player-card" onclick="openEditPlayerForm('${p.id}')" style="cursor:pointer">
             <div class="pc-row1" style="margin-bottom:0">
