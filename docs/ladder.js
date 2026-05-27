@@ -545,7 +545,7 @@ function renderDivisionLadder() {
         <div class="ch-history-header">
           <span class="challenge-list-header" style="padding:0">History</span>
           <select id="results-filter-sel" class="results-filter-sel" onchange="setLadderResultsFilter(this.value)">
-            <option value="all">🎾 All</option>
+            <option value="all">⚔️ All</option>
             <option value="played">⚔️ Played</option>
             <option value="declined">🐔 Decline</option>
             <option value="forfeit">👻 Forfeit</option>
