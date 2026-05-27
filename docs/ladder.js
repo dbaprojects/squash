@@ -480,7 +480,7 @@ function renderDivisionLadder() {
           if (_CHALLENGES_ENABLED) {
             const existing = myOutgoingMap[p.player_id];
             if (existing) {
-              const icon  = existing.status === 'accepted' ? '🎾' : '⏳';
+              const icon  = existing.status === 'accepted' ? '💥' : '⏳';
               const title = existing.status === 'accepted' ? 'Game on! — tap to record result' : 'Challenge pending — tap to manage';
               badge = `<button class="div-challenge-btn"
                 onclick="event.stopPropagation();openChallengeResult('${existing.id}')"
@@ -495,7 +495,7 @@ function renderDivisionLadder() {
           // Player is below me — show icon if they have an active challenge against me
           const incoming = myIncomingMap[p.player_id];
           if (incoming) {
-            const icon  = incoming.status === 'accepted' ? '🎾' : '⏳';
+            const icon  = incoming.status === 'accepted' ? '💥' : '⏳';
             const title = incoming.status === 'accepted' ? 'Game on! — tap to record result' : 'Challenge from them — tap to manage';
             badge = `<button class="div-challenge-btn"
               onclick="event.stopPropagation();openChallengeResult('${incoming.id}')"
@@ -545,7 +545,7 @@ function renderDivisionLadder() {
         <div class="ch-history-header">
           <span class="challenge-list-header" style="padding:0">History</span>
           <select id="results-filter-sel" class="results-filter-sel" onchange="setLadderResultsFilter(this.value)">
-            <option value="all">⚔️ All</option>
+            <option value="all">♾️ All</option>
             <option value="played">⚔️ Played</option>
             <option value="declined">🐔 Decline</option>
             <option value="forfeit">👻 Forfeit</option>
@@ -721,7 +721,7 @@ function openChallengeResult(challengeId) {
   const isPending  = c.status === 'pending';
   const isMine     = c.challenger_id === myId;
   const canWithdraw = isPending && (isMine || isAdmin);
-  const title      = isPending ? `⏳ vs ${isMine ? dn : cn}` : `🎾 Game on! vs ${isMine ? dn : cn}`;
+  const title      = isPending ? `⏳ vs ${isMine ? dn : cn}` : `💥 Game on! vs ${isMine ? dn : cn}`;
   const issuedDate = c.issued_at
     ? new Date(c.issued_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
     : '';
