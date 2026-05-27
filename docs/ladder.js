@@ -424,7 +424,7 @@ function _renderResultsList() {
         const ln = c.winner_id === c.challenger_id ? dn : cn;
         label = `🍺 ${wn} 😢 ${ln}`; break;
       }
-      case 'declined':        label = `🐔 ${dn} dodged ${cn}`; break;
+      case 'declined':        label = `🐔 ${dn} dodged 🍺 ${cn}`; break;
       case 'declined_injury': label = `🩹 ${dn} claimed injury vs ${cn}`; break;
       case 'forfeited': {
         const wn = c.winner_id === c.challenger_id ? cn : dn;
