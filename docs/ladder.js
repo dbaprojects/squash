@@ -319,7 +319,7 @@ function _myChallengeStatusLabel(c, myId) {
     case 'pending':          return '<span style="color:#fbbf24;font-weight:700">Pending</span>';
     case 'accepted':         return '<span style="color:#86efac;font-weight:700">Accepted</span>';
     case 'declined':         return '<span style="color:#fca5a5;font-weight:700">Declined ↓</span>';
-    case 'declined_injury':  return '<span style="color:#fdba74;font-weight:700">Injury</span>';
+    case 'declined_injury':  return '<span style="color:#fdba74;font-weight:700">🩹 Injury</span>';
     case 'completed':
       return isMe(c.winner_id)
         ? '<span style="color:#86efac;font-weight:700">Won 🏆</span>'
@@ -393,13 +393,20 @@ function setLadderResultsFilter(f) {
 function _renderResultsList() {
   const el = document.getElementById('challenge-results-list');
   if (!el) return;
-  const statusMap = { all: null, played: 'completed', declined: 'declined', injury: 'declined_injury', forfeit: 'forfeited' };
-  const filterStatus = statusMap[_resultsFilter];
-  const filtered = filterStatus ? _recentCompleted.filter(c => c.status === filterStatus) : _recentCompleted;
+  const myId = ST?.player?.id;
 
-  document.querySelectorAll('.results-filter-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.filter === _resultsFilter);
-  });
+  let filtered;
+  switch (_resultsFilter) {
+    case 'win':      filtered = _recentCompleted.filter(c => c.status === 'completed' && c.winner_id === myId); break;
+    case 'lose':     filtered = _recentCompleted.filter(c => c.status === 'completed' && c.winner_id !== myId && (c.challenger_id === myId || c.challenged_id === myId)); break;
+    case 'declined': filtered = _recentCompleted.filter(c => c.status === 'declined'); break;
+    case 'forfeit':  filtered = _recentCompleted.filter(c => c.status === 'forfeited'); break;
+    case 'injury':   filtered = _recentCompleted.filter(c => c.status === 'declined_injury'); break;
+    default:         filtered = _recentCompleted;
+  }
+
+  const sel = document.getElementById('results-filter-sel');
+  if (sel) sel.value = _resultsFilter;
 
   if (filtered.length === 0) {
     el.innerHTML = '<div class="ch-empty">No results</div>';
@@ -419,7 +426,7 @@ function _renderResultsList() {
         icon = '🍺'; label = `${wn} beat ${ln}`; break;
       }
       case 'declined':        icon = '🐔'; label = `${dn} declined ${cn}`; break;
-      case 'declined_injury': icon = '🤒'; label = `${dn} — injury`;       break;
+      case 'declined_injury': icon = '🩹'; label = `${dn} — injury`;       break;
       case 'forfeited':       icon = '👻'; label = `${dn} forfeited`;       break;
       default:                icon = '⚔️'; label = `${cn} v ${dn}`;
     }
@@ -511,15 +518,6 @@ function renderDivisionLadder() {
   const challengesPanelHtml = _CHALLENGES_ENABLED ? `
     <div class="challenges-panel-wrap">
       <div class="ch-col">
-        <div class="challenge-list-header">History</div>
-        <div class="results-filter-bar">
-          ${[['all','⚔️'],['played','🍺'],['declined','🐔'],['injury','🤒'],['forfeit','👻']].map(([f,ic]) =>
-            `<button class="results-filter-btn${_resultsFilter === f ? ' active' : ''}" data-filter="${f}" onclick="setLadderResultsFilter('${f}')" title="${f.charAt(0).toUpperCase()+f.slice(1)}">${ic}</button>`
-          ).join('')}
-        </div>
-        <div id="challenge-results-list"></div>
-      </div>
-      <div class="ch-col">
         <div class="challenge-list-header">Active</div>
         ${_activeChallenges.length === 0
           ? '<div class="ch-empty">No active challenges</div>'
@@ -539,6 +537,20 @@ function renderDivisionLadder() {
               </div>`;
             }).join('')
         }
+      </div>
+      <div class="ch-col">
+        <div class="ch-history-header">
+          <span class="challenge-list-header" style="padding:0">History</span>
+          <select id="results-filter-sel" class="results-filter-sel" onchange="setLadderResultsFilter(this.value)">
+            <option value="all">🎾 All</option>
+            <option value="win">🍺 Win</option>
+            <option value="lose">😢 Lose</option>
+            <option value="declined">🐔 Decline</option>
+            <option value="forfeit">👻 Forfeit</option>
+            <option value="injury">🩹 Injury</option>
+          </select>
+        </div>
+        <div id="challenge-results-list"></div>
       </div>
     </div>` : '';
 
