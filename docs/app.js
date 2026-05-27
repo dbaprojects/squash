@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '5.18';;;
+const APP_VERSION = '5.19';;;
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -2616,8 +2616,14 @@ function renderPlayersTable() {
             ? ' <span class="tag-pending">Pending</span>'
             : !p.active ? ' <span class="tag-inactive">Inactive</span>' : '';
           const logins = playerLoginCounts[p.id] || 0;
+          const _waNum = normalizePhone(p.phone);
+          const _waText = encodeURIComponent('Squash Section Business: ');
+          const _isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
+          const _waUrl = _isMobile
+            ? `https://wa.me/${_waNum}?text=${_waText}`
+            : `https://web.whatsapp.com/send?phone=${_waNum}&text=${_waText}`;
           const waBtn = ST.player?.is_super_admin && p.phone
-            ? `<a class="wa-btn" href="https://wa.me/${normalizePhone(p.phone)}?text=${encodeURIComponent('Squash Section Business: ')}" target="_blank" onclick="event.stopPropagation()" title="WhatsApp">WA</a>`
+            ? `<a class="wa-btn" href="${_waUrl}" target="_blank" onclick="event.stopPropagation()" title="WhatsApp">WA</a>`
             : '';
           return `<div class="player-card" onclick="openEditPlayerForm('${p.id}')" style="cursor:pointer">
             <div class="pc-row1" style="margin-bottom:0">
