@@ -5,7 +5,7 @@
 - **Owner:** David Barkess — personal project, unrelated to SAP/DealSensAI work
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `C:\Users\I061437\OneDrive\Projects\Squash`
-- **Current version:** v5.05
+- **Current version:** v5.09
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -443,3 +443,7 @@ echo "{\"version\":\"4.XX\",\"build\":\"$(date +%s)\"}" > docs/version.json
 | v5.03 | Rules of Engagement rewritten — 8 rules with emoji (🍺😢🐔👻), late-arrival clause ("we're not tennis players"), ghost rule, injury rule; rendered in ladder.js |
 | v5.04 | Rules of Engagement moved to modal — amber ⚔️ button below ladder grid calls `showLadderRules()` → `showFormModal`; 15px font in modal; injury rule updated with doctor's certificate joke |
 | v5.05 | Rules button moved to top (above grid); David B. note moved inside modal as amber info box |
+| v5.06 | Me tile: show only pending/accepted/injury challenges; injury only within last 7 days |
+| v5.07 | Ladder challenge access: only challenger/challenged can click rows (admin bypass removed); super_admin-only withdraw override; results query includes declined_injury with no row limit; 2-col panel layout (LHS history with icon filters ⚔️🍺🐔🤒👻, RHS active) |
+| v5.08 | Audit log: remove limit(500) for all-time period — was cutting off older users from unique view; bounded periods use limit(1000) |
+| v5.09 | Version bump to consolidate v5.06–v5.08 changes |
