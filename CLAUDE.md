@@ -2,10 +2,10 @@
 
 ## Project identity
 - **Name:** BC Squash Section — Booking & Handicap Manager
-- **Owner:** David Barkess — personal project, unrelated to SAP/DealSensAI work
+- **Owner:** Club admin — personal project
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
-- **Location:** `C:\Users\I061437\OneDrive\Projects\Squash`
-- **Current version:** v5.09
+- **Location:** `[local project directory]`
+- **Current version:** v5.17
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -30,8 +30,8 @@ Update this file after every non-trivial change. Record new patterns, gotchas, a
 
 ## Supabase credentials
 
-- **URL:** `https://ikfzmqtglgeotyooosur.supabase.co`
-- **Anon key:** `sb_publishable_zs7ClfRPKw5TEaVSn2_oTA_kqVLhZfe` (safe to be in client code)
+- **URL:** `[redacted — see app.js]`
+- **Anon key:** `[redacted — see app.js]` (safe to be in client code)
 - **Service role key:** stored in memory only — used for seed scripts, never committed
 
 ---
@@ -174,7 +174,7 @@ reportsFilter  // 'last12' | 'last2y' | 'last3y' | 'all' | 'YYYY'
 - Filter bar: name search (applies to winner OR runner-up) + Active/Inactive/All status buttons
 - Status filter matches names via `hofPlayerMap` built from players table
 - Two side-by-side leaderboards: Most Titles (🏆) and Most #2's (🥈), top 5 each
-- HC shown inline in brackets: "David Barkess (-6)"
+- HC shown inline in brackets: "Player Name (-6)"
 - Table: Month | Champion (HC) | Runner-Up (HC) | Score — no separate HC columns
 - `hofPlayerMap` is built in `loadHof()` by fetching all players in parallel with hof_results
 
@@ -442,8 +442,16 @@ echo "{\"version\":\"4.XX\",\"build\":\"$(date +%s)\"}" > docs/version.json
 | v5.02 | Forfeit rule change: challenged drops to just below challenger (no big jump for challenger); new `_applyForfeitResult()` — removes challenged, reinserts after challenger, renumbers; `winner_pos_change=0` for forfeits; new `loser_pos_change` column records places dropped (1 for normal/decline, N for forfeit); `db/migration-loser-pos-change.sql` |
 | v5.03 | Rules of Engagement rewritten — 8 rules with emoji (🍺😢🐔👻), late-arrival clause ("we're not tennis players"), ghost rule, injury rule; rendered in ladder.js |
 | v5.04 | Rules of Engagement moved to modal — amber ⚔️ button below ladder grid calls `showLadderRules()` → `showFormModal`; 15px font in modal; injury rule updated with doctor's certificate joke |
-| v5.05 | Rules button moved to top (above grid); David B. note moved inside modal as amber info box |
+| v5.05 | Rules button moved to top (above grid); admin note moved inside modal as amber info box |
 | v5.06 | Me tile: show only pending/accepted/injury challenges; injury only within last 7 days |
 | v5.07 | Ladder challenge access: only challenger/challenged can click rows (admin bypass removed); super_admin-only withdraw override; results query includes declined_injury with no row limit; 2-col panel layout (LHS history with icon filters ⚔️🍺🐔🤒👻, RHS active) |
 | v5.08 | Audit log: remove limit(500) for all-time period — was cutting off older users from unique view; bounded periods use limit(1000) |
 | v5.09 | Version bump to consolidate v5.06–v5.08 changes |
+| v5.10 | Ladder challenges panel: History moved to RHS, Active LHS; dropdown filter inline with History header (⚔️ All / 🍺 Win / 😢 Lose / 🐔 Decline / 👻 Forfeit / 🩹 Injury) |
+| v5.11 | Challenges history: filter dropdown font reduced 12→10px |
+| v5.12 | Challenges history: Win/Lose personal filters removed — replaced with single section-wide ⚔️ Played filter |
+| v5.13 | History rows: dual icons — 🍺 winner / 😢 loser for completed; 🍺 winner / 👻 loser ghosted for forfeit; 🩹 + both names for injury |
+| v5.14 | Challenges history filter: ⚔️ replaces 🎾 racket for All option — iOS renders racket emoji as tennis ball |
+| v5.15 | Challenges history: ♾️ replaces ⚔️ for All filter; accepted challenge icon 🎾 → 💥 in ladder rows |
+| v5.16 | History rows: declined format — 🐔 dodger + 🍺 challenger who issued the challenge (challenger deserves beer) |
+| v5.17 | HC Calculator: cap starting scores at +6 (was +7); explanatory text updated; CLAUDE.md PII removed |
