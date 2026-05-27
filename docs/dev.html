@@ -7,7 +7,7 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>BC Squash Section</title>
-  <link rel="stylesheet" href="style.css?v=5.05">
+  <link rel="stylesheet" href="style.css?v=5.09">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="bcss.png">
   <meta name="theme-color" content="#1B2A6B">
@@ -151,26 +151,37 @@
     }
     .div-challenge-btn:hover { opacity: 1; }
 
-    .challenge-list { max-width: 600px; margin: 8px auto 0; }
     .challenge-list-header {
       font-size: 11px; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 0.5px; color: #64748b; padding: 10px 8px 4px;
+      letter-spacing: 0.5px; color: #64748b; padding: 6px 0 4px;
     }
-    .challenge-row {
-      display: flex; align-items: center; gap: 8px; padding: 7px 12px;
-      background: #fff; border: 1px solid #e2e8f0; border-radius: 6px;
-      margin-bottom: 4px; font-size: 13px; cursor: pointer;
-    }
-    .challenge-row:hover { background: #f8fafc; }
-    .challenge-row.display-only { cursor: default; }
-    .challenge-row.display-only:hover { background: #fff; }
-    .challenge-row-names { flex: 1; font-weight: 500; }
     .challenge-status-badge {
       font-size: 10px; font-weight: 700; padding: 2px 6px;
       border-radius: 8px; background: #fef9c3; color: #854d0e; flex-shrink: 0;
     }
     .challenge-status-badge.accepted { background: #dcfce7; color: #15803d; }
     .challenge-date { font-size: 11px; color: #94a3b8; flex-shrink: 0; }
+
+    /* 2-col challenges panel */
+    .challenges-panel-wrap {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+      max-width: 600px; margin: 10px auto 0; padding: 0 8px;
+    }
+    .ch-col { min-width: 0; }
+    .results-filter-bar { display: flex; gap: 4px; padding: 0 0 6px; flex-wrap: nowrap; }
+    .results-filter-btn {
+      font-size: 14px; padding: 3px 6px; border-radius: 8px;
+      border: 1.5px solid #cbd5e1; background: #fff; cursor: pointer; line-height: 1;
+    }
+    .results-filter-btn.active { border-color: #1B2A6B; background: #e8ecf8; }
+    .ch-res-row { padding: 4px 0; border-bottom: 1px solid #f1f5f9; }
+    .ch-res-names { font-size: 12px; color: #334155; line-height: 1.4; word-break: break-word; }
+    .ch-act-row { padding: 5px 0; border-bottom: 1px solid #f1f5f9; }
+    .ch-act-row.clickable { cursor: pointer; }
+    .ch-act-row.clickable:hover .ch-act-names { color: #1B2A6B; }
+    .ch-act-names { font-size: 12px; font-weight: 600; color: #334155; line-height: 1.4; word-break: break-word; }
+    .ch-act-foot { display: flex; align-items: center; gap: 6px; margin-top: 2px; }
+    .ch-empty { font-size: 12px; color: #94a3b8; padding: 6px 0; }
 
     .divladder-challenges { margin-top: 6px; padding-top: 5px; }
     .divladder-challenge-row {
@@ -211,7 +222,7 @@
     </div>
     <div id="login-phone-error" class="error-msg" style="margin-bottom:8px"></div>
     <button class="btn-google-full" onclick="submitLoginPhone()">Sign In</button>
-    <p class="login-version">v5.05</p>
+    <p class="login-version">v5.09</p>
     <p class="login-terms"><button class="login-terms-link" onclick="openTermsModal()">Terms of Use</button></p>
   </div>
 </div>
@@ -275,7 +286,7 @@
       <img src="bcss.png" class="header-logo" alt="BC">
       <div class="header-title">
         <span class="logo">British Club</span>
-        <span class="logo-sub">Squash Section <span class="version">v5.05</span></span>
+        <span class="logo-sub">Squash Section <span class="version">v5.09</span></span>
       </div>
     </div>
     <div id="header-page-title" class="header-page-title"></div>
@@ -434,7 +445,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
-<script src="app.js?v=5.05"></script>
-<script src="ladder.js?v=5.05"></script>
+<script src="app.js?v=5.09"></script>
+<script src="ladder.js?v=5.09"></script>
 </body>
 </html>

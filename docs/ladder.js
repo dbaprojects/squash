@@ -87,10 +87,11 @@ let _challengeRange   = 3;
 let _ladderInList     = [];
 let _ladderPool       = [];
 let _ladderAllPlayers = [];
-let _activeChallenges = [];
-let _recentCompleted  = [];
-let _myChallenges     = [];
-let _formModalLocked  = false;
+let _activeChallenges  = [];
+let _recentCompleted   = [];
+let _myChallenges      = [];
+let _resultsFilter     = 'all';
+let _formModalLocked   = false;
 const _notifiedChallengeIds = new Set();
 
 // ── Challenge messages ─────────────────────────────────────────────────────
@@ -215,12 +216,11 @@ async function _loadChallenges() {
       .in('status', ['pending', 'accepted'])
       .order('issued_at', { ascending: false }),
     sb.from('ladder_challenges')
-      .select(`id, challenger_id, challenged_id, status, completed_at, winner_id, winner_pos_change,
+      .select(`id, challenger_id, challenged_id, status, completed_at, responded_at, winner_id, winner_pos_change,
                challenger:players!challenger_id(first_name, last_name),
                challenged:players!challenged_id(first_name, last_name)`)
-      .in('status', ['completed', 'forfeited', 'declined'])
+      .in('status', ['completed', 'forfeited', 'declined', 'declined_injury'])
       .order('completed_at', { ascending: false })
-      .limit(4)
   ]);
   _activeChallenges = activeRes.data || [];
   _recentCompleted  = completedRes.data || [];
@@ -340,7 +340,13 @@ function _injectMyChallenges() {
   meCard.querySelector('.me-challenges-wrap')?.remove();
   if (_myChallenges.length === 0) return;
   const myId = ST.player.id;
-  const rows = _myChallenges.slice(0, 3).map(c => {
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const active = _myChallenges.filter(c => {
+    if (c.status === 'declined_injury') return c.issued_at >= sevenDaysAgo;
+    return ['pending', 'accepted'].includes(c.status);
+  });
+  if (active.length === 0) return;
+  const rows = active.slice(0, 3).map(c => {
     const opp = c.challenger_id === myId ? c.challenged : c.challenger;
     const oppName = `${opp?.first_name || ''} ${(opp?.last_name || '')[0] || ''}`.trim();
     const statusHtml = _myChallengeStatusLabel(c, myId);
@@ -377,6 +383,51 @@ async function loadDivisionLadder() {
 
   if (_CHALLENGES_ENABLED) await _processAutoForfeits();
   renderDivisionLadder();
+}
+
+function setLadderResultsFilter(f) {
+  _resultsFilter = f;
+  _renderResultsList();
+}
+
+function _renderResultsList() {
+  const el = document.getElementById('challenge-results-list');
+  if (!el) return;
+  const statusMap = { all: null, played: 'completed', declined: 'declined', injury: 'declined_injury', forfeit: 'forfeited' };
+  const filterStatus = statusMap[_resultsFilter];
+  const filtered = filterStatus ? _recentCompleted.filter(c => c.status === filterStatus) : _recentCompleted;
+
+  document.querySelectorAll('.results-filter-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.filter === _resultsFilter);
+  });
+
+  if (filtered.length === 0) {
+    el.innerHTML = '<div class="ch-empty">No results</div>';
+    return;
+  }
+  el.innerHTML = filtered.map(c => {
+    const cn = (c.challenger?.first_name || '') + ' ' + ((c.challenger?.last_name || '')[0] || '');
+    const dn = (c.challenged?.first_name || '') + ' ' + ((c.challenged?.last_name || '')[0] || '');
+    const date = (c.completed_at || c.responded_at)
+      ? new Date(c.completed_at || c.responded_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+      : '';
+    let icon, label;
+    switch (c.status) {
+      case 'completed': {
+        const wn = c.winner_id === c.challenger_id ? cn : dn;
+        const ln = c.winner_id === c.challenger_id ? dn : cn;
+        icon = '🍺'; label = `${wn} beat ${ln}`; break;
+      }
+      case 'declined':        icon = '🐔'; label = `${dn} declined ${cn}`; break;
+      case 'declined_injury': icon = '🤒'; label = `${dn} — injury`;       break;
+      case 'forfeited':       icon = '👻'; label = `${dn} forfeited`;       break;
+      default:                icon = '⚔️'; label = `${cn} v ${dn}`;
+    }
+    return `<div class="ch-res-row">
+      <div class="ch-res-names">${icon} ${label}</div>
+      <div class="challenge-date">${date}</div>
+    </div>`;
+  }).join('');
 }
 
 function renderDivisionLadder() {
@@ -456,34 +507,49 @@ function renderDivisionLadder() {
       </div>`);
   }
 
-  // Build challenge list html
-  const myIsAdmin = ST?.player?.is_admin || ST?.player?.is_super_admin;
-  const challengeListHtml = (_CHALLENGES_ENABLED && _activeChallenges.length > 0)
-    ? `<div class="challenge-list">
-        <div class="challenge-list-header">Active Challenges</div>
-        ${_activeChallenges.map(c => {
-          const cn = (c.challenger?.first_name || '') + ' ' + ((c.challenger?.last_name || '')[0] || '');
-          const dn = (c.challenged?.first_name || '') + ' ' + ((c.challenged?.last_name || '')[0] || '');
-          const canAct = myId && (c.challenger_id === myId || c.challenged_id === myId || myIsAdmin);
-          const statusCls   = c.status === 'accepted' ? ' accepted' : '';
-          const statusLabel = c.status === 'accepted' ? 'Accepted' : 'Pending';
-          const issuedDate = c.issued_at ? new Date(c.issued_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
-          return `<div class="challenge-row${canAct ? '' : ' display-only'}"
-            ${canAct ? `onclick="openChallengeResult('${c.id}')"` : ''}>
-            <span class="challenge-row-names">⚔️ ${cn} vs ${dn}</span>
-            <span class="challenge-status-badge${statusCls}">${statusLabel}</span>
-            <span class="challenge-date">${issuedDate}</span>
-          </div>`;
-        }).join('')}
-      </div>`
-    : '';
+  // Build 2-col challenges panel
+  const challengesPanelHtml = _CHALLENGES_ENABLED ? `
+    <div class="challenges-panel-wrap">
+      <div class="ch-col">
+        <div class="challenge-list-header">History</div>
+        <div class="results-filter-bar">
+          ${[['all','⚔️'],['played','🍺'],['declined','🐔'],['injury','🤒'],['forfeit','👻']].map(([f,ic]) =>
+            `<button class="results-filter-btn${_resultsFilter === f ? ' active' : ''}" data-filter="${f}" onclick="setLadderResultsFilter('${f}')" title="${f.charAt(0).toUpperCase()+f.slice(1)}">${ic}</button>`
+          ).join('')}
+        </div>
+        <div id="challenge-results-list"></div>
+      </div>
+      <div class="ch-col">
+        <div class="challenge-list-header">Active</div>
+        ${_activeChallenges.length === 0
+          ? '<div class="ch-empty">No active challenges</div>'
+          : _activeChallenges.map(c => {
+              const cn = (c.challenger?.first_name || '') + ' ' + ((c.challenger?.last_name || '')[0] || '');
+              const dn = (c.challenged?.first_name || '') + ' ' + ((c.challenged?.last_name || '')[0] || '');
+              const canAct = myId && (c.challenger_id === myId || c.challenged_id === myId);
+              const statusCls   = c.status === 'accepted' ? ' accepted' : '';
+              const statusLabel = c.status === 'accepted' ? 'Accepted' : 'Pending';
+              const issuedDate  = c.issued_at ? new Date(c.issued_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
+              return `<div class="ch-act-row${canAct ? ' clickable' : ''}"${canAct ? ` onclick="openChallengeResult('${c.id}')"` : ''}>
+                <div class="ch-act-names">⚔️ ${cn} vs ${dn}</div>
+                <div class="ch-act-foot">
+                  <span class="challenge-status-badge${statusCls}">${statusLabel}</span>
+                  <span class="challenge-date">${issuedDate}</span>
+                </div>
+              </div>`;
+            }).join('')
+        }
+      </div>
+    </div>` : '';
 
   wrap.innerHTML = `
     <div style="max-width:600px;margin:0 auto 0;padding:0 8px">
       <button class="hc-calc-banner" onclick="showLadderRules()">⚔️ Rules of Engagement ⚔️</button>
     </div>
     <div class="div-ladder-grid">${divCards.join('')}</div>
-    ${challengeListHtml}`;
+    ${challengesPanelHtml}`;
+
+  _renderResultsList();
 }
 
 function showLadderRules() {
@@ -635,7 +701,7 @@ function openChallengeResult(challengeId) {
   const c = _activeChallenges.find(x => x.id === challengeId);
   if (!c) return;
   const myId    = ST?.player?.id;
-  const isAdmin = ST?.player?.is_admin || ST?.player?.is_super_admin;
+  const isAdmin = ST?.player?.is_super_admin === true;
   const cn = `${c.challenger?.first_name || ''} ${c.challenger?.last_name || ''}`.trim();
   const dn = `${c.challenged?.first_name || ''} ${c.challenged?.last_name || ''}`.trim();
   const isPending  = c.status === 'pending';

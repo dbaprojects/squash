@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '5.05';;;
+const APP_VERSION = '5.09';;;
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -3256,8 +3256,7 @@ async function loadAuditLog() {
 
   let query = sb.from('audit_log')
     .select('event_type, player_name, phone, user_agent, details, created_at')
-    .order('created_at', { ascending: false })
-    .limit(500);
+    .order('created_at', { ascending: false });
 
   if (auditPeriodFilter !== 'all') {
     let cutoff;
@@ -3267,7 +3266,7 @@ async function loadAuditLog() {
       const days = auditPeriodFilter === '7d' ? 7 : 30;
       cutoff = new Date(); cutoff.setDate(cutoff.getDate() - days);
     }
-    query = query.gte('created_at', cutoff.toISOString());
+    query = query.gte('created_at', cutoff.toISOString()).limit(1000);
   }
 
   const { data: rows } = await query;
