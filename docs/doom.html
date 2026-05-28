@@ -41,10 +41,7 @@
             color: #aaa;
             text-decoration: none;
             font-size: 13px;
-            transition: color 0.2s;
         }
-
-        #header a:hover { color: #fff; }
 
         #game-wrap {
             flex: 1;
@@ -84,42 +81,23 @@
             gap: 16px;
         }
 
-        #loading .skull {
-            font-size: 48px;
-            animation: pulse 1.5s ease-in-out infinite;
-        }
-
-        #loading .msg {
-            color: #C9A84C;
-            font-size: 14px;
-            letter-spacing: 2px;
-        }
-
-        #loading .sub {
-            color: #555;
-            font-size: 11px;
-        }
+        #loading .skull { font-size: 48px; animation: pulse 1.5s ease-in-out infinite; }
+        #loading .msg   { color: #C9A84C; font-size: 14px; letter-spacing: 2px; }
+        #loading .sub   { color: #555; font-size: 11px; }
 
         #loading .progress-bar {
-            width: 200px;
-            height: 4px;
-            background: #222;
-            border-radius: 2px;
-            overflow: hidden;
+            width: 200px; height: 4px;
+            background: #222; border-radius: 2px; overflow: hidden;
         }
-
         #loading .progress-fill {
-            height: 100%;
-            background: #C9A84C;
-            width: 0%;
+            height: 100%; background: #C9A84C; width: 0%;
             animation: load 3s ease-in-out forwards;
         }
 
         @keyframes pulse {
             0%, 100% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.1); opacity: 0.7; }
+            50%       { transform: scale(1.1); opacity: 0.7; }
         }
-
         @keyframes load {
             0%   { width: 0%; }
             60%  { width: 70%; }
@@ -129,124 +107,114 @@
 
         #error-msg {
             display: none;
-            background: #1a0000;
-            border: 1px solid #500;
-            color: #f66;
-            padding: 16px 20px;
-            font-size: 13px;
-            line-height: 1.6;
-            max-width: 640px;
-            text-align: center;
+            background: #1a0000; border: 1px solid #500;
+            color: #f66; padding: 16px 20px;
+            font-size: 13px; line-height: 1.6;
+            max-width: 640px; text-align: center;
         }
-
         #error-msg a { color: #f99; }
 
         #kb-controls {
             display: none;
-            color: #555;
-            font-size: 12px;
-            text-align: center;
-            line-height: 1.8;
+            color: #555; font-size: 12px;
+            text-align: center; line-height: 1.8;
         }
-
         #kb-controls .key {
-            background: #222;
-            border: 1px solid #444;
-            border-radius: 3px;
-            padding: 1px 6px;
-            color: #ccc;
-            font-size: 11px;
+            background: #222; border: 1px solid #444;
+            border-radius: 3px; padding: 1px 6px;
+            color: #ccc; font-size: 11px;
         }
 
-        /* ── Mobile gamepad ─────────────────────────────────── */
+        /* ── Mobile gamepad ─────────────────────────────────────── */
         #mobile-controls {
             display: none;
             width: 100%;
             max-width: 640px;
             justify-content: space-between;
-            align-items: flex-end;
-            padding: 8px 16px 4px;
+            align-items: center;
+            padding: 12px 20px 6px;
             user-select: none;
             -webkit-user-select: none;
         }
 
-        #dpad {
-            display: grid;
-            grid-template-areas:
-                ". up ."
-                "left . right"
-                ". down .";
-            grid-template-columns: repeat(3, 56px);
-            grid-template-rows: repeat(3, 56px);
-            gap: 4px;
-        }
-
-        .dp-up    { grid-area: up; }
-        .dp-down  { grid-area: down; }
-        .dp-left  { grid-area: left; }
-        .dp-right { grid-area: right; }
-
-        .dpad-btn {
-            background: #1c1c1c;
+        /* Joystick */
+        #joystick-base {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.05);
             border: 2px solid #333;
-            border-radius: 10px;
-            color: #bbb;
-            font-size: 20px;
-            width: 56px;
-            height: 56px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
+            position: relative;
             touch-action: none;
-            -webkit-tap-highlight-color: transparent;
-            transition: background 0.05s, color 0.05s;
+            flex-shrink: 0;
         }
 
-        .dpad-btn:active,
-        .dpad-btn.held {
-            background: #3a3a3a;
-            color: #fff;
-            border-color: #666;
+        #joystick-knob {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%, #555, #222);
+            border: 2px solid #666;
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            transition: background 0.1s;
         }
 
+        #joystick-base.active #joystick-knob {
+            background: radial-gradient(circle at 35% 35%, #888, #444);
+            border-color: #aaa;
+        }
+
+        /* Action buttons */
         #action-btns {
             display: flex;
             flex-direction: column;
             align-items: flex-end;
-            gap: 8px;
+            gap: 10px;
         }
 
-        .action-row {
-            display: flex;
-            gap: 8px;
-        }
+        .action-row { display: flex; gap: 10px; }
 
         .action-btn {
             font-family: 'Courier New', monospace;
             font-size: 11px;
             font-weight: bold;
             letter-spacing: 1px;
-            width: 60px;
-            height: 44px;
+            width: 62px;
+            height: 46px;
+            background: #1c1c1c;
+            border: 2px solid #333;
+            border-radius: 10px;
+            color: #bbb;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            touch-action: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .action-btn.held {
+            background: #3a3a3a;
+            color: #fff;
+            border-color: #666;
         }
 
         .action-shoot {
             background: #3a0000;
             border-color: #700;
             color: #ff7777;
-            width: 128px;
-            height: 56px;
+            width: 134px;
+            height: 58px;
             font-size: 13px;
         }
-
         .action-shoot.held { background: #700; border-color: #c00; }
 
         #secret-note {
-            color: #222;
-            font-size: 10px;
-            letter-spacing: 1px;
-            margin-top: 4px;
+            color: #222; font-size: 10px;
+            letter-spacing: 1px; margin-top: 4px;
         }
     </style>
 </head>
@@ -278,7 +246,7 @@
         and place it alongside this file, then set <code>DOOM_ZIP_URL = 'doom1.zip'</code>.
     </div>
 
-    <!-- Keyboard controls (desktop only) -->
+    <!-- Keyboard hint (desktop only) -->
     <div id="kb-controls">
         <span><span class="key">↑↓←→</span> Move</span> &nbsp;
         <span><span class="key">Ctrl</span> Shoot</span> &nbsp;
@@ -289,18 +257,15 @@
 
     <!-- Mobile gamepad (touch devices only) -->
     <div id="mobile-controls">
-        <div id="dpad">
-            <button class="dpad-btn dp-up"    data-kc="38">▲</button>
-            <button class="dpad-btn dp-left"  data-kc="37">◀</button>
-            <button class="dpad-btn dp-right" data-kc="39">▶</button>
-            <button class="dpad-btn dp-down"  data-kc="40">▼</button>
+        <div id="joystick-base">
+            <div id="joystick-knob"></div>
         </div>
         <div id="action-btns">
             <div class="action-row">
-                <button class="dpad-btn action-btn" data-kc="32">USE</button>
-                <button class="dpad-btn action-btn" data-kc="27">ESC</button>
+                <button class="action-btn" data-kc="32">USE</button>
+                <button class="action-btn" data-kc="27">ESC</button>
             </div>
-            <button class="dpad-btn action-btn action-shoot" data-kc="17" data-kc2="13">SHOOT</button>
+            <button class="action-btn action-shoot" data-kc="17" data-kc2="13">SHOOT</button>
         </div>
     </div>
 
@@ -316,9 +281,8 @@
     const errorBox = document.getElementById('error-msg');
     const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 
-    // Loading dots animation
     let dotCount = 0;
-    const dotsEl  = document.getElementById('dots');
+    const dotsEl   = document.getElementById('dots');
     const dotTimer = setInterval(() => {
         dotCount = (dotCount + 1) % 4;
         dotsEl.textContent = '.'.repeat(dotCount);
@@ -329,7 +293,8 @@
         loading.style.display = 'none';
         if (isMobile) {
             document.getElementById('mobile-controls').style.display = 'flex';
-            initGamepad();
+            initJoystick();
+            initActionButtons();
         } else {
             document.getElementById('kb-controls').style.display = 'block';
         }
@@ -342,18 +307,66 @@
         console.error('Doom load error:', err);
     }
 
-    // ── Mobile gamepad ────────────────────────────────────────────────────────
     function fireKey(keyCode, type) {
-        // Dispatch to both canvas and document — DOSBox may listen on either
-        [canvas, document].forEach(target => {
-            target.dispatchEvent(new KeyboardEvent(type, {
-                keyCode, which: keyCode, bubbles: true, cancelable: true
-            }));
-        });
+        [canvas, document].forEach(t => t.dispatchEvent(
+            new KeyboardEvent(type, { keyCode, which: keyCode, bubbles: true, cancelable: true })
+        ));
     }
 
-    function initGamepad() {
-        document.querySelectorAll('.dpad-btn').forEach(btn => {
+    // ── Virtual joystick ──────────────────────────────────────────────────────
+    function initJoystick() {
+        const base    = document.getElementById('joystick-base');
+        const knob    = document.getElementById('joystick-knob');
+        const maxDist = 34;   // max knob travel in px
+        const dead    = 12;   // dead zone in px
+        let activeKeys = new Set();
+
+        function updateKeys(dx, dy) {
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const next = new Set();
+            if (dist > dead) {
+                if (dy < -dead) next.add(38); // up / forward
+                if (dy >  dead) next.add(40); // down / back
+                if (dx < -dead) next.add(37); // left / turn left
+                if (dx >  dead) next.add(39); // right / turn right
+            }
+            activeKeys.forEach(kc => { if (!next.has(kc)) fireKey(kc, 'keyup'); });
+            next.forEach(kc  => { if (!activeKeys.has(kc)) fireKey(kc, 'keydown'); });
+            activeKeys = next;
+        }
+
+        function resetKnob() {
+            knob.style.transform = 'translate(-50%, -50%)';
+            base.classList.remove('active');
+            activeKeys.forEach(kc => fireKey(kc, 'keyup'));
+            activeKeys = new Set();
+        }
+
+        base.addEventListener('touchstart', e => {
+            e.preventDefault();
+            base.classList.add('active');
+        }, { passive: false });
+
+        base.addEventListener('touchmove', e => {
+            e.preventDefault();
+            const rect  = base.getBoundingClientRect();
+            const cx    = rect.left + rect.width  / 2;
+            const cy    = rect.top  + rect.height / 2;
+            let dx = e.touches[0].clientX - cx;
+            let dy = e.touches[0].clientY - cy;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist > maxDist) { dx = dx / dist * maxDist; dy = dy / dist * maxDist; }
+            knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+            updateKeys(dx, dy);
+        }, { passive: false });
+
+        base.addEventListener('touchend',    () => resetKnob());
+        base.addEventListener('touchcancel', () => resetKnob());
+    }
+
+    // ── Action buttons (SHOOT / USE / ESC) ───────────────────────────────────
+    function initActionButtons() {
+        document.querySelectorAll('.action-btn').forEach(btn => {
             const kc  = parseInt(btn.dataset.kc);
             const kc2 = btn.dataset.kc2 ? parseInt(btn.dataset.kc2) : null;
 
@@ -374,6 +387,7 @@
             btn.addEventListener('touchcancel', () => {
                 btn.classList.remove('held');
                 fireKey(kc, 'keyup');
+                if (kc2) fireKey(kc2, 'keyup');
             });
         });
     }
