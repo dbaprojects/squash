@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '5.21';;;
+const APP_VERSION = '5.22';;;
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -2042,7 +2042,7 @@ function _initDoomEgg() {
     timer = setTimeout(() => {
       fired = true;
       el.classList.remove('doom-charging');
-      window.open('doom.html', '_blank');
+      window.location.href = 'doom.html';
     }, 5000);
   }
 
