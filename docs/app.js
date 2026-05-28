@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '5.22';;;
+const APP_VERSION = '5.23';;;
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -2033,11 +2033,16 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
 function _initDoomEgg() {
   const el = document.getElementById('home-hof-tile');
   if (!el) return;
-  let timer = null;
-  let fired = false;
+  let timer   = null;
+  let fired   = false;
+  let moved   = false;
+  let startX  = 0;
+  let startY  = 0;
 
-  function start() {
+  function start(e) {
     fired = false;
+    moved = false;
+    if (e.touches) { startX = e.touches[0].clientX; startY = e.touches[0].clientY; }
     el.classList.add('doom-charging');
     timer = setTimeout(() => {
       fired = true;
@@ -2046,22 +2051,31 @@ function _initDoomEgg() {
     }, 5000);
   }
 
+  function onMove(e) {
+    if (!timer) return;
+    const dx = e.touches[0].clientX - startX;
+    const dy = e.touches[0].clientY - startY;
+    if (Math.sqrt(dx*dx + dy*dy) > 10) abort();
+  }
+
   function release() {
     if (timer) { clearTimeout(timer); timer = null; }
     el.classList.remove('doom-charging');
-    if (!fired) navTo('hof');
+    if (!fired && !moved) navTo('hof');
   }
 
   function abort() {
+    moved = true;
     if (timer) { clearTimeout(timer); timer = null; }
     el.classList.remove('doom-charging');
   }
 
-  el.addEventListener('mousedown', start);
-  el.addEventListener('mouseup', release);
-  el.addEventListener('mouseleave', abort);
-  el.addEventListener('touchstart', start, { passive: true });
-  el.addEventListener('touchend', release);
+  el.addEventListener('mousedown',   start);
+  el.addEventListener('mouseup',     release);
+  el.addEventListener('mouseleave',  abort);
+  el.addEventListener('touchstart',  start,   { passive: true });
+  el.addEventListener('touchmove',   onMove,  { passive: true });
+  el.addEventListener('touchend',    release);
   el.addEventListener('touchcancel', abort);
 }
 
