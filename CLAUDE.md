@@ -316,11 +316,15 @@ Considered options for deeper integration:
 
 ## Doom easter egg
 
-`docs/doom.html` — standalone page, not linked from the main app yet.
+`docs/doom.html` — standalone page, triggered from the home screen.
 - Uses **js-dos v6.22** (CDN) + **DOSBox WASM**
 - Loads `docs/doom.ZIP` (Doom shareware Episode 1, id Software freely-distributable) from same origin
-- BC navy/gold styling, keyboard controls shown, `← Back to Squash` link
-- Trigger plan: Konami code or long-press logo → `window.open('doom.html')`
+- BC navy/gold header styling, `← Back to Squash` link
+- **Trigger:** 5-second press-and-hold on the HCRR home tile — panel fills red bottom-to-top during hold; normal tap still navigates to HoF
+- **Desktop:** keyboard controls hint shown after load
+- **Mobile:** virtual joystick (left) + SHOOT/USE/ESC buttons (right); joystick fires arrow key events on direction change, supports diagonals, 12px dead zone
+- **iOS gotchas fixed:** synthetic `mousedown` after `touchend` blocked (600ms guard); touchmove >10px aborts timer; `-webkit-touch-callout:none` on trophy image suppresses iOS save/share popup
+- SHOOT button fires both Ctrl (weapon) and Enter (menu select)
 - Custom squash-themed sprites discussed but not implemented
 
 ---
@@ -491,3 +495,10 @@ echo "{\"version\":\"4.XX\",\"build\":\"$(date +%s)\"}" > docs/version.json
 | v5.18 | Admin players: WhatsApp button (super_admin only) beside each player — opens wa.me with pre-filled "Squash Section Business: " message |
 | v5.19 | WhatsApp button: desktop routes to web.whatsapp.com/send (no prompt); mobile keeps wa.me (opens app) |
 | v5.20 | WA button: window.open with named target 'whatsapp_web' — reuses same tab on subsequent clicks |
+| v5.21 | Doom easter egg: 5s press-and-hold on HCRR home tile launches doom.html; red panel fills bottom-to-top during hold; normal tap still navigates to HoF; `_initDoomEgg()` called after every `loadHome()` |
+| v5.22 | Doom: navigate same tab (`window.location.href`) instead of `window.open` — fixes popup blocker on PC and iOS |
+| v5.23 | Doom egg: abort timer on touchmove >10px (prevents scroll triggering doom); `moved` flag guards `release()` from navigating to HoF after a scroll gesture |
+| v5.24 | Suppress iOS long-press save/share callout on HoF trophy image (`-webkit-touch-callout: none`) |
+| v5.25 | Doom egg: block synthetic `mousedown` fired by iOS after `touchend` (was setting a ghost 5s timer); clear stale timer at top of `start()` |
+| v5.26 | Doom mobile controls: replace D-pad buttons with virtual joystick (120px circular base, 52px draggable knob, 34px travel, 12px dead zone); diagonal directions supported; keys fired only on state change; action buttons (SHOOT/USE/ESC) unchanged on right |
+| v5.27 | Doom egg charge animation: full panel fills bottom-to-top (scaleY) instead of thin line left-to-right (scaleX) |
