@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>DOOM — BC Squash</title>
     <script src="https://js-dos.com/6.22/current/js-dos.js"></script>
     <style>
@@ -16,6 +16,7 @@
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
+            overflow-x: hidden;
         }
 
         #header {
@@ -51,8 +52,8 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 20px;
-            gap: 14px;
+            padding: 12px;
+            gap: 10px;
             width: 100%;
         }
 
@@ -60,13 +61,16 @@
             position: relative;
             border: 2px solid #333;
             box-shadow: 0 0 40px rgba(201,168,76,0.15);
+            width: 100%;
+            max-width: 640px;
         }
 
         #jsdos {
             display: block;
-            max-width: 100%;
-            width: 640px;
-            height: 400px;
+            width: 100%;
+            height: auto;
+            aspect-ratio: 8/5;
+            touch-action: none;
         }
 
         #loading {
@@ -117,9 +121,9 @@
         }
 
         @keyframes load {
-            0% { width: 0%; }
-            60% { width: 70%; }
-            80% { width: 85%; }
+            0%   { width: 0%; }
+            60%  { width: 70%; }
+            80%  { width: 85%; }
             100% { width: 92%; }
         }
 
@@ -137,7 +141,7 @@
 
         #error-msg a { color: #f99; }
 
-        #controls {
+        #kb-controls {
             display: none;
             color: #555;
             font-size: 12px;
@@ -145,9 +149,7 @@
             line-height: 1.8;
         }
 
-        #controls span { color: #888; margin: 0 6px; }
-
-        #controls .key {
+        #kb-controls .key {
             background: #222;
             border: 1px solid #444;
             border-radius: 3px;
@@ -156,11 +158,95 @@
             font-size: 11px;
         }
 
+        /* ── Mobile gamepad ─────────────────────────────────── */
+        #mobile-controls {
+            display: none;
+            width: 100%;
+            max-width: 640px;
+            justify-content: space-between;
+            align-items: flex-end;
+            padding: 8px 16px 4px;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        #dpad {
+            display: grid;
+            grid-template-areas:
+                ". up ."
+                "left . right"
+                ". down .";
+            grid-template-columns: repeat(3, 56px);
+            grid-template-rows: repeat(3, 56px);
+            gap: 4px;
+        }
+
+        .dp-up    { grid-area: up; }
+        .dp-down  { grid-area: down; }
+        .dp-left  { grid-area: left; }
+        .dp-right { grid-area: right; }
+
+        .dpad-btn {
+            background: #1c1c1c;
+            border: 2px solid #333;
+            border-radius: 10px;
+            color: #bbb;
+            font-size: 20px;
+            width: 56px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            touch-action: none;
+            -webkit-tap-highlight-color: transparent;
+            transition: background 0.05s, color 0.05s;
+        }
+
+        .dpad-btn:active,
+        .dpad-btn.held {
+            background: #3a3a3a;
+            color: #fff;
+            border-color: #666;
+        }
+
+        #action-btns {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+        }
+
+        .action-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            width: 60px;
+            height: 44px;
+        }
+
+        .action-shoot {
+            background: #3a0000;
+            border-color: #700;
+            color: #ff7777;
+            width: 128px;
+            height: 56px;
+            font-size: 13px;
+        }
+
+        .action-shoot.held { background: #700; border-color: #c00; }
+
         #secret-note {
-            color: #333;
+            color: #222;
             font-size: 10px;
             letter-spacing: 1px;
-            margin-top: 8px;
+            margin-top: 4px;
         }
     </style>
 </head>
@@ -183,7 +269,7 @@
         </div>
     </div>
 
-    <div id="error-msg" id="error-box">
+    <div id="error-msg">
         <strong>Failed to load Doom.</strong><br>
         The shareware archive may have moved. Try:<br>
         1. Check the URL constant in this file and update <code>DOOM_ZIP_URL</code>.<br>
@@ -192,13 +278,30 @@
         and place it alongside this file, then set <code>DOOM_ZIP_URL = 'doom1.zip'</code>.
     </div>
 
-    <div id="controls">
-        <span><span class="key">↑↓←→</span> or <span class="key">WASD</span> Move</span>
-        <span><span class="key">Ctrl</span> Shoot</span>
-        <span><span class="key">Space</span> Use / Open</span>
-        <span><span class="key">Shift</span> Run</span>
-        <span><span class="key">Alt+↑↓</span> Look</span>
+    <!-- Keyboard controls (desktop only) -->
+    <div id="kb-controls">
+        <span><span class="key">↑↓←→</span> Move</span> &nbsp;
+        <span><span class="key">Ctrl</span> Shoot</span> &nbsp;
+        <span><span class="key">Space</span> Use</span> &nbsp;
+        <span><span class="key">Shift</span> Run</span> &nbsp;
         <span><span class="key">Esc</span> Menu</span>
+    </div>
+
+    <!-- Mobile gamepad (touch devices only) -->
+    <div id="mobile-controls">
+        <div id="dpad">
+            <button class="dpad-btn dp-up"    data-kc="38">▲</button>
+            <button class="dpad-btn dp-left"  data-kc="37">◀</button>
+            <button class="dpad-btn dp-right" data-kc="39">▶</button>
+            <button class="dpad-btn dp-down"  data-kc="40">▼</button>
+        </div>
+        <div id="action-btns">
+            <div class="action-row">
+                <button class="dpad-btn action-btn" data-kc="32">USE</button>
+                <button class="dpad-btn action-btn" data-kc="27">ESC</button>
+            </div>
+            <button class="dpad-btn action-btn action-shoot" data-kc="17">SHOOT</button>
+        </div>
     </div>
 
     <div id="secret-note">[ you found it ]</div>
@@ -206,25 +309,31 @@
 </div>
 
 <script>
-    // ── Doom Shareware source ────────────────────────────────────────────────
-    // id Software released Doom Episode 1 as freely-distributable shareware.
-    // Update this URL if the archive moves. You can also host doom1.zip locally
-    // in docs/ and set this to just 'doom1.zip'.
     const DOOM_ZIP_URL = 'doom.ZIP';
-    // ─────────────────────────────────────────────────────────────────────────
 
     const canvas   = document.getElementById('jsdos');
     const loading  = document.getElementById('loading');
     const errorBox = document.getElementById('error-msg');
-    const controls = document.getElementById('controls');
+    const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 
-    // Animate the loading dots
+    // Loading dots animation
     let dotCount = 0;
-    const dotsEl = document.getElementById('dots');
+    const dotsEl  = document.getElementById('dots');
     const dotTimer = setInterval(() => {
         dotCount = (dotCount + 1) % 4;
         dotsEl.textContent = '.'.repeat(dotCount);
     }, 400);
+
+    function onGameReady() {
+        clearInterval(dotTimer);
+        loading.style.display = 'none';
+        if (isMobile) {
+            document.getElementById('mobile-controls').style.display = 'flex';
+            initGamepad();
+        } else {
+            document.getElementById('kb-controls').style.display = 'block';
+        }
+    }
 
     function onError(err) {
         clearInterval(dotTimer);
@@ -233,12 +342,43 @@
         console.error('Doom load error:', err);
     }
 
+    // ── Mobile gamepad ────────────────────────────────────────────────────────
+    function fireKey(keyCode, type) {
+        // Dispatch to both canvas and document — DOSBox may listen on either
+        [canvas, document].forEach(target => {
+            target.dispatchEvent(new KeyboardEvent(type, {
+                keyCode, which: keyCode, bubbles: true, cancelable: true
+            }));
+        });
+    }
+
+    function initGamepad() {
+        document.querySelectorAll('.dpad-btn').forEach(btn => {
+            const kc = parseInt(btn.dataset.kc);
+
+            btn.addEventListener('touchstart', e => {
+                e.preventDefault();
+                btn.classList.add('held');
+                fireKey(kc, 'keydown');
+            }, { passive: false });
+
+            btn.addEventListener('touchend', e => {
+                e.preventDefault();
+                btn.classList.remove('held');
+                fireKey(kc, 'keyup');
+            }, { passive: false });
+
+            btn.addEventListener('touchcancel', () => {
+                btn.classList.remove('held');
+                fireKey(kc, 'keyup');
+            });
+        });
+    }
+
+    // ── Boot DOSBox ───────────────────────────────────────────────────────────
     Dos(canvas, { wdosboxUrl: 'https://js-dos.com/6.22/current/wdosbox.js' }).ready(function(fs, main) {
         fs.extract(DOOM_ZIP_URL).then(function() {
-            clearInterval(dotTimer);
-            loading.style.display = 'none';
-            controls.style.display = 'block';
-            // DOOM.EXE is the standard executable in the shareware zip
+            onGameReady();
             main(['-c', 'DOOM.EXE']);
         }).catch(onError);
     });
