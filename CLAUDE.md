@@ -292,6 +292,39 @@ The division ladder is implemented entirely in `docs/ladder.js`, loaded after `a
 
 ---
 
+## WhatsApp integration
+
+Current state (v5.18–5.20): super_admin players list has a WA button that opens a pre-filled `wa.me` / `web.whatsapp.com` message. Manual send — no API.
+
+Considered options for deeper integration:
+
+| Approach | Effort | Cost | Notes |
+|---|---|---|---|
+| `wa.me` links | Zero | Free | User manually sends; good for share/notify buttons anywhere in app |
+| Meta WhatsApp Business Cloud API | Medium | Free (low vol) | Automated templated messages; needs Meta Business account + approved templates |
+| Twilio / MessageBird | Low–medium | Per-message fee | Wraps Meta API, easier setup, handles verification complexity |
+| Inbound webhook (reply commands) | High | — | Players text "CANCEL Wed" → auto-removes signup; needs persistent HTTPS endpoint |
+
+**Preferred path if automated notifications are built:**
+- Trigger: Supabase Edge Function (database webhook or scheduled)
+- Channel: Meta Cloud API (free tier sufficient for club volume)
+- Use cases in priority order: ladder challenge issued/accepted, session reminder (24h), admin alert for pending player approval, sign-up confirmation
+
+**Constraint:** No backend in production — all automation must live in Supabase Edge Functions.
+
+---
+
+## Doom easter egg
+
+`docs/doom.html` — standalone page, not linked from the main app yet.
+- Uses **js-dos v6.22** (CDN) + **DOSBox WASM**
+- Loads `docs/doom.ZIP` (Doom shareware Episode 1, id Software freely-distributable) from same origin
+- BC navy/gold styling, keyboard controls shown, `← Back to Squash` link
+- Trigger plan: Konami code or long-press logo → `window.open('doom.html')`
+- Custom squash-themed sprites discussed but not implemented
+
+---
+
 ## Gotchas & decisions
 
 - **`is_admin_user()` SQL function does NOT work** in Supabase SQL editor — inline the check directly in each policy
