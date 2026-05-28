@@ -300,7 +300,7 @@
                 <button class="dpad-btn action-btn" data-kc="32">USE</button>
                 <button class="dpad-btn action-btn" data-kc="27">ESC</button>
             </div>
-            <button class="dpad-btn action-btn action-shoot" data-kc="17">SHOOT</button>
+            <button class="dpad-btn action-btn action-shoot" data-kc="17" data-kc2="13">SHOOT</button>
         </div>
     </div>
 
@@ -354,18 +354,21 @@
 
     function initGamepad() {
         document.querySelectorAll('.dpad-btn').forEach(btn => {
-            const kc = parseInt(btn.dataset.kc);
+            const kc  = parseInt(btn.dataset.kc);
+            const kc2 = btn.dataset.kc2 ? parseInt(btn.dataset.kc2) : null;
 
             btn.addEventListener('touchstart', e => {
                 e.preventDefault();
                 btn.classList.add('held');
                 fireKey(kc, 'keydown');
+                if (kc2) fireKey(kc2, 'keydown');
             }, { passive: false });
 
             btn.addEventListener('touchend', e => {
                 e.preventDefault();
                 btn.classList.remove('held');
                 fireKey(kc, 'keyup');
+                if (kc2) fireKey(kc2, 'keyup');
             }, { passive: false });
 
             btn.addEventListener('touchcancel', () => {
