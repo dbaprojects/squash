@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '5.20';;;
+const APP_VERSION = '5.21';;;
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -1967,7 +1967,7 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
          <div class="home-hof-info" style="color:#aaa;font-size:13px">No records yet</div>
        </div>`;
   const hofCard = `
-    <div class="home-card home-card-hof" onclick="navTo('hof')">
+    <div class="home-card home-card-hof" id="home-hof-tile">
       <div class="home-card-label">Current HCRR Champ</div>
       ${hofInner}
       <div class="home-card-link">Hall of Fame →</div>
@@ -2027,6 +2027,42 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
   }
 
   document.getElementById('home-grid').innerHTML = meCard + signupCard + ladderCard + hofCard + adminCard + auditCard;
+  _initDoomEgg();
+}
+
+function _initDoomEgg() {
+  const el = document.getElementById('home-hof-tile');
+  if (!el) return;
+  let timer = null;
+  let fired = false;
+
+  function start() {
+    fired = false;
+    el.classList.add('doom-charging');
+    timer = setTimeout(() => {
+      fired = true;
+      el.classList.remove('doom-charging');
+      window.open('doom.html', '_blank');
+    }, 5000);
+  }
+
+  function release() {
+    if (timer) { clearTimeout(timer); timer = null; }
+    el.classList.remove('doom-charging');
+    if (!fired) navTo('hof');
+  }
+
+  function abort() {
+    if (timer) { clearTimeout(timer); timer = null; }
+    el.classList.remove('doom-charging');
+  }
+
+  el.addEventListener('mousedown', start);
+  el.addEventListener('mouseup', release);
+  el.addEventListener('mouseleave', abort);
+  el.addEventListener('touchstart', start, { passive: true });
+  el.addEventListener('touchend', release);
+  el.addEventListener('touchcancel', abort);
 }
 
 function navTo(view, callback) {
