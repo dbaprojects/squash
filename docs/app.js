@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '5.24';;;
+const APP_VERSION = '5.25';;;
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -2033,13 +2033,17 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
 function _initDoomEgg() {
   const el = document.getElementById('home-hof-tile');
   if (!el) return;
-  let timer   = null;
-  let fired   = false;
-  let moved   = false;
-  let startX  = 0;
-  let startY  = 0;
+  let timer         = null;
+  let fired         = false;
+  let moved         = false;
+  let startX        = 0;
+  let startY        = 0;
+  let lastTouchTime = 0;
 
   function start(e) {
+    // Ignore synthetic mousedown that iOS fires after touchend
+    if (e.type === 'mousedown' && Date.now() - lastTouchTime < 600) return;
+    if (timer) { clearTimeout(timer); timer = null; }
     fired = false;
     moved = false;
     if (e.touches) { startX = e.touches[0].clientX; startY = e.touches[0].clientY; }
@@ -2058,7 +2062,8 @@ function _initDoomEgg() {
     if (Math.sqrt(dx*dx + dy*dy) > 10) abort();
   }
 
-  function release() {
+  function release(e) {
+    if (e.type === 'touchend') lastTouchTime = Date.now();
     if (timer) { clearTimeout(timer); timer = null; }
     el.classList.remove('doom-charging');
     if (!fired && !moved) navTo('hof');
