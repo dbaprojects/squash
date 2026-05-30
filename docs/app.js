@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '5.27';;;
+const APP_VERSION = '5.28';;;
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -3178,7 +3178,7 @@ const DOW_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','
 
 async function renderTemplatesTab() {
   const { data } = await sb.from('session_templates')
-    .select('*').eq('active', true).order('day_of_week');
+    .select('*').eq('active', true).order('day_of_week').order('start_time');
   ST.templates = data || [];
   const el = document.getElementById('templates-list');
   document.getElementById('btn-add-template').onclick = openAddTemplateForm;
