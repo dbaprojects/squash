@@ -308,7 +308,7 @@ function exportExcel() {
     });
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(totalsRows), 'Totals');
 
-    // Sheet 3: Member Summary (name, total shirts, amount due)
+    // Sheet 3: Member Summary (member id, name, phone, total shirts, amount due)
     const allItems = [];
     for (const row of (data || [])) {
       for (const item of (row.orders || [])) {
@@ -318,13 +318,13 @@ function exportExcel() {
     const totalShirts = allItems.reduce((s, it) => s + it.qty, 0);
     const pricePerShirt = totalShirts >= 50 ? 40 : 45;
 
-    const summaryRows = [['Name', 'Total Shirts', 'Amount Due']];
+    const summaryRows = [['Member', 'Name', 'Phone', 'Total Shirts', 'Amount Due']];
     for (const row of (data || [])) {
       if (!(row.orders || []).length) continue;
       const qty = (row.orders || []).reduce((s, it) => s + (it.qty || 1), 0);
-      summaryRows.push([row.name, qty, qty * pricePerShirt]);
+      summaryRows.push([row.member_number, row.name, row.phone || '', qty, `$${qty * pricePerShirt}`]);
     }
-    summaryRows.push(['TOTAL', totalShirts, totalShirts * pricePerShirt]);
+    summaryRows.push(['', 'TOTAL', '', totalShirts, `$${totalShirts * pricePerShirt}`]);
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summaryRows), 'Member Summary');
 
     XLSX.writeFile(wb, 'shirt-orders.xlsx');
