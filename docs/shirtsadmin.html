@@ -226,8 +226,10 @@ function renderAdmin(filterQ) {
         const [design, cut, colour, size] = key.split('|');
         return `${design} ${cut} ${colour} ${size}${qty > 1 ? ` ×${qty}` : ''}`;
       }).join('<br>');
+    const memberQty = (row.orders || []).reduce((s, it) => s + (it.qty || 1), 0);
+    const memberDue = memberQty * pricePerShirt;
     return `<tr>
-      <td>${row.member_number}</td><td>${row.name}</td><td>${row.phone || '—'}</td>
+      <td>${row.member_number}</td><td>${row.name}<br><span style="font-size:11px;color:#15803d;font-weight:700">$${memberDue}</span></td><td>${row.phone || '—'}</td>
       <td style="font-size:13px">${items || '<span style="color:#94a3b8">No items</span>'}</td>
     </tr>`;
   }).join('');
