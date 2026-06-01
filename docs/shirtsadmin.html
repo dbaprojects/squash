@@ -76,6 +76,14 @@
     .admin-filter { flex: 1; padding: 8px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 14px; outline: none; }
     #admin-content { display: none; }
     #admin-members-card { display: none; }
+    #admin-member-summary-card { display: none; }
+
+    .member-summary-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .member-summary-table th { background: #1B2A6B; color: #fff; padding: 7px 10px; text-align: left; font-weight: 600; }
+    .member-summary-table td { padding: 7px 10px; border-bottom: 1px solid #e2e8f0; }
+    .member-summary-table tr:last-child td { border-bottom: none; }
+    .member-summary-table .num { text-align: right; font-weight: 700; color: #1B2A6B; }
+    .member-summary-table tfoot td { font-weight: 700; background: #f1f5f9; }
   </style>
 </head>
 <body>
@@ -108,6 +116,10 @@
                placeholder="Search name or number…" oninput="renderAdmin()">
       </div>
       <div id="admin-members-table"></div>
+    </div>
+    <div class="card" id="admin-member-summary-card">
+      <h2 id="admin-member-summary-heading">By Member</h2>
+      <div id="admin-member-summary-table"></div>
     </div>
   </div>
 </div>
@@ -269,6 +281,35 @@ function renderAdmin(filterQ) {
       </table>
     </div>`;
   document.getElementById('admin-members-card').style.display = 'block';
+
+  // Member summary: total shirts + amount due per member
+  const memberSummaryRows = data
+    .filter(row => (row.orders || []).length > 0)
+    .map(row => {
+      const qty = (row.orders || []).reduce((s, it) => s + (it.qty || 1), 0);
+      const due = qty * pricePerShirt;
+      return { name: row.name, qty, due };
+    })
+    .sort((a, b) => a.name.localeCompare(b.name));
+  const totalDue = memberSummaryRows.reduce((s, r) => s + r.due, 0);
+  const summaryRowsHtml = memberSummaryRows.map(r =>
+    `<tr><td>${r.name}</td><td class="num">${r.qty}</td><td class="num">$${r.due.toLocaleString()}</td></tr>`
+  ).join('');
+  document.getElementById('admin-member-summary-heading').textContent =
+    `By Member (${memberSummaryRows.length} with orders, $${pricePerShirt}/shirt)`;
+  document.getElementById('admin-member-summary-table').innerHTML = `
+    <div style="overflow-x:auto">
+      <table class="member-summary-table">
+        <thead><tr><th>Name</th><th style="text-align:right">Shirts</th><th style="text-align:right">Amount Due</th></tr></thead>
+        <tbody>${summaryRowsHtml || '<tr><td colspan="3" style="color:#94a3b8;text-align:center">No orders yet</td></tr>'}</tbody>
+        <tfoot><tr>
+          <td>Total</td>
+          <td class="num">${totalShirts}</td>
+          <td class="num">$${totalDue.toLocaleString()}</td>
+        </tr></tfoot>
+      </table>
+    </div>`;
+  document.getElementById('admin-member-summary-card').style.display = 'block';
 }
 
 function exportExcel() {

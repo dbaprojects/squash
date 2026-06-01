@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '5.29';;;
+const APP_VERSION = '5.30';;;
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -1774,11 +1774,10 @@ async function loadHome() {
       .gte('event_date', today)
       .order('event_date').order('start_time')
       .limit(15),
-    // All active players with current HC (for section stats)
+    // All active players (for section stats — includes those with no HC set)
     sb.from('players')
       .select('id, current_handicap')
       .eq('active', true)
-      .not('current_handicap', 'is', null)
       .order('current_handicap'),
     // All players' HC history (full, for accurate improved/worsened carry-forward)
     sb.from('handicap_history')
@@ -2740,7 +2739,7 @@ function openAddPlayerForm() {
         <input type="tel" id="fp-phone" class="phone-local" placeholder="9123 4567" autocomplete="off" inputmode="numeric">
       </div>
     </div>
-    <div class="form-group"><label>Handicap</label><input type="number" id="fp-hcap" min="-35" max="10" step="0.5"></div>
+    <div class="form-group"><label>Handicap</label><input type="text" inputmode="decimal" id="fp-hcap" placeholder="e.g. -5" style="width:100%"></div>
     <div class="form-group"><label><input type="checkbox" id="fp-admin"> Admin</label></div>
     ${ST.player.is_super_admin ? `<div class="form-group"><label><input type="checkbox" id="fp-super-admin"> Super Admin</label></div>` : ''}
     <div style="text-align:right;margin-top:8px">
@@ -2920,7 +2919,7 @@ async function openHandicapModal(playerId, playerName) {
       <h3 style="font-size:14px;margin-bottom:10px">Add new entry</h3>
       <div class="form-group">
         <label>New handicap value</label>
-        <input type="number" id="hc-value" min="-35" max="10" step="0.5" value="${trueCurrentHc ?? ''}">
+        <input type="text" inputmode="decimal" id="hc-value" placeholder="e.g. -5" value="${trueCurrentHc ?? ''}">
       </div>
       <div class="form-group">
         <label>Date</label>
@@ -3798,11 +3797,11 @@ function openHcCalculator() {
   showFormModal('HC Calculator', `
     <div class="form-group">
       <label>Player A handicap</label>
-      <input type="number" id="hcc-a" value="${myHc}" oninput="calcHcResult()" style="text-align:center;font-size:18px;font-weight:700;width:100%">
+      <input type="text" inputmode="decimal" id="hcc-a" value="${myHc}" oninput="calcHcResult()" style="text-align:center;font-size:18px;font-weight:700;width:100%">
     </div>
     <div class="form-group">
       <label>Player B handicap</label>
-      <input type="number" id="hcc-b" placeholder="e.g. -5" oninput="calcHcResult()" style="text-align:center;font-size:18px;font-weight:700;width:100%">
+      <input type="text" inputmode="decimal" id="hcc-b" placeholder="e.g. -5" oninput="calcHcResult()" style="text-align:center;font-size:18px;font-weight:700;width:100%">
     </div>
     <div class="hc-calc-result">
       <div style="display:flex;gap:12px;justify-content:center;margin-top:4px">
