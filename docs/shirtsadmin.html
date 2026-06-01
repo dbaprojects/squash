@@ -322,9 +322,9 @@ function exportExcel() {
     for (const row of (data || [])) {
       if (!(row.orders || []).length) continue;
       const qty = (row.orders || []).reduce((s, it) => s + (it.qty || 1), 0);
-      summaryRows.push([row.member_number, row.name, row.phone || '', qty, `$${qty * pricePerShirt}`]);
+      summaryRows.push([row.member_number, row.name, row.phone || '', qty, qty * pricePerShirt]);
     }
-    summaryRows.push(['', 'TOTAL', '', totalShirts, `$${totalShirts * pricePerShirt}`]);
+    summaryRows.push(['', 'TOTAL', '', totalShirts, totalShirts * pricePerShirt]);
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summaryRows), 'Member Summary');
 
     XLSX.writeFile(wb, 'shirt-orders.xlsx');
