@@ -5,7 +5,7 @@
 - **Owner:** Club admin — personal project
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `[local project directory]`
-- **Current version:** v5.27
+- **Current version:** v5.30
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -502,3 +502,6 @@ echo "{\"version\":\"4.XX\",\"build\":\"$(date +%s)\"}" > docs/version.json
 | v5.25 | Doom egg: block synthetic `mousedown` fired by iOS after `touchend` (was setting a ghost 5s timer); clear stale timer at top of `start()` |
 | v5.26 | Doom mobile controls: replace D-pad buttons with virtual joystick (120px circular base, 52px draggable knob, 34px travel, 12px dead zone); diagonal directions supported; keys fired only on state change; action buttons (SHOOT/USE/ESC) unchanged on right |
 | v5.27 | Doom egg charge animation: full panel fills bottom-to-top (scaleY) instead of thin line left-to-right (scaleX) |
+| v5.28 | Admin templates: secondary sort by start_time after day_of_week — fixes out-of-order display |
+| v5.29 | Duplicate signup prevention: `_joiningEvent` / `_submittingSignup` in-flight boolean flags on `joinEvent` and `submitSignup`; TOCTOU race where double-tap could pass duplicate check before first insert completed; `finally` block always resets flags |
+| v5.30 | HC tile shows all active players (not just those with HC set); HC inputs changed to `type=text inputmode=decimal` for Android minus key; shirtsadmin.html: new By Member card with per-member shirt count and amount due |
