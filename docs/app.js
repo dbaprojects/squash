@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '5.28';;;
+const APP_VERSION = '5.29';;;
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -532,6 +532,10 @@ function normaliseSignup(s) {
 function normaliseEvent(ev) {
   return { ...ev, signups: (ev.signups || []).map(normaliseSignup) };
 }
+
+// ── Schedule in-flight guards (prevent double-tap duplicate signups) ──────────
+let _joiningEvent    = false;
+let _submittingSignup = false;
 
 // ── Ladder ────────────────────────────────────────────────────────────────
 let ladderPlayers     = [];
@@ -2245,6 +2249,8 @@ async function fetchEventSignups(eventId) {
 
 async function joinEvent(e, eventId) {
   e.stopPropagation();
+  if (_joiningEvent) return;
+  _joiningEvent = true;
   try {
     const { count: already } = await sb.from('signups')
       .select('id', { count: 'exact', head: true })
@@ -2262,6 +2268,7 @@ async function joinEvent(e, eventId) {
     if (error) throw error;
     refreshCard(eventId, await fetchEventSignups(eventId));
   } catch (err) { alert(err.message); }
+  finally { _joiningEvent = false; }
 }
 
 async function leaveEvent(e, signupId, eventId) {
@@ -2406,25 +2413,29 @@ function renderSignupForm(ev) {
 }
 
 async function submitSignup(eventId, type) {
-  await ensurePlayers();
-  const { data: ev } = await sb.from('events').select('max_signups').eq('id', eventId).single();
-  const { count }    = await sb.from('signups')
-    .select('id', { count: 'exact', head: true })
-    .eq('event_id', eventId).eq('is_reserve', false);
-  const isReserve = !!(ev.max_signups && count >= ev.max_signups);
-  const row = { event_id: eventId, signed_up_by: ST.player.id, is_reserve: isReserve };
+  if (_submittingSignup) return;
+  _submittingSignup = true;
+  try {
+    await ensurePlayers();
+    const { data: ev } = await sb.from('events').select('max_signups').eq('id', eventId).single();
+    const { count }    = await sb.from('signups')
+      .select('id', { count: 'exact', head: true })
+      .eq('event_id', eventId).eq('is_reserve', false);
+    const isReserve = !!(ev.max_signups && count >= ev.max_signups);
+    const row = { event_id: eventId, signed_up_by: ST.player.id, is_reserve: isReserve };
 
-  if (type === 'self') {
-    row.player_id = ST.player.id;
-  } else if (type === 'player') {
-    const pid = document.getElementById('su-player-id').value;
-    if (!pid) { alert('Please select a player'); return; }
-    row.player_id = pid;
-  }
+    if (type === 'self') {
+      row.player_id = ST.player.id;
+    } else if (type === 'player') {
+      const pid = document.getElementById('su-player-id').value;
+      if (!pid) { alert('Please select a player'); return; }
+      row.player_id = pid;
+    }
 
-  const { error } = await sb.from('signups').insert(row);
-  if (error) { alert(error.message); return; }
-  openEvent(eventId);
+    const { error } = await sb.from('signups').insert(row);
+    if (error) { alert(error.message); return; }
+    openEvent(eventId);
+  } finally { _submittingSignup = false; }
 }
 
 async function removeSignup(signupId) {
