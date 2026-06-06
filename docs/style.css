@@ -1929,7 +1929,7 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 .hcc-box-label { font-size: 11px; font-weight: 600; color: #94a3b8; text-transform: uppercase; margin-bottom: 2px; }
 .hcc-box-val { font-size: 26px; font-weight: 800; color: #1B2A6B; min-height: 32px; }
 .hcc-keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 8px; }
-.hcc-key { font-size: 18px; font-weight: 600; padding: 10px 0; border-radius: 8px; background: #f8fafc; border: 1.5px solid #e2e8f0; cursor: pointer; color: #1B2A6B; }
+.hcc-key { font-size: 18px; font-weight: 600; padding: 10px 0; border-radius: 8px; background: #f8fafc; border: 1.5px solid #e2e8f0; cursor: pointer; color: #1B2A6B; touch-action: manipulation; }
 .hcc-key:active { background: #e8eaf6; }
 .hcc-key-minus { color: #dc2626; font-size: 22px; }
 .hcc-key-del { font-size: 16px; color: #64748b; }
