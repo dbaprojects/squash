@@ -5,7 +5,7 @@
 - **Owner:** Club admin — personal project
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `[local project directory]`
-- **Current version:** v5.31
+- **Current version:** v5.32
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -506,3 +506,4 @@ echo "{\"version\":\"4.XX\",\"build\":\"$(date +%s)\"}" > docs/version.json
 | v5.29 | Duplicate signup prevention: `_joiningEvent` / `_submittingSignup` in-flight boolean flags on `joinEvent` and `submitSignup`; TOCTOU race where double-tap could pass duplicate check before first insert completed; `finally` block always resets flags |
 | v5.30 | HC tile shows all active players (not just those with HC set); HC inputs changed to `type=text inputmode=decimal` for Android minus key; shirtsadmin.html: new By Member card with per-member shirt count and amount due |
 | v5.31 | HC Calculator: ± toggle button beside each input — negates value on tap; fixes missing minus key on iOS/Android (`inputmode=numeric`) |
+| v5.32 | HC Calculator: replaced text inputs + ± button with custom numeric keypad (3×4 grid); − key toggles sign; ⌫ backspace; tapping player box switches focus; auto-advances to Player B after 2-digit entry |

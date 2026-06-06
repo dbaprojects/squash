@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '5.31';;;
+const APP_VERSION = '5.32';;;
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -3792,22 +3792,43 @@ function computeHcStarts(hcA, hcB) {
   return { startA, startB, netted, shifts };
 }
 
+let _hccVals = { a: '', b: '' };
+let _hccActive = 'a';
+
+function _hccFmt(v) {
+  if (!v || v === '-') return v || '--';
+  const n = parseFloat(v);
+  return isNaN(n) ? '--' : (n > 0 ? '+' + n : String(n));
+}
+
 function openHcCalculator() {
-  const myHc = ST.player?.current_handicap ?? '';
+  const myHc = ST.player?.current_handicap;
+  _hccVals = { a: myHc != null ? String(myHc) : '', b: '' };
+  _hccActive = myHc != null ? 'b' : 'a';
   showFormModal('HC Calculator', `
-    <div class="form-group">
-      <label>Player A handicap</label>
-      <div style="display:flex;gap:8px;align-items:center">
-        <input type="text" inputmode="numeric" id="hcc-a" value="${myHc}" oninput="calcHcResult()" style="text-align:center;font-size:18px;font-weight:700;flex:1">
-        <button type="button" class="hcc-negate-btn" onclick="hccNegate('hcc-a')" title="Toggle negative">±</button>
+    <div style="display:flex;gap:12px;margin-bottom:12px">
+      <div class="hcc-box" id="hcc-box-a" onclick="hccFocus('a')">
+        <div class="hcc-box-label">Player A</div>
+        <div class="hcc-box-val" id="hcc-val-a">${_hccFmt(_hccVals.a)}</div>
+      </div>
+      <div class="hcc-box" id="hcc-box-b" onclick="hccFocus('b')">
+        <div class="hcc-box-label">Player B</div>
+        <div class="hcc-box-val" id="hcc-val-b">${_hccFmt(_hccVals.b)}</div>
       </div>
     </div>
-    <div class="form-group">
-      <label>Player B handicap</label>
-      <div style="display:flex;gap:8px;align-items:center">
-        <input type="text" inputmode="numeric" id="hcc-b" placeholder="e.g. -5" oninput="calcHcResult()" style="text-align:center;font-size:18px;font-weight:700;flex:1">
-        <button type="button" class="hcc-negate-btn" onclick="hccNegate('hcc-b')" title="Toggle negative">±</button>
-      </div>
+    <div class="hcc-keypad">
+      <button class="hcc-key" onclick="hccKey('7')">7</button>
+      <button class="hcc-key" onclick="hccKey('8')">8</button>
+      <button class="hcc-key" onclick="hccKey('9')">9</button>
+      <button class="hcc-key" onclick="hccKey('4')">4</button>
+      <button class="hcc-key" onclick="hccKey('5')">5</button>
+      <button class="hcc-key" onclick="hccKey('6')">6</button>
+      <button class="hcc-key" onclick="hccKey('1')">1</button>
+      <button class="hcc-key" onclick="hccKey('2')">2</button>
+      <button class="hcc-key" onclick="hccKey('3')">3</button>
+      <button class="hcc-key hcc-key-minus" onclick="hccKey('-')">−</button>
+      <button class="hcc-key" onclick="hccKey('0')">0</button>
+      <button class="hcc-key hcc-key-del" onclick="hccKey('del')">⌫</button>
     </div>
     <div class="hc-calc-result">
       <div style="display:flex;gap:12px;justify-content:center;margin-top:4px">
@@ -3830,21 +3851,37 @@ function openHcCalculator() {
       <p>Starting scores are capped at +6.</p>
     </div>
   `);
+  hccFocus(_hccActive);
   calcHcResult();
 }
 
-function hccNegate(id) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  const v = parseFloat(el.value);
-  if (!isNaN(v) && v !== 0) el.value = String(-v);
-  else if (el.value === '' || el.value === '-') el.value = '';
+function hccFocus(which) {
+  _hccActive = which;
+  document.getElementById('hcc-box-a')?.classList.toggle('active', which === 'a');
+  document.getElementById('hcc-box-b')?.classList.toggle('active', which === 'b');
+}
+
+function hccKey(k) {
+  let v = _hccVals[_hccActive];
+  const digits = v.replace('-', '');
+  if (k === 'del') {
+    v = v.slice(0, -1);
+  } else if (k === '-') {
+    v = v.startsWith('-') ? v.slice(1) : '-' + v;
+  } else {
+    if (digits.length < 2) v += k;
+  }
+  _hccVals[_hccActive] = v;
+  const dispEl = document.getElementById('hcc-val-' + _hccActive);
+  if (dispEl) dispEl.textContent = _hccFmt(v);
   calcHcResult();
+  const newDigits = v.replace('-', '');
+  if (newDigits.length === 2 && digits.length < 2) hccFocus(_hccActive === 'a' ? 'b' : 'a');
 }
 
 function calcHcResult() {
-  const valA = parseFloat(document.getElementById('hcc-a')?.value);
-  const valB = parseFloat(document.getElementById('hcc-b')?.value);
+  const valA = parseFloat(_hccVals.a);
+  const valB = parseFloat(_hccVals.b);
   const scoreA = document.getElementById('hcc-score-a');
   const scoreB = document.getElementById('hcc-score-b');
   const note   = document.getElementById('hcc-note');
