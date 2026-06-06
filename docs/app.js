@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '5.34';;;
+const APP_VERSION = '5.35';;;
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -2174,12 +2174,14 @@ function eventCard(ev) {
     ? `<button class="ev-btn-enrolled" onclick="leaveEvent(event,'${mySignup.id}','${ev.id}')">&#10003; ENROLLED</button>`
     : `<span class="ev-btn-join">JOIN <span class="ev-btn-arrow">&#8594;</span></span>`;
 
+  const showHc = ev.title?.toUpperCase().includes('HCRR');
   const confirmedNames = confirmed.map(s => {
     const name = s.player_first ? esc(shortName(s.player_first, s.player_last)) : esc(s.guest_name || 'Guest');
+    const hc   = showHc && s.player_handicap != null ? ` <span class="chip-hc">(${s.player_handicap})</span>` : '';
     const del  = isAdmin
       ? `<button class="chip-del" onclick="event.stopPropagation();removeSignupChip('${s.id}','${ev.id}','${name.replace(/'/g, '&#39;')}')" title="Remove">×</button>`
       : '';
-    return `<span class="ev-name-item">${name}${del}</span>`;
+    return `<span class="ev-name-item">${name}${hc}${del}</span>`;
   }).join('');
 
   const reserveNames = reserves.length ? reserves.map(s => {
