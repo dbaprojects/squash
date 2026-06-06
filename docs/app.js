@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '5.30';;;
+const APP_VERSION = '5.31';;;
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -3797,11 +3797,17 @@ function openHcCalculator() {
   showFormModal('HC Calculator', `
     <div class="form-group">
       <label>Player A handicap</label>
-      <input type="text" inputmode="decimal" id="hcc-a" value="${myHc}" oninput="calcHcResult()" style="text-align:center;font-size:18px;font-weight:700;width:100%">
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="text" inputmode="numeric" id="hcc-a" value="${myHc}" oninput="calcHcResult()" style="text-align:center;font-size:18px;font-weight:700;flex:1">
+        <button type="button" class="hcc-negate-btn" onclick="hccNegate('hcc-a')" title="Toggle negative">±</button>
+      </div>
     </div>
     <div class="form-group">
       <label>Player B handicap</label>
-      <input type="text" inputmode="decimal" id="hcc-b" placeholder="e.g. -5" oninput="calcHcResult()" style="text-align:center;font-size:18px;font-weight:700;width:100%">
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="text" inputmode="numeric" id="hcc-b" placeholder="e.g. -5" oninput="calcHcResult()" style="text-align:center;font-size:18px;font-weight:700;flex:1">
+        <button type="button" class="hcc-negate-btn" onclick="hccNegate('hcc-b')" title="Toggle negative">±</button>
+      </div>
     </div>
     <div class="hc-calc-result">
       <div style="display:flex;gap:12px;justify-content:center;margin-top:4px">
@@ -3824,6 +3830,15 @@ function openHcCalculator() {
       <p>Starting scores are capped at +6.</p>
     </div>
   `);
+  calcHcResult();
+}
+
+function hccNegate(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const v = parseFloat(el.value);
+  if (!isNaN(v) && v !== 0) el.value = String(-v);
+  else if (el.value === '' || el.value === '-') el.value = '';
   calcHcResult();
 }
 
