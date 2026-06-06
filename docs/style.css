@@ -1919,20 +1919,20 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
   margin: 8px 0 0; border-radius: 8px;
 }
 .hc-calc-banner:hover { background: #f59e0b; }
-.hc-calc-result { margin-top: 12px; text-align: center; }
-.hc-calc-player-box { background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 10px 20px; }
+.hc-calc-result { margin-top: 8px; text-align: center; }
+.hc-calc-player-box { background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 6px 14px; }
 .hc-calc-label { font-size: 11px; color: #94a3b8; font-weight: 600; text-transform: uppercase; }
-.hc-calc-score { font-size: 28px; font-weight: 800; color: #1B2A6B; }
-.hc-calc-note { font-size: 12px; color: #64748b; margin-top: 10px; }
-.hcc-box { flex: 1; border: 2px solid #e2e8f0; border-radius: 10px; padding: 10px 8px; text-align: center; cursor: pointer; }
+.hc-calc-score { font-size: 22px; font-weight: 800; color: #1B2A6B; }
+.hc-calc-note { font-size: 11px; color: #64748b; margin-top: 6px; }
+.hcc-box { flex: 1; border: 2px solid #e2e8f0; border-radius: 10px; padding: 6px; text-align: center; cursor: pointer; }
 .hcc-box.active { border-color: #1B2A6B; background: #f0f3ff; }
-.hcc-box-label { font-size: 11px; font-weight: 600; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px; }
-.hcc-box-val { font-size: 34px; font-weight: 800; color: #1B2A6B; min-height: 42px; }
-.hcc-keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
-.hcc-key { font-size: 22px; font-weight: 600; padding: 14px 0; border-radius: 8px; background: #f8fafc; border: 1.5px solid #e2e8f0; cursor: pointer; color: #1B2A6B; }
+.hcc-box-label { font-size: 11px; font-weight: 600; color: #94a3b8; text-transform: uppercase; margin-bottom: 2px; }
+.hcc-box-val { font-size: 26px; font-weight: 800; color: #1B2A6B; min-height: 32px; }
+.hcc-keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 8px; }
+.hcc-key { font-size: 18px; font-weight: 600; padding: 10px 0; border-radius: 8px; background: #f8fafc; border: 1.5px solid #e2e8f0; cursor: pointer; color: #1B2A6B; }
 .hcc-key:active { background: #e8eaf6; }
-.hcc-key-minus { color: #dc2626; font-size: 26px; }
-.hcc-key-del { font-size: 18px; color: #64748b; }
-.hc-calc-rules { margin-top: 16px; padding-top: 12px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #64748b; line-height: 1.5; }
-.hc-calc-rules p { margin: 0 0 6px; }
+.hcc-key-minus { color: #dc2626; font-size: 22px; }
+.hcc-key-del { font-size: 16px; color: #64748b; }
+.hc-calc-rules { margin-top: 10px; padding-top: 8px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #64748b; line-height: 1.4; }
+.hc-calc-rules p { margin: 0 0 4px; }
 .hc-calc-rules p:last-child { margin-bottom: 0; }

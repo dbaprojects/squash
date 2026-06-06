@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '5.32';;;
+const APP_VERSION = '5.33';;;
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -3806,7 +3806,7 @@ function openHcCalculator() {
   _hccVals = { a: myHc != null ? String(myHc) : '', b: '' };
   _hccActive = myHc != null ? 'b' : 'a';
   showFormModal('HC Calculator', `
-    <div style="display:flex;gap:12px;margin-bottom:12px">
+    <div style="display:flex;gap:10px;margin-bottom:8px">
       <div class="hcc-box" id="hcc-box-a" onclick="hccFocus('a')">
         <div class="hcc-box-label">Player A</div>
         <div class="hcc-box-val" id="hcc-val-a">${_hccFmt(_hccVals.a)}</div>
