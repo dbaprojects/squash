@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '5.36';;;
+const APP_VERSION = '5.37';;;
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -2507,6 +2507,7 @@ const DIAL_CODES = [
 
 let allPlayers       = [];
 let playerLoginCounts = {};
+let _editingHcId = null;
 let playersFilter = { status: 'active', search: '', sortBy: 'name', sortDir: 'asc', role: 'all' };
 
 function dialCodeOptions(selected = '65') {
@@ -2896,6 +2897,7 @@ async function rejectPlayer(id) {
 
 // ── Handicap modal ────────────────────────────────────────────────────────
 async function openHandicapModal(playerId, playerName) {
+  _editingHcId = null;
   document.getElementById('modal-title').textContent = `Handicap — ${playerName}`;
   const { data: history } = await sb.from('handicap_history')
     .select('*, changed_by_player:players!changed_by (first_name, last_name)')
@@ -2934,17 +2936,21 @@ async function openHandicapModal(playerId, playerName) {
         <label>Notes (optional)</label>
         <input type="text" id="hc-notes" placeholder="e.g. after club championship">
       </div>
-      <button class="btn-primary" onclick="submitHandicap('${playerId}')">Save</button>
+      <button id="hc-save-btn" class="btn-primary" onclick="submitHandicap('${playerId}')">Save</button>
     </div>
     <h3 style="font-size:14px;margin-bottom:8px">History</h3>
     ${(history||[]).length ? `<table class="data-table">
-      <thead><tr><th>Date</th><th>Value</th><th>Changed by</th><th>Notes</th></tr></thead>
+      <thead><tr><th>Date</th><th>Value</th><th>Changed by</th><th>Notes</th><th></th></tr></thead>
       <tbody>
       ${(history||[]).map(h => `<tr>
         <td>${fmtDatetime(h.changed_at)}</td>
         <td><span class="hcap-badge">${h.handicap_value}</span></td>
         <td>${esc(h.changed_by_player ? `${h.changed_by_player.first_name} ${h.changed_by_player.last_name}` : '–')}</td>
         <td>${h.notes ? esc(h.notes) : '–'}</td>
+        <td style="white-space:nowrap">
+          <button class="btn-icon-sm" onclick="hcEditRow('${h.id}',${h.handicap_value},'${h.changed_at}',${JSON.stringify(h.notes||'')})">Edit</button>
+          <button class="btn-icon-sm btn-icon-danger" onclick="deleteHcRow('${h.id}','${playerId}')">Del</button>
+        </td>
       </tr>`).join('')}
       </tbody></table>`
     : '<p style="color:#888;font-size:13px">No history yet.</p>'}
@@ -2958,24 +2964,51 @@ async function submitHandicap(playerId) {
   const dateVal   = document.getElementById('hc-date').value || new Date().toISOString().slice(0, 10);
   const changedAt = new Date(dateVal + 'T12:00:00').toISOString();
   const notes     = document.getElementById('hc-notes').value.trim();
-  const { error: hErr } = await sb.from('handicap_history').insert({
-    player_id: playerId, handicap_value: value,
-    changed_at: changedAt, changed_by: ST.player.id, notes: notes || null
-  });
-  if (hErr) { alert(hErr.message); return; }
-  // Use the most recent entry by changed_at as current_handicap (handles backdated inserts)
+
+  if (_editingHcId) {
+    const { error } = await sb.from('handicap_history')
+      .update({ handicap_value: value, changed_at: changedAt, notes: notes || null })
+      .eq('id', _editingHcId);
+    if (error) { alert(error.message); return; }
+    _editingHcId = null;
+  } else {
+    const { error } = await sb.from('handicap_history').insert({
+      player_id: playerId, handicap_value: value,
+      changed_at: changedAt, changed_by: ST.player.id, notes: notes || null
+    });
+    if (error) { alert(error.message); return; }
+  }
+
   const { data: latest } = await sb.from('handicap_history')
-    .select('handicap_value')
-    .eq('player_id', playerId)
-    .order('changed_at', { ascending: false })
-    .limit(1)
-    .single();
+    .select('handicap_value').eq('player_id', playerId)
+    .order('changed_at', { ascending: false }).limit(1).single();
   const currentValue = latest?.handicap_value ?? value;
   const { error: pErr } = await sb.from('players').update({ current_handicap: currentValue }).eq('id', playerId);
   if (pErr) { alert(pErr.message); return; }
+  await renderPlayersTab();
+  closeModal();
+}
+
+function hcEditRow(id, value, changedAt, notes) {
+  _editingHcId = id;
+  document.getElementById('hc-value').value = value;
+  document.getElementById('hc-date').value  = changedAt.slice(0, 10);
+  document.getElementById('hc-notes').value = notes || '';
+  document.getElementById('hc-save-btn').textContent = 'Update';
+  document.getElementById('modal-body').scrollTop = 0;
+}
+
+async function deleteHcRow(id, playerId) {
+  if (!confirm('Delete this handicap entry?')) return;
+  const { error } = await sb.from('handicap_history').delete().eq('id', id);
+  if (error) { alert(error.message); return; }
+  const { data: latest } = await sb.from('handicap_history')
+    .select('handicap_value').eq('player_id', playerId)
+    .order('changed_at', { ascending: false }).limit(1).maybeSingle();
+  await sb.from('players').update({ current_handicap: latest?.handicap_value ?? null }).eq('id', playerId);
   const p = allPlayers.find(x => x.id === playerId);
   await renderPlayersTab();
-  await openHandicapModal(playerId, p ? `${p.first_name} ${p.last_name}` : playerName);
+  await openHandicapModal(playerId, p ? `${p.first_name} ${p.last_name}` : '');
 }
 
 // ── Admin events tab ──────────────────────────────────────────────────────
