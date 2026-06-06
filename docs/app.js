@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '5.35';;;
+const APP_VERSION = '5.36';;;
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -2741,7 +2741,7 @@ function openAddPlayerForm() {
         <input type="tel" id="fp-phone" class="phone-local" placeholder="9123 4567" autocomplete="off" inputmode="numeric">
       </div>
     </div>
-    <div class="form-group"><label>Handicap</label><input type="text" inputmode="decimal" id="fp-hcap" placeholder="e.g. -5" style="width:100%"></div>
+    <div class="form-group"><label>Handicap</label><div style="display:flex;gap:6px"><input type="text" inputmode="decimal" id="fp-hcap" placeholder="e.g. -5" style="flex:1"><button type="button" class="btn-negate" onclick="toggleNegate('fp-hcap')">±</button></div></div>
     <div class="form-group"><label><input type="checkbox" id="fp-admin"> Admin</label></div>
     ${ST.player.is_super_admin ? `<div class="form-group"><label><input type="checkbox" id="fp-super-admin"> Super Admin</label></div>` : ''}
     <div style="text-align:right;margin-top:8px">
@@ -2921,7 +2921,10 @@ async function openHandicapModal(playerId, playerName) {
       <h3 style="font-size:14px;margin-bottom:10px">Add new entry</h3>
       <div class="form-group">
         <label>New handicap value</label>
-        <input type="text" inputmode="decimal" id="hc-value" placeholder="e.g. -5" value="${trueCurrentHc ?? ''}">
+        <div style="display:flex;gap:6px">
+        <input type="text" inputmode="decimal" id="hc-value" placeholder="e.g. -5" value="${trueCurrentHc ?? ''}" style="flex:1">
+        <button type="button" class="btn-negate" onclick="toggleNegate('hc-value')">±</button>
+        </div>
       </div>
       <div class="form-group">
         <label>Date</label>
@@ -3855,6 +3858,13 @@ function openHcCalculator() {
   `);
   hccFocus(_hccActive);
   calcHcResult();
+}
+
+function toggleNegate(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const v = parseFloat(el.value);
+  if (!isNaN(v) && v !== 0) el.value = String(-v);
 }
 
 function hccFocus(which) {
