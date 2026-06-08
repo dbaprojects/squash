@@ -5,7 +5,7 @@
 - **Owner:** Club admin — personal project
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `[local project directory]`
-- **Current version:** v5.46
+- **Current version:** v5.48
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -520,3 +520,5 @@ echo "{\"version\":\"4.XX\",\"build\":\"$(date +%s)\"}" > docs/version.json
 | v5.44 | Ladders home tile: random witty quip — 40 "active challenge" quips + 40 "idle" quips; shown at bottom of tile |
 | v5.45 | Ladders home tile quip: random icon prefix from themed pool (20 active / 20 idle); font 13px, darker colour |
 | v5.46 | Ladders home tile quip: icon on both sides, only text italicised (not icons) |
+| v5.47 | Ladders home tile footer text changed to "Click to view ladders →" |
+| v5.48 | Ladders home tile quip: icons vertically aligned — flexbox on container, icons wrapped in inline flex spans |

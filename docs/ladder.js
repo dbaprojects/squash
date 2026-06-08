@@ -280,7 +280,7 @@ const _ICONS_IDLE   = ['👀','🤔','⬆️','🏃','🧗','⏰','😏','🗣�
 function _rndQuip(quips, icons) {
   const q = quips[Math.floor(Math.random() * quips.length)];
   const i = icons[Math.floor(Math.random() * icons.length)];
-  return `${i} <em>${q}</em> ${i}`;
+  return `<span>${i}</span><em>${q}</em><span>${i}</span>`;
 }
 function _cr(iconL, nameL, iconR, nameR) {
   return `<div class="divladder-challenge-row"><span class="dlcr-ic">${iconL}</span><span class="dlcr-nl">${nameL}</span><span class="dlcr-v">v</span><span class="dlcr-nr">${nameR}</span><span class="dlcr-ic">${iconR}</span></div>`;
@@ -382,7 +382,7 @@ function _injectLadderHomeCard() {
   card.innerHTML = `
     <div class="home-card-label" style="${_CHALLENGES_ENABLED ? 'text-align:center' : ''}">${_CHALLENGES_ENABLED ? '<span style="font-size:22px">🍺</span> LADDERS <span style="font-size:22px">⚔️</span>' : 'Ladders'}</div>
     ${bodyHtml}
-    <div style="font-size:11px;color:#64748b;text-align:center;padding:4px 10px 6px">Click to view all →</div>`;
+    <div style="font-size:11px;color:#64748b;text-align:center;padding:4px 10px 6px">Click to view ladders →</div>`;
 
   const adminCard = grid.querySelector('.home-card-admin');
   if (adminCard) grid.insertBefore(card, adminCard);
