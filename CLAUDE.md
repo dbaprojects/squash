@@ -540,3 +540,4 @@ echo "{\"version\":\"4.XX\",\"build\":\"$(date +%s)\"}" > docs/version.json
 | v5.64 | Modal: header 19px, body 17px; top padding 60px on mobile (just below status bar); challenge form text 17px/16px/14px |
 | v5.65 | Ladders home tile footer: "Click to view ladders →" → "Click for Ladder Action →" |
 | v5.66 | Division ladder page: player rows 12→15px, header 12→14px, HC 10→12px, row padding 3→5px |
+| v5.67 | Division ladder page: player rows 15→17px, header 14→16px, HC 12→13px, row padding 5→7px |

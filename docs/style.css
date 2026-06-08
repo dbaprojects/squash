@@ -813,7 +813,7 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 .panel-header h3 { font-size: 17px; color: var(--bc-navy); font-weight: 700; }
 
 /* ── Division ladder shared ────────────────────────────────────────────── */
-.div-hc { font-size: 12px; color: #94a3b8; margin-left: 2px; }
+.div-hc { font-size: 13px; color: #94a3b8; margin-left: 2px; }
 .div-row-me .div-hc { color: rgba(0,0,0,.4); }
 
 /* ── Tables ────────────────────────────────────────────────────────────── */
@@ -1951,12 +1951,12 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 /* ── Division Ladder ─────────────────────────────────────────────────────── */
 .div-ladder-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 8px; max-width: 600px; margin: 0 auto; }
 .div-card { background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.10); overflow: hidden; }
-.div-card-header { background: #1B2A6B; color: #fff; font-weight: 700; font-size: 14px; padding: 7px 10px; text-align: center; }
-.div-player-row { display: flex; align-items: center; gap: 6px; padding: 5px 10px; border-bottom: 1px solid #f1f5f9; font-size: 15px; line-height: 1.4; }
+.div-card-header { background: #1B2A6B; color: #fff; font-weight: 700; font-size: 16px; padding: 8px 10px; text-align: center; }
+.div-player-row { display: flex; align-items: center; gap: 6px; padding: 7px 10px; border-bottom: 1px solid #f1f5f9; font-size: 17px; line-height: 1.4; }
 .div-player-row:last-child { border-bottom: none; }
-.div-pos { width: 22px; text-align: center; font-size: 15px; flex-shrink: 0; line-height: 1; }
+.div-pos { width: 24px; text-align: center; font-size: 17px; flex-shrink: 0; line-height: 1; }
 .div-player-name { flex: 1; }
-.div-hc { font-size: 12px; color: #94a3b8; margin-left: 1px; }
+.div-hc { font-size: 13px; color: #94a3b8; margin-left: 1px; }
 .ladder-banner { max-width: 600px; margin: 8px auto 0; padding: 10px 14px; background: #fffbeb; border: 1.5px solid #fbbf24; border-radius: 8px; font-size: 13px; color: #92400e; line-height: 1.5; }
 .ladder-rules { margin: 6px 0 0 16px; padding: 0; }
 .ladder-rules li { margin-bottom: 2px; }
