@@ -303,25 +303,25 @@ function _injectLadderHomeCard() {
       let rows = '';
       if (myActive.length > 0) {
         rows += `<div class="divladder-section-label" style="padding:0 2px;margin-top:6px">My challenges</div>`;
-        rows += myActive.map(c => {
+        rows += `<div class="dlhc-tiles">` + myActive.map(c => {
           const opp  = c.challenger_id === myId ? c.challenged : c.challenger;
           const icon = c.status === 'accepted' ? '💥' : '⏳';
           const meta = c.status === 'accepted' ? 'Game on!' : 'Pending';
-          return `<div class="dlhc-row dlhc-active">`
-            + `<span class="dlhc-icon">${icon}</span>`
-            + `<span class="dlhc-name">vs ${fn1(opp)}</span>`
-            + `<span class="dlhc-meta">${meta}</span>`
+          return `<div class="dlhc-tile dlhc-active">`
+            + `<span class="dlhc-tile-icon">${icon}</span>`
+            + `<span class="dlhc-tile-name">vs ${fn1(opp)}</span>`
+            + `<span class="dlhc-tile-meta">${meta}</span>`
             + `</div>`;
-        }).join('');
+        }).join('') + `</div>`;
       }
 
       if (challengeable.length > 0) {
         rows += `<div class="divladder-section-label" style="padding:0 2px;margin-top:${myActive.length ? 6 : 6}px">Can challenge</div>`;
-        rows += challengeable.map(p => `<div class="dlhc-row dlhc-can">`
-          + `<span class="dlhc-icon">⚔️</span>`
-          + `<span class="dlhc-name">${fn1(p.players)}</span>`
-          + `<span class="dlhc-meta">pos ${p.position}</span>`
-          + `</div>`).join('');
+        rows += `<div class="dlhc-tiles">` + challengeable.map(p => `<div class="dlhc-tile dlhc-can">`
+          + `<span class="dlhc-tile-icon">⚔️</span>`
+          + `<span class="dlhc-tile-name">${fn1(p.players)}</span>`
+          + `<span class="dlhc-tile-meta">${p.position}</span>`
+          + `</div>`).join('') + `</div>`;
       }
 
       if (!rows) {
