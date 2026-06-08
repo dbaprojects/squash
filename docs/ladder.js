@@ -381,7 +381,7 @@ function _injectLadderHomeCard() {
   card.innerHTML = `
     <div class="home-card-label" style="${_CHALLENGES_ENABLED ? 'text-align:center' : ''}">${_CHALLENGES_ENABLED ? '<span style="font-size:22px">🍺</span> LADDERS <span style="font-size:22px">⚔️</span>' : 'Ladders'}</div>
     ${bodyHtml}
-    <div style="font-size:11px;color:#64748b;text-align:center;padding:4px 10px 6px">Click to view ladders →</div>`;
+    <div style="font-size:11px;color:#64748b;text-align:center;padding:4px 10px 6px">Click for Ladder Action →</div>`;
 
   const adminCard = grid.querySelector('.home-card-admin');
   if (adminCard) grid.insertBefore(card, adminCard);

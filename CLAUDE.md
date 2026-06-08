@@ -538,3 +538,4 @@ echo "{\"version\":\"4.XX\",\"build\":\"$(date +%s)\"}" > docs/version.json
 | v5.62 | Modal mobile: bottom-sheet layout — slides up from bottom, full width, rounded top corners only (20px); no side padding |
 | v5.63 | Modal mobile: reverted to top-anchored; side padding 4px (near-full width), top padding 16px, max-height 94vh |
 | v5.64 | Modal: header 19px, body 17px; top padding 60px on mobile (just below status bar); challenge form text 17px/16px/14px |
+| v5.65 | Ladders home tile footer: "Click to view ladders →" → "Click for Ladder Action →" |
