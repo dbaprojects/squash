@@ -5,7 +5,7 @@
 - **Owner:** Club admin — personal project
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `[local project directory]`
-- **Current version:** v5.59
+- **Current version:** v5.60
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -533,3 +533,4 @@ echo "{\"version\":\"4.XX\",\"build\":\"$(date +%s)\"}" > docs/version.json
 | v5.57 | Challenge system promoted to production — _CHALLENGES_ENABLED = true on all pages |
 | v5.58 | Fix: all ladder/challenge CSS moved from dev.html <style> block into style.css — was missing on production, causing unstyled ladder tile and challenge panels on iOS |
 | v5.59 | Challenge form: bigger text/textarea (15px intro, 14px textarea, 3 rows); "Shuffle" → "🔀 New message" button with pill background; fix asset query strings always bumped from now |
+| v5.60 | Modal enlarged (max-width 560px, 90vh, header 17px, body 18px padding+15px font); challenge form textarea font-size 16px + touch-action:manipulation — prevents iOS Safari zoom on focus |
