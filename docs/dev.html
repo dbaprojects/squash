@@ -7,7 +7,7 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>BC Squash Section</title>
-  <link rel="stylesheet" href="style.css?v=5.39">
+  <link rel="stylesheet" href="style.css?v=5.40">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="bcss.png">
   <meta name="theme-color" content="#1B2A6B">
@@ -202,6 +202,16 @@
     .me-challenges-wrap { margin-top: 8px; border-top: 1px solid rgba(255,255,255,.15); padding-top: 6px; cursor: pointer; }
     .me-challenge-row { font-size: 11px; color: rgba(255,255,255,.75); padding: 1px 0; line-height: 1.4; }
 
+    /* Ladder home tile — personal challenge rows */
+    .dlhc-rows { margin-top: 4px; border-top: 1px solid #e2e8f0; padding-top: 2px; }
+    .dlhc-row  { display: flex; align-items: center; gap: 6px; padding: 3px 4px; font-size: 12px; border-radius: 4px; margin-bottom: 1px; }
+    .dlhc-icon { font-size: 13px; flex-shrink: 0; line-height: 1; }
+    .dlhc-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .dlhc-meta { font-size: 10px; color: #94a3b8; flex-shrink: 0; }
+    .dlhc-active .dlhc-name { font-weight: 600; color: #1B2A6B; }
+    .dlhc-can { background: #f0fdf4; }
+    .dlhc-can .dlhc-name { color: #166534; }
+
     /* Injury badge in challenge list */
     .challenge-status-badge.injury { background: #ffedd5; color: #c2410c; }
   </style>
@@ -221,7 +231,7 @@
     </div>
     <div id="login-phone-error" class="error-msg" style="margin-bottom:8px"></div>
     <button class="btn-google-full" onclick="submitLoginPhone()">Sign In</button>
-    <p class="login-version">v5.39</p>
+    <p class="login-version">v5.40</p>
     <p class="login-terms"><button class="login-terms-link" onclick="openTermsModal()">Terms of Use</button></p>
   </div>
 </div>
@@ -285,7 +295,7 @@
       <img src="bcss.png" class="header-logo" alt="BC">
       <div class="header-title">
         <span class="logo">British Club</span>
-        <span class="logo-sub">Squash Section <span class="version">v5.39</span></span>
+        <span class="logo-sub">Squash Section <span class="version">v5.40</span></span>
       </div>
     </div>
     <div id="header-page-title" class="header-page-title"></div>
@@ -444,7 +454,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
-<script src="app.js?v=5.39"></script>
-<script src="ladder.js?v=5.39"></script>
+<script src="app.js?v=5.40"></script>
+<script src="ladder.js?v=5.40"></script>
 </body>
 </html>

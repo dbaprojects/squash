@@ -5,7 +5,7 @@
 - **Owner:** Club admin — personal project
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `[local project directory]`
-- **Current version:** v5.39
+- **Current version:** v5.40
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -513,3 +513,4 @@ echo "{\"version\":\"4.XX\",\"build\":\"$(date +%s)\"}" > docs/version.json
 | v5.38 | Admin HC modal: close on save (no re-entry bug); Edit and Delete buttons on each history row |
 | v5.38 | Admin Ladder tab (dev): Challenges section — lists all challenges with status/players/date + Delete per row; super_admin only |
 | v5.39 | Admin Ladder challenges: multi-select checkboxes + bulk delete; name filter searches challenger/challenged names |
+| v5.40 | Ladders home tile (dev): personal view — "Can challenge" (players in range, not already matched) + "My challenges" (active pending/accepted); falls back to D1-D4 grid if not on ladder |

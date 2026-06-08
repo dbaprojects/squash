@@ -244,17 +244,8 @@ function _cr(iconL, nameL, iconR, nameR) {
   return `<div class="divladder-challenge-row"><span class="dlcr-ic">${iconL}</span><span class="dlcr-nl">${nameL}</span><span class="dlcr-v">v</span><span class="dlcr-nr">${nameR}</span><span class="dlcr-ic">${iconR}</span></div>`;
 }
 
-function _injectLadderHomeCard() {
-  const grid = document.getElementById('home-grid');
-  if (!grid) return;
-  document.getElementById('home-card-division-ladder')?.remove();
-
-  const card = document.createElement('div');
-  card.id = 'home-card-division-ladder';
-  card.className = 'home-card home-card-divladder';
-  card.onclick = () => navTo('division-ladder');
-
-  const divGridHtml = `<div class="divladder-home-body">
+function _divGridHtml() {
+  return `<div class="divladder-home-body">
     ${[1,2,3,4].map(d => {
       const start = (d - 1) * _ladderDivSize + 1;
       const top3  = _ladderPositions.filter(p => p.position >= start && p.position <= start + 2);
@@ -265,33 +256,85 @@ function _injectLadderHomeCard() {
       return `<div class="divladder-home-div"><span class="divladder-home-div-label">D${d}</span> ${names}</div>`;
     }).join('')}
   </div>`;
+}
 
-  let extraHtml = '';
+function _injectLadderHomeCard() {
+  const grid = document.getElementById('home-grid');
+  if (!grid) return;
+  document.getElementById('home-card-division-ladder')?.remove();
+
+  const card = document.createElement('div');
+  card.id = 'home-card-division-ladder';
+  card.className = 'home-card home-card-divladder';
+  card.onclick = () => navTo('division-ladder');
+
+  let bodyHtml = '';
+
   if (_CHALLENGES_ENABLED) {
-    const activeRows = _activeChallenges.map(c => {
-      const cn = (c.challenger?.first_name || '') + ' ' + ((c.challenger?.last_name || '')[0] || '');
-      const dn = (c.challenged?.first_name || '') + ' ' + ((c.challenged?.last_name || '')[0] || '');
-      return _cr('⚔️', cn, '⚔️', dn);
-    });
-    const completedRows = _recentCompleted.map(c => {
-      const cr = (c.challenger?.first_name || '') + ' ' + ((c.challenger?.last_name || '')[0] || '');
-      const cd = (c.challenged?.first_name || '') + ' ' + ((c.challenged?.last_name || '')[0] || '');
-      if (c.status === 'declined')  return _cr('🍺', cr, '🐔', cd);
-      if (c.status === 'forfeited') return _cr('🍺', cr, '👻', cd);
-      const winner = c.winner_id === c.challenger_id ? c.challenger : c.challenged;
-      const loser  = c.winner_id === c.challenger_id ? c.challenged : c.challenger;
-      const wn = (winner?.first_name || '') + ' ' + ((winner?.last_name || '')[0] || '');
-      const ln = (loser?.first_name  || '') + ' ' + ((loser?.last_name  || '')[0] || '');
-      return _cr('🍺', wn, '😢', ln);
-    });
-    const allRows = [...activeRows, ...completedRows].slice(0, 6);
-    if (allRows.length > 0) {
-      extraHtml = `<div class="divladder-challenges">${allRows.join('')}</div>`;
+    const myId  = ST?.player?.id;
+    const myPos = myId ? (_ladderPositions.find(p => p.player_id === myId)?.position ?? null) : null;
+
+    if (myPos === null) {
+      // Not on ladder — show D1-D4 grid
+      bodyHtml = _divGridHtml();
+    } else {
+      const fn1 = obj => `${obj?.first_name || ''} ${(obj?.last_name || '')[0] || ''}`.trim();
+
+      // IDs of players already in an active challenge with me
+      const myActivePairIds = new Set(
+        _activeChallenges
+          .filter(c => c.challenger_id === myId || c.challenged_id === myId)
+          .map(c => c.challenger_id === myId ? c.challenged_id : c.challenger_id)
+      );
+
+      // Players within challenge range above me who aren't already matched with me
+      const challengeable = _ladderPositions.filter(p =>
+        p.players &&
+        p.position < myPos &&
+        p.position >= myPos - _challengeRange &&
+        !myActivePairIds.has(p.player_id)
+      );
+
+      // My active (pending + accepted) challenges
+      const myActive = _activeChallenges.filter(c =>
+        c.challenger_id === myId || c.challenged_id === myId
+      );
+
+      let rows = '';
+      if (myActive.length > 0) {
+        rows += `<div class="divladder-section-label" style="padding:0 2px;margin-top:6px">My challenges</div>`;
+        rows += myActive.map(c => {
+          const opp  = c.challenger_id === myId ? c.challenged : c.challenger;
+          const icon = c.status === 'accepted' ? '💥' : '⏳';
+          const meta = c.status === 'accepted' ? 'Game on!' : 'Pending';
+          return `<div class="dlhc-row dlhc-active">`
+            + `<span class="dlhc-icon">${icon}</span>`
+            + `<span class="dlhc-name">vs ${fn1(opp)}</span>`
+            + `<span class="dlhc-meta">${meta}</span>`
+            + `</div>`;
+        }).join('');
+      }
+
+      if (challengeable.length > 0) {
+        rows += `<div class="divladder-section-label" style="padding:0 2px;margin-top:${myActive.length ? 6 : 6}px">Can challenge</div>`;
+        rows += challengeable.map(p => `<div class="dlhc-row dlhc-can">`
+          + `<span class="dlhc-icon">⚔️</span>`
+          + `<span class="dlhc-name">${fn1(p.players)}</span>`
+          + `<span class="dlhc-meta">pos ${p.position}</span>`
+          + `</div>`).join('');
+      }
+
+      if (!rows) {
+        rows = `<div style="font-size:11px;color:#94a3b8;text-align:center;padding:6px 0">No open challenges</div>`;
+      }
+
+      bodyHtml = `<div class="dlhc-rows">${rows}</div>`;
     }
   } else {
-    // prod: show active challenges only (no buttons)
+    // prod: D1-D4 grid + any active challenges (global)
+    bodyHtml = _divGridHtml();
     if (_activeChallenges.length > 0) {
-      extraHtml = `<div class="divladder-challenges">
+      bodyHtml += `<div class="divladder-challenges">
         ${_activeChallenges.slice(0, 6).map(c => {
           const cn = (c.challenger?.first_name || '') + ' ' + ((c.challenger?.last_name || '')[0] || '');
           const dn = (c.challenged?.first_name || '') + ' ' + ((c.challenged?.last_name || '')[0] || '');
@@ -303,8 +346,7 @@ function _injectLadderHomeCard() {
 
   card.innerHTML = `
     <div class="home-card-label" style="${_CHALLENGES_ENABLED ? 'text-align:center' : ''}">${_CHALLENGES_ENABLED ? '<span style="font-size:22px">🍺</span> LADDERS <span style="font-size:22px">⚔️</span>' : 'Ladders'}</div>
-    ${_CHALLENGES_ENABLED ? '' : divGridHtml}
-    ${extraHtml}
+    ${bodyHtml}
     <div style="font-size:11px;color:#64748b;text-align:center;padding:4px 10px 6px">Click to view all →</div>`;
 
   const adminCard = grid.querySelector('.home-card-admin');
