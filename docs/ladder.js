@@ -548,7 +548,7 @@ function renderDivisionLadder() {
       const first = p.players.first_name || '';
       const last  = (p.players.last_name || '')[0]?.toUpperCase() || '';
       const hc    = p.players.current_handicap != null ? ` (${p.players.current_handicap})` : '';
-      let cls = '', badge = '';
+      let cls = '', badge = '', rowClick = '';
       if (myPos !== null) {
         if (p.player_id === myId) {
           cls = ' div-row-me';
@@ -559,28 +559,30 @@ function renderDivisionLadder() {
             if (existing) {
               const icon  = existing.status === 'accepted' ? '💥' : '⏳';
               const title = existing.status === 'accepted' ? 'Game on! — tap to record result' : 'Challenge pending — tap to manage';
+              rowClick = `openChallengeResult('${existing.id}')`;
               badge = `<button class="div-challenge-btn"
                 onclick="event.stopPropagation();openChallengeResult('${existing.id}')"
                 title="${title}">${icon}</button>`;
             } else {
+              rowClick = `_issueChallengeForm('${p.player_id}','${first} ${last}',${p.position})`;
               badge = `<button class="div-challenge-btn"
                 onclick="event.stopPropagation();_issueChallengeForm('${p.player_id}','${first} ${last}',${p.position})"
                 title="Challenge ${first}">⚔️</button>`;
             }
           }
         } else if (_CHALLENGES_ENABLED) {
-          // Player is below me — show icon if they have an active challenge against me
           const incoming = myIncomingMap[p.player_id];
           if (incoming) {
             const icon  = incoming.status === 'accepted' ? '💥' : '⏳';
             const title = incoming.status === 'accepted' ? 'Game on! — tap to record result' : 'Challenge from them — tap to manage';
+            rowClick = `openChallengeResult('${incoming.id}')`;
             badge = `<button class="div-challenge-btn"
               onclick="event.stopPropagation();openChallengeResult('${incoming.id}')"
               title="${title}">${icon}</button>`;
           }
         }
       }
-      return `<div class="div-player-row${cls}">
+      return `<div class="div-player-row${cls}"${rowClick ? ` onclick="${rowClick}" style="cursor:pointer"` : ''}>
         <span class="div-pos">${p.position}</span>
         <span class="div-player-name">${first} ${last}<span class="div-hc">${hc}</span></span>
         ${badge}
@@ -671,7 +673,7 @@ function renderDivisionLadder() {
     ${myBannerHtml}
     <div style="max-width:600px;margin:0 auto 0;padding:0 8px">
       <button class="hc-calc-banner" onclick="showLadderRules()">⚔️ Rules of Engagement ⚔️</button>
-      ${_CHALLENGES_ENABLED ? '<p style="text-align:center;font-size:12px;color:#64748b;margin:4px 0 0">Tap ⚔️ next to a player\'s name to issue a challenge</p>' : ''}
+      ${_CHALLENGES_ENABLED ? '<p style="text-align:center;font-size:12px;font-weight:700;color:#475569;margin:4px 0 0">Click a player\'s name to issue a challenge</p>' : ''}
     </div>
     <div class="div-ladder-grid">${divCards.join('')}</div>
     ${challengesPanelHtml}`;
