@@ -535,6 +535,21 @@ function renderDivisionLadder() {
     }
   }
 
+  // Build most-recent-result icon map per player (skip injury/pending)
+  const recentIconMap = {};
+  for (const c of _recentCompleted) {
+    const relevant = c.status === 'completed' || c.status === 'forfeited' || c.status === 'declined';
+    if (!relevant) continue;
+    for (const pid of [c.challenger_id, c.challenged_id]) {
+      if (recentIconMap[pid]) continue; // already have most recent
+      let icon = '';
+      if (c.status === 'completed')  icon = c.winner_id === pid ? '🍺' : '😢';
+      else if (c.status === 'forfeited') icon = c.winner_id === pid ? '🍺' : '👻';
+      else if (c.status === 'declined')  icon = c.challenged_id === pid ? '🐔' : '🍺';
+      if (icon) recentIconMap[pid] = icon;
+    }
+  }
+
   const divCards = [];
   for (let d = 1; d <= numDivisions; d++) {
     const start = (d - 1) * _ladderDivSize + 1;
@@ -583,7 +598,7 @@ function renderDivisionLadder() {
         }
       }
       return `<div class="div-player-row${cls}"${rowClick ? ` onclick="${rowClick}" style="cursor:pointer"` : ''}>
-        <span class="div-pos">${p.position}</span>
+        <span class="div-pos">${recentIconMap[p.player_id] || ''}</span>
         <span class="div-player-name">${first} ${last}<span class="div-hc">${hc}</span></span>
         ${badge}
       </div>`;
