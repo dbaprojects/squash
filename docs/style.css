@@ -1946,4 +1946,115 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 .hcc-key-del { font-size: 16px; color: #64748b; }
 .hc-calc-rules { margin-top: 10px; padding-top: 8px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #64748b; line-height: 1.4; }
 .hc-calc-rules p { margin: 0 0 4px; }
+
+/* ── Division Ladder ─────────────────────────────────────────────────────── */
+.div-ladder-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 8px; max-width: 600px; margin: 0 auto; }
+.div-card { background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.10); overflow: hidden; }
+.div-card-header { background: #1B2A6B; color: #fff; font-weight: 700; font-size: 12px; padding: 5px 10px; text-align: center; }
+.div-player-row { display: flex; align-items: center; gap: 6px; padding: 3px 10px; border-bottom: 1px solid #f1f5f9; font-size: 12px; line-height: 1.4; }
+.div-player-row:last-child { border-bottom: none; }
+.div-pos { width: 20px; text-align: center; font-size: 13px; flex-shrink: 0; line-height: 1; }
+.div-player-name { flex: 1; }
+.div-hc { font-size: 10px; color: #94a3b8; margin-left: 1px; }
+.ladder-banner { max-width: 600px; margin: 8px auto 0; padding: 10px 14px; background: #fffbeb; border: 1.5px solid #fbbf24; border-radius: 8px; font-size: 12px; color: #92400e; line-height: 1.5; }
+.ladder-rules { margin: 6px 0 0 16px; padding: 0; }
+.ladder-rules li { margin-bottom: 2px; }
+.div-row-me { background: #fbbf24; color: #1e1e1e; font-weight: 700; }
+.div-row-me .div-pos { color: rgba(0,0,0,0.35); }
+.div-row-can-challenge { background: #f0fdf4; border-left: 3px solid #22c55e; }
+.div-row-challenger { background: #fff1f2; border-left: 3px solid #f43f5e; }
+.div-row-badge { font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 8px; flex-shrink: 0; }
+.badge-up { background: #dcfce7; color: #15803d; }
+.badge-dn { background: #ffe4e6; color: #be123c; }
+
+/* Home tile */
+.home-card-divladder { border-top: 3px solid #16a34a; }
+.divladder-home-body { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
+.divladder-home-div { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 4px 8px; font-size: 10px; color: #334155; line-height: 1.5; }
+.divladder-home-div-label { font-weight: 800; color: #16a34a; margin-right: 3px; }
+
+/* Admin reorder */
+.ladder-admin-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 0 0 24px; }
+@media (max-width: 600px) { .ladder-admin-wrap { grid-template-columns: 1fr; } }
+.ladder-admin-panel { display: flex; flex-direction: column; }
+.ladder-panel-header { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; padding-bottom: 8px; }
+.ladder-in-list, .ladder-pool-list { border: 1.5px solid #e2e8f0; border-radius: 8px; min-height: 60px; background: #fafafa; overflow-y: auto; max-height: 600px; }
+.ladder-in-row { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-bottom: 1px solid #e2e8f0; background: #fff; cursor: grab; font-size: 13px; }
+.ladder-in-row:last-child { border-bottom: none; }
+.ladder-div-end { border-bottom: 2px solid #1B2A6B !important; }
+.ladder-drag-handle { color: #cbd5e1; font-size: 16px; cursor: grab; flex-shrink: 0; }
+.ladder-in-row.ladder-dragging { opacity: 0.35; }
+.ladder-in-row.ladder-drag-over { background: #e8ecf8; border-left: 3px solid #1B2A6B; }
+.ladder-in-pos { width: 22px; text-align: right; font-size: 11px; color: #94a3b8; flex-shrink: 0; }
+.ladder-in-name { flex: 1; font-weight: 500; }
+.ladder-in-div { font-size: 10px; font-weight: 700; color: #1B2A6B; background: #e8ecf8; border-radius: 4px; padding: 1px 5px; flex-shrink: 0; }
+.ladder-remove-btn { border: none; background: none; color: #94a3b8; cursor: pointer; font-size: 14px; padding: 0 4px; flex-shrink: 0; }
+.ladder-remove-btn:hover { color: #dc2626; }
+.ladder-pool-row { display: flex; align-items: center; justify-content: space-between; padding: 7px 10px; border-bottom: 1px solid #e2e8f0; background: #fff; font-size: 13px; cursor: grab; }
+.ladder-pool-row:last-child { border-bottom: none; }
+.ladder-pool-name { font-weight: 500; }
+.ladder-add-btn { border: 1px solid #1B2A6B; background: none; color: #1B2A6B; border-radius: 6px; font-size: 12px; font-weight: 600; padding: 3px 8px; cursor: pointer; }
+.ladder-add-btn:hover { background: #1B2A6B; color: #fff; }
+.ladder-config-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; }
+.ladder-cfg-label { font-size: 12px; font-weight: 600; color: #475569; display: flex; flex-direction: column; gap: 3px; }
+.ladder-cfg-input { width: 64px; padding: 5px 8px; border: 1.5px solid #cbd5e1; border-radius: 6px; font-size: 14px; font-weight: 700; text-align: center; outline: none; }
+.ladder-cfg-input:focus { border-color: #1B2A6B; }
+
+/* ── Challenge System ────────────────────────────────────────────────────── */
+.div-challenge-btn { border: none; background: none; font-size: 13px; cursor: pointer; padding: 0 2px; flex-shrink: 0; opacity: 0.7; line-height: 1; }
+.div-challenge-btn:hover { opacity: 1; }
+.challenge-list-header { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; padding: 6px 0 4px; }
+.challenge-status-badge { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 8px; background: #fef9c3; color: #854d0e; flex-shrink: 0; }
+.challenge-status-badge.accepted { background: #dcfce7; color: #15803d; }
+.challenge-status-badge.injury { background: #ffedd5; color: #c2410c; }
+.challenge-date { font-size: 11px; color: #94a3b8; flex-shrink: 0; }
+.challenges-panel-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; max-width: 600px; margin: 10px auto 0; padding: 0 8px; }
+.ch-col { min-width: 0; }
+.ch-history-header { display: flex; align-items: center; justify-content: space-between; padding: 6px 0 4px; }
+.results-filter-sel { font-size: 10px; padding: 2px 4px; border-radius: 6px; border: 1.5px solid #cbd5e1; background: #fff; color: #334155; cursor: pointer; max-width: 80px; }
+.ch-res-row { padding: 4px 0; border-bottom: 1px solid #f1f5f9; }
+.ch-res-names { font-size: 12px; color: #334155; line-height: 1.4; word-break: break-word; }
+.ch-act-row { padding: 5px 0; border-bottom: 1px solid #f1f5f9; }
+.ch-act-row.clickable { cursor: pointer; }
+.ch-act-row.clickable:hover .ch-act-names { color: #1B2A6B; }
+.ch-act-names { font-size: 12px; font-weight: 600; color: #334155; line-height: 1.4; word-break: break-word; }
+.ch-act-foot { display: flex; align-items: center; gap: 6px; margin-top: 2px; }
+.ch-empty { font-size: 12px; color: #94a3b8; padding: 6px 0; }
+.divladder-challenges { margin-top: 6px; padding-top: 5px; }
+.divladder-challenge-row { display: grid; grid-template-columns: 1.4em 1fr auto 1fr 1.4em; align-items: center; gap: 3px; font-size: 12px; color: #475569; padding: 2px 0; }
+.dlcr-ic { text-align: center; }
+.dlcr-nl { text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dlcr-v  { text-align: center; color: #94a3b8; font-size: 10px; padding: 0 2px; }
+.dlcr-nr { text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.divladder-section-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8; margin-bottom: 2px; }
+.me-challenges-wrap { margin-top: 8px; border-top: 1px solid rgba(255,255,255,.15); padding-top: 6px; cursor: pointer; }
+.me-challenge-row { font-size: 11px; color: rgba(255,255,255,.75); padding: 1px 0; line-height: 1.4; }
+
+/* Ladder home tile — personal challenge tiles */
+.dlhc-rows { margin-top: 4px; border-top: 1px solid #e2e8f0; padding-top: 4px; }
+.dlhc-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; margin: 3px 0; }
+.dlhc-tile  { display: flex; align-items: center; gap: 3px; padding: 3px 6px; border-radius: 8px; font-size: 11px; border: 1px solid #e2e8f0; background: #f8fafc; min-width: 0; overflow: hidden; }
+.dlhc-tile-icon { flex-shrink: 0; line-height: 1; }
+.dlhc-tile-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dlhc-tile-meta { font-size: 9px; color: #94a3b8; flex-shrink: 0; }
+.dlhc-can { background: #f0fdf4; border-color: #86efac; }
+.dlhc-can .dlhc-tile-name { color: #166534; font-weight: 600; }
+.dlhc-active { background: #eff6ff; border-color: #bfdbfe; }
+.dlhc-active .dlhc-tile-name { color: #1B2A6B; font-weight: 600; }
+.dlhc-quip { font-size: 13px; color: #334155; display: flex; align-items: center; justify-content: center; gap: 5px; padding: 6px 2px 2px; }
+.dlhc-quip span { display: flex; align-items: center; line-height: 1; flex-shrink: 0; }
+.dlhc-quip em { flex: 1; text-align: center; }
+
+/* Active challenge banner (top of ladder view) */
+.my-challenge-banner { max-width: 600px; margin: 8px auto 0; padding: 0 8px; }
+.mcb-card { background: linear-gradient(135deg, #1B2A6B 0%, #2d3f8a 100%); border-radius: 10px; padding: 14px 16px; display: flex; align-items: center; gap: 14px; margin-bottom: 6px; }
+.mcb-icon { font-size: 28px; flex-shrink: 0; }
+.mcb-info { flex: 1; min-width: 0; }
+.mcb-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #fbbf24; margin-bottom: 2px; }
+.mcb-match { font-size: 17px; font-weight: 800; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mcb-btn { background: #fbbf24; color: #1B2A6B; border: none; border-radius: 8px; font-size: 14px; font-weight: 800; padding: 10px 16px; cursor: pointer; flex-shrink: 0; white-space: nowrap; }
+.mcb-pending { background: linear-gradient(135deg, #334155 0%, #475569 100%); }
+.mcb-pending .mcb-label { color: #94a3b8; }
+.mcb-note { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+.mcb-btn-withdraw { background: #f1f5f9; color: #475569; }
 .hc-calc-rules p:last-child { margin-bottom: 0; }
