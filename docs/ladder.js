@@ -206,6 +206,18 @@ function _applyConfig(cfgData) {
   if (cr) _challengeRange = parseInt(cr.value, 10);
 }
 
+// D4 players can challenge up to 5 ahead but no more than 2 spots into D3
+function _canChallenge(myPos, targetPos) {
+  if (targetPos >= myPos) return false;
+  const d4Start   = _ladderDivSize * 3 + 1;
+  const d3Bottom  = _ladderDivSize * 3;      // last position of D3
+  if (myPos >= d4Start) {
+    const minAllowed = Math.max(myPos - 5, d3Bottom - 1); // 2 into D3
+    return targetPos >= minAllowed;
+  }
+  return targetPos >= myPos - _challengeRange;
+}
+
 // ── Load challenges ────────────────────────────────────────────────────────
 async function _loadChallenges() {
   const [activeRes, completedRes] = await Promise.all([
@@ -332,8 +344,7 @@ function _injectLadderHomeCard() {
       // Players within challenge range above me who aren't already matched with me
       const challengeable = _ladderPositions.filter(p =>
         p.players &&
-        p.position < myPos &&
-        p.position >= myPos - _challengeRange &&
+        _canChallenge(myPos, p.position) &&
         !myActivePairIds.has(p.player_id)
       );
 
@@ -567,7 +578,7 @@ function renderDivisionLadder() {
       if (myPos !== null) {
         if (p.player_id === myId) {
           cls = ' div-row-me';
-        } else if (p.position < myPos && p.position >= myPos - _challengeRange) {
+        } else if (_canChallenge(myPos, p.position)) {
           cls = ' div-row-can-challenge';
           if (_CHALLENGES_ENABLED) {
             const existing = myOutgoingMap[p.player_id];
@@ -708,7 +719,7 @@ function showLadderRules() {
       <li><strong>Refuse a challenge?</strong> You lose a place and earn yourself a 🐔. Cluck cluck.</li>
       <li><strong>Injured?</strong> Fair enough — decline with injury and no penalty applies. We won't ask for a doctor's certificate... unless it becomes a habit.</li>
       <li><strong>One ladder game per session</strong> is all that's required. No one can demand a rematch the same night.</li>
-      <li><strong>You can challenge up to ${_challengeRange} place${_challengeRange !== 1 ? 's' : ''} above you.</strong> Pick your battles wisely.</li>
+      <li><strong>You can challenge up to ${_challengeRange} place${_challengeRange !== 1 ? 's' : ''} above you.</strong> Division 4 players can challenge up to 5 places ahead, but no more than 2 spots into Division 3.</li>
       <li><strong>Ghost rule</strong> 👻 — If you don't accept <em>or</em> decline within 7 days, you automatically drop one place. Don't go quiet.</li>
     </ol>
   `);
@@ -747,8 +758,15 @@ async function submitChallenge(targetId) {
   const err = document.getElementById('challenge-form-error');
 
   try {
-  // Max 3 active (pending/accepted) challenges per player
+  // Validate positions
   const myId = ST.player.id;
+  const myEntry     = _ladderPositions.find(p => p.player_id === myId);
+  const targetEntry = _ladderPositions.find(p => p.player_id === targetId);
+  if (myEntry && targetEntry && !_canChallenge(myEntry.position, targetEntry.position)) {
+    if (err) err.textContent = 'That player is outside your challenge range.';
+    return;
+  }
+  // Max 3 active (pending/accepted) challenges per player
   const { data: active } = await sb.from('ladder_challenges')
     .select('id, challenger_id, challenged_id')
     .in('status', ['pending', 'accepted']);
