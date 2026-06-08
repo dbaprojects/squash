@@ -721,7 +721,7 @@ function _issueChallengeForm(targetId, targetName, targetPos) {
     <div class="form-group">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
         <label style="margin:0;font-size:14px">Trash talk</label>
-        <button type="button" onclick="_shuffleChallengeMsg()" style="border:none;background:#f1f5f9;border-radius:6px;font-size:13px;cursor:pointer;color:#1B2A6B;font-weight:600;padding:4px 10px">🔀 New message</button>
+        <button type="button" onclick="_shuffleChallengeMsg()" style="border:none;background:#f1f5f9;border-radius:6px;font-size:13px;cursor:pointer;color:#1B2A6B;font-weight:600;padding:4px 10px">🍀 Pick a message for me</button>
       </div>
       <textarea id="challenge-msg" rows="3" style="width:100%;padding:10px;border:1.5px solid #cbd5e1;border-radius:6px;font-size:16px;resize:vertical;touch-action:manipulation">${msg}</textarea>
     </div>
