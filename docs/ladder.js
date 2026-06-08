@@ -636,7 +636,10 @@ function renderDivisionLadder() {
   const myAccepted = _CHALLENGES_ENABLED && myId
     ? _activeChallenges.filter(c => c.status === 'accepted' && (c.challenger_id === myId || c.challenged_id === myId))
     : [];
-  const myAcceptedBannerHtml = myAccepted.length > 0 ? `
+  const myPending = _CHALLENGES_ENABLED && myId
+    ? _activeChallenges.filter(c => c.status === 'pending' && c.challenger_id === myId)
+    : [];
+  const myBannerHtml = (myAccepted.length > 0 || myPending.length > 0) ? `
     <div class="my-challenge-banner">
       ${myAccepted.map(c => {
         const oppObj = c.challenger_id === myId ? c.challenged : c.challenger;
@@ -650,10 +653,22 @@ function renderDivisionLadder() {
           <button class="mcb-btn" onclick="openChallengeResult('${c.id}')">Record Result</button>
         </div>`;
       }).join('')}
+      ${myPending.map(c => {
+        const opp = `${c.challenged?.first_name || ''} ${c.challenged?.last_name || ''}`.trim();
+        return `<div class="mcb-card mcb-pending">
+          <div class="mcb-icon">⏳</div>
+          <div class="mcb-info">
+            <div class="mcb-label">Awaiting Response</div>
+            <div class="mcb-match">You vs ${opp}</div>
+            <div class="mcb-note">No penalty — they haven't accepted yet</div>
+          </div>
+          <button class="mcb-btn mcb-btn-withdraw" onclick="withdrawChallenge('${c.id}')">Withdraw</button>
+        </div>`;
+      }).join('')}
     </div>` : '';
 
   wrap.innerHTML = `
-    ${myAcceptedBannerHtml}
+    ${myBannerHtml}
     <div style="max-width:600px;margin:0 auto 0;padding:0 8px">
       <button class="hc-calc-banner" onclick="showLadderRules()">⚔️ Rules of Engagement ⚔️</button>
       ${_CHALLENGES_ENABLED ? '<p style="text-align:center;font-size:12px;color:#64748b;margin:4px 0 0">Tap ⚔️ next to a player\'s name to issue a challenge</p>' : ''}
@@ -840,7 +855,6 @@ function openChallengeResult(challengeId) {
 }
 
 async function withdrawChallenge(challengeId) {
-  if (!confirm('Withdraw this challenge?')) return;
   const { error } = await sb.from('ladder_challenges')
     .update({ status: 'withdrawn', responded_at: new Date().toISOString() })
     .eq('id', challengeId);

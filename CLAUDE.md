@@ -5,7 +5,7 @@
 - **Owner:** Club admin — personal project
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `[local project directory]`
-- **Current version:** v5.51
+- **Current version:** v5.52
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -525,3 +525,4 @@ echo "{\"version\":\"4.XX\",\"build\":\"$(date +%s)\"}" > docs/version.json
 | v5.49 | Ladders home tile quip: text centred between icons (em flex:1); ghost/forfeit rule changed to one-place drop (same as decline) |
 | v5.50 | Division Ladder: hint text below Rules of Engagement button — "Tap ⚔️ next to a player's name to issue a challenge" (dev/challenges only) |
 | v5.51 | Division Ladder: prominent "Game On!" card above ladder grid for player's own accepted challenges — navy card with amber Record Result button; fix APP_VERSION semicolons corruption |
+| v5.52 | Division Ladder: pending outgoing challenge card above grid — grey card, big Withdraw button, "No penalty — they haven't accepted yet" note; removed confirm() dialog from withdrawChallenge |
