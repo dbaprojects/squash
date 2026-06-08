@@ -87,6 +87,7 @@ let _ladderInList     = [];
 let _ladderPool       = [];
 let _ladderAllPlayers = [];
 let _activeChallenges  = [];
+let _submittingChallenge = false;
 let _recentCompleted   = [];
 let _myChallenges      = [];
 let _resultsFilter     = 'all';
@@ -740,15 +741,25 @@ function _shuffleChallengeMsg() {
 }
 
 async function submitChallenge(targetId) {
+  if (_submittingChallenge) return;
+  _submittingChallenge = true;
   const msg = document.getElementById('challenge-msg')?.value.trim();
   const err = document.getElementById('challenge-form-error');
 
+  try {
   // Max 3 active (pending/accepted) challenges per player
   const myId = ST.player.id;
   const { data: active } = await sb.from('ladder_challenges')
     .select('id, challenger_id, challenged_id')
     .in('status', ['pending', 'accepted']);
   if (active) {
+    // Block duplicate challenge between same pair
+    const duplicate = active.find(c =>
+      (c.challenger_id === myId && c.challenged_id === targetId) ||
+      (c.challenger_id === targetId && c.challenged_id === myId)
+    );
+    if (duplicate) { closeFormModal(); return; }
+
     const myCount     = active.filter(c => c.challenger_id === myId    || c.challenged_id === myId).length;
     const theirCount  = active.filter(c => c.challenger_id === targetId || c.challenged_id === targetId).length;
     if (myCount >= 3) {
@@ -774,6 +785,9 @@ async function submitChallenge(targetId) {
   renderDivisionLadder();
   _injectLadderHomeCard();
   _injectMyChallenges();
+  } finally {
+    _submittingChallenge = false;
+  }
 }
 
 // ── Pending challenge popup — fires on every loadHome for any unseen challenge ─

@@ -541,3 +541,4 @@ echo "{\"version\":\"4.XX\",\"build\":\"$(date +%s)\"}" > docs/version.json
 | v5.65 | Ladders home tile footer: "Click to view ladders →" → "Click for Ladder Action →" |
 | v5.66 | Division ladder page: player rows 12→15px, header 12→14px, HC 10→12px, row padding 3→5px |
 | v5.67 | Division ladder page: player rows 15→17px, header 14→16px, HC 12→13px, row padding 5→7px |
+| v5.68 | Challenge submit: `_submittingChallenge` in-flight flag prevents double-tap duplicates; duplicate pair check silently closes modal if active challenge already exists between same two players |
