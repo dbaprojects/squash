@@ -36,6 +36,12 @@ const _CHALLENGES_ENABLED = true;
   // ── Patch loadHome ─────────────────────────────────────────────────────
   const _origLoadHome = loadHome;
   loadHome = async function () {
+    // Clear stale state so previous user's data doesn't linger
+    _ladderPositions = [];
+    _activeChallenges = [];
+    _myChallenges = [];
+    _recentCompleted = [];
+    _notifiedChallengeIds = new Set();
     const basePromises = [
       _origLoadHome(),
       sb.from('ladder_positions')
@@ -92,7 +98,7 @@ let _recentCompleted   = [];
 let _myChallenges      = [];
 let _resultsFilter     = 'all';
 let _formModalLocked   = false;
-const _notifiedChallengeIds = new Set();
+let _notifiedChallengeIds = new Set();
 
 // ── Challenge messages ─────────────────────────────────────────────────────
 const CHALLENGE_MESSAGES = [
