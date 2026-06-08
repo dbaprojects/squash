@@ -853,14 +853,14 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
   padding: 16px 18px;
   border-bottom: 1px solid var(--bc-border);
   font-weight: 700;
-  font-size: 17px;
+  font-size: 19px;
   color: var(--bc-navy);
 }
 
 .modal-close { background: none; border: none; cursor: pointer; font-size: 18px; color: #888; }
 .modal-close:hover { color: var(--bc-text); }
 
-#modal-body, #form-body { padding: 18px; overflow-y: auto; font-size: 16px; }
+#modal-body, #form-body { padding: 18px; overflow-y: auto; font-size: 17px; }
 
 /* ── Admin event list ──────────────────────────────────────────────────── */
 .admin-event-row {
@@ -1857,10 +1857,10 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
   .stat-num { font-size: 22px; }
 
   /* Modals — top-anchored on mobile, near-full width */
-  .modal-overlay { align-items: flex-start; padding: 4px; padding-top: 16px; }
+  .modal-overlay { align-items: flex-start; padding: 4px; padding-top: 60px; }
   .modal {
     border-radius: 12px;
-    max-height: 94vh;
+    max-height: 90vh;
     max-width: 100%;
     width: 100%;
   }

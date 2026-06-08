@@ -717,11 +717,11 @@ function showLadderRules() {
 function _issueChallengeForm(targetId, targetName, targetPos) {
   const msg = CHALLENGE_MESSAGES[Math.floor(Math.random() * CHALLENGE_MESSAGES.length)];
   showFormModal(`⚔️ Challenge ${targetName}`, `
-    <p style="margin-bottom:14px;font-size:15px">Send a challenge to <strong>${targetName}</strong> (position ${targetPos}).</p>
+    <p style="margin-bottom:14px;font-size:17px">Send a challenge to <strong>${targetName}</strong> (position ${targetPos}).</p>
     <div class="form-group">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-        <label style="margin:0;font-size:14px">Trash talk</label>
-        <button type="button" onclick="_shuffleChallengeMsg()" style="border:none;background:#f1f5f9;border-radius:6px;font-size:13px;cursor:pointer;color:#1B2A6B;font-weight:600;padding:4px 10px">🍀 Pick a message for me</button>
+        <label style="margin:0;font-size:16px">Trash talk</label>
+        <button type="button" onclick="_shuffleChallengeMsg()" style="border:none;background:#f1f5f9;border-radius:6px;font-size:14px;cursor:pointer;color:#1B2A6B;font-weight:600;padding:6px 12px">🍀 Pick a message for me</button>
       </div>
       <textarea id="challenge-msg" rows="3" style="width:100%;padding:10px;border:1.5px solid #cbd5e1;border-radius:6px;font-size:16px;resize:vertical;touch-action:manipulation">${msg}</textarea>
     </div>
