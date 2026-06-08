@@ -656,7 +656,7 @@ function showLadderRules() {
       <li><strong>Injured?</strong> Fair enough — decline with injury and no penalty applies. We won't ask for a doctor's certificate... unless it becomes a habit.</li>
       <li><strong>One ladder game per session</strong> is all that's required. No one can demand a rematch the same night.</li>
       <li><strong>You can challenge up to ${_challengeRange} place${_challengeRange !== 1 ? 's' : ''} above you.</strong> Pick your battles wisely.</li>
-      <li><strong>Ghost rule</strong> 👻 — If you don't accept <em>or</em> decline within 7 days, you automatically drop to the place below the challenger. Don't go quiet.</li>
+      <li><strong>Ghost rule</strong> 👻 — If you don't accept <em>or</em> decline within 7 days, you automatically drop one place. Don't go quiet.</li>
     </ol>
   `);
 }
@@ -943,13 +943,13 @@ async function _processAutoForfeits() {
   const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
   const expired = _activeChallenges.filter(c => c.status === 'pending' && c.issued_at < cutoff);
   for (const c of expired) {
-    const { winnerChange, loserChange } = await _applyForfeitResult(c.challenger_id, c.challenged_id);
+    await _applyOnePlaceDrop(c.challenged_id);
     await sb.from('ladder_challenges').update({
       status: 'forfeited',
       winner_id: c.challenger_id,
       completed_at: new Date().toISOString(),
-      winner_pos_change: winnerChange,
-      loser_pos_change: loserChange
+      winner_pos_change: 0,
+      loser_pos_change: 1
     }).eq('id', c.id);
   }
   if (expired.length > 0) await _loadChallenges();

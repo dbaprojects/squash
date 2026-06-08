@@ -214,7 +214,8 @@
     .dlhc-active { background: #eff6ff; border-color: #bfdbfe; }
     .dlhc-active .dlhc-tile-name { color: #1B2A6B; font-weight: 600; }
     .dlhc-quip { font-size: 13px; color: #334155; display: flex; align-items: center; justify-content: center; gap: 5px; padding: 6px 2px 2px; }
-    .dlhc-quip span { display: flex; align-items: center; line-height: 1; }
+    .dlhc-quip span { display: flex; align-items: center; line-height: 1; flex-shrink: 0; }
+    .dlhc-quip em { flex: 1; text-align: center; }
 
     /* Injury badge in challenge list */
     .challenge-status-badge.injury { background: #ffedd5; color: #c2410c; }
@@ -235,7 +236,7 @@
     </div>
     <div id="login-phone-error" class="error-msg" style="margin-bottom:8px"></div>
     <button class="btn-google-full" onclick="submitLoginPhone()">Sign In</button>
-    <p class="login-version">v5.48</p>
+    <p class="login-version">v5.49</p>
     <p class="login-terms"><button class="login-terms-link" onclick="openTermsModal()">Terms of Use</button></p>
   </div>
 </div>
@@ -299,7 +300,7 @@
       <img src="bcss.png" class="header-logo" alt="BC">
       <div class="header-title">
         <span class="logo">British Club</span>
-        <span class="logo-sub">Squash Section <span class="version">v5.48</span></span>
+        <span class="logo-sub">Squash Section <span class="version">v5.49</span></span>
       </div>
     </div>
     <div id="header-page-title" class="header-page-title"></div>
