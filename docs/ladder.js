@@ -206,16 +206,19 @@ function _applyConfig(cfgData) {
   if (cr) _challengeRange = parseInt(cr.value, 10);
 }
 
-// D4 players can challenge up to 5 ahead but no more than 2 spots into D3
+// D1 uses base range; each lower division gets +1. Effective range is
+// determined by the TARGET's division, so crossing up uses the higher div's
+// (smaller) range as the cap.
+function _divOf(pos) {
+  return Math.ceil(pos / _ladderDivSize);
+}
+function _divRange(div) {
+  return _challengeRange + (div - 1);
+}
 function _canChallenge(myPos, targetPos) {
   if (targetPos >= myPos) return false;
-  const d4Start   = _ladderDivSize * 3 + 1;
-  const d3Bottom  = _ladderDivSize * 3;      // last position of D3
-  if (myPos >= d4Start) {
-    const minAllowed = Math.max(myPos - 5, d3Bottom - 1); // 2 into D3
-    return targetPos >= minAllowed;
-  }
-  return targetPos >= myPos - _challengeRange;
+  const effectiveRange = _divRange(_divOf(targetPos));
+  return targetPos >= myPos - effectiveRange;
 }
 
 // ── Load challenges ────────────────────────────────────────────────────────
@@ -719,7 +722,7 @@ function showLadderRules() {
       <li><strong>Refuse a challenge?</strong> You lose a place and earn yourself a 🐔. Cluck cluck.</li>
       <li><strong>Injured?</strong> Fair enough — decline with injury and no penalty applies. We won't ask for a doctor's certificate... unless it becomes a habit.</li>
       <li><strong>One ladder game per session</strong> is all that's required. No one can demand a rematch the same night.</li>
-      <li><strong>You can challenge up to ${_challengeRange} place${_challengeRange !== 1 ? 's' : ''} above you.</strong> Division 4 players can challenge up to 5 places ahead, but no more than 2 spots into Division 3.</li>
+      <li><strong>Challenge range increases by division</strong> — D1: ${_divRange(1)}, D2: ${_divRange(2)}, D3: ${_divRange(3)}, D4: ${_divRange(4)}. When challenging into a higher division the target division's (smaller) range applies.</li>
       <li><strong>Ghost rule</strong> 👻 — If you don't accept <em>or</em> decline within 7 days, you automatically drop one place. Don't go quiet.</li>
     </ol>
   `);
@@ -1119,7 +1122,7 @@ function renderLadderAdmin() {
       <label class="ladder-cfg-label">Division size
         <input type="number" id="cfg-div-size" class="ladder-cfg-input" value="${_ladderDivSize}" min="1" max="20">
       </label>
-      <label class="ladder-cfg-label">Challenge range
+      <label class="ladder-cfg-label">D1 challenge range
         <input type="number" id="cfg-challenge-range" class="ladder-cfg-input" value="${_challengeRange}" min="1" max="10">
       </label>
       <button class="btn-secondary" onclick="saveAdminConfig()" style="align-self:flex-end">Save Settings</button>

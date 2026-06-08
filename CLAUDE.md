@@ -543,3 +543,4 @@ echo "{\"version\":\"4.XX\",\"build\":\"$(date +%s)\"}" > docs/version.json
 | v5.67 | Division ladder page: player rows 15→17px, header 14→16px, HC 12→13px, row padding 5→7px |
 | v5.68 | Challenge submit: `_submittingChallenge` in-flight flag prevents double-tap duplicates; duplicate pair check silently closes modal if active challenge already exists between same two players |
 | v5.69 | D4 challenge rule: `_canChallenge(myPos, targetPos)` helper — D4 players can challenge up to 5 ahead but no higher than 2 spots into D3; applied to home tile, grid rows, submit validation, and Rules of Engagement |
+| v5.70 | Challenge range by division: `_divRange(div) = base + (div-1)`; effective range = target's division range; D1=base, D2=base+1, D3=base+2, D4=base+3; admin label → "D1 challenge range"; Rules of Engagement shows all four ranges dynamically |
