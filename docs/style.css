@@ -1856,11 +1856,11 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
   .reports-grid { grid-template-columns: 1fr; }
   .stat-num { font-size: 22px; }
 
-  /* Modals — bottom sheet on mobile */
-  .modal-overlay { align-items: flex-end; padding: 0; }
+  /* Modals — top-anchored on mobile, near-full width */
+  .modal-overlay { align-items: flex-start; padding: 4px; padding-top: 16px; }
   .modal {
-    border-radius: 20px 20px 0 0;
-    max-height: 92vh;
+    border-radius: 12px;
+    max-height: 94vh;
     max-width: 100%;
     width: 100%;
   }

@@ -536,3 +536,4 @@ echo "{\"version\":\"4.XX\",\"build\":\"$(date +%s)\"}" > docs/version.json
 | v5.60 | Modal enlarged (max-width 560px, 90vh, header 17px, body 18px padding+15px font); challenge form textarea font-size 16px + touch-action:manipulation — prevents iOS Safari zoom on focus |
 | v5.61 | Modal mobile: reduced top padding (20px not 60px), 92vh, body font 16px; challenge button "🍀 Pick a message for me" |
 | v5.62 | Modal mobile: bottom-sheet layout — slides up from bottom, full width, rounded top corners only (20px); no side padding |
+| v5.63 | Modal mobile: reverted to top-anchored; side padding 4px (near-full width), top padding 16px, max-height 94vh |
