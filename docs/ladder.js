@@ -699,7 +699,7 @@ function renderDivisionLadder() {
 function showLadderRules() {
   showFormModal('⚔️ Rules of Engagement ⚔️', `
     <p style="font-size:13px;color:#92400e;background:#fffbeb;border:1.5px solid #fbbf24;border-radius:6px;padding:8px 12px;margin:0 0 14px">
-      <strong>Note:</strong> Ladders are currently updated by David B. — let him know of any movements.
+      <strong>Note:</strong> Ladders updated automatically — any issues, ping David B.
     </p>
     <ol style="padding-left:20px;margin:0;font-size:15px;line-height:1.8;color:#1e293b">
       <li><strong>Challenge whenever you like</strong> — agree a time, or find each other at a session. <em>(Rocking up late when your opponent has already been playing for an hour can be respectfully declined — we're not tennis players.)</em></li>
