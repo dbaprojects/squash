@@ -996,6 +996,64 @@ function renderLadderAdmin() {
     row.addEventListener('touchmove',   _ladderTouchMove,  { passive: false });
     row.addEventListener('touchend',    _ladderTouchEnd,   { passive: false });
   });
+
+  if (_CHALLENGES_ENABLED) loadAdminChallenges();
+}
+
+// ── Admin challenges section ───────────────────────────────────────────────
+async function loadAdminChallenges() {
+  const wrap = document.getElementById('tab-ladder');
+  if (!wrap) return;
+
+  let section = document.getElementById('admin-challenges-section');
+  if (!section) {
+    section = document.createElement('div');
+    section.id = 'admin-challenges-section';
+    section.style.cssText = 'margin-top:24px;padding-top:16px;border-top:1px solid #e2e8f0';
+    wrap.appendChild(section);
+  }
+  section.innerHTML = '<p style="color:#888;font-size:13px;padding:8px 0">Loading challenges…</p>';
+
+  const { data, error } = await sb.from('ladder_challenges')
+    .select(`id, status, issued_at, responded_at, completed_at,
+             challenger:players!challenger_id(first_name, last_name),
+             challenged:players!challenged_id(first_name, last_name)`)
+    .order('issued_at', { ascending: false });
+
+  if (error) { section.innerHTML = `<p style="color:#c00">${error.message}</p>`; return; }
+
+  const statusLabel = { pending:'⏳ Pending', accepted:'💥 Accepted', completed:'🍺 Completed',
+    declined:'🐔 Declined', declined_injury:'🩹 Injury', forfeited:'👻 Forfeited', withdrawn:'↩️ Withdrawn' };
+
+  const rows = (data || []).map(c => {
+    const cr = `${c.challenger?.first_name || '?'} ${c.challenger?.last_name || ''}`.trim();
+    const cd = `${c.challenged?.first_name || '?'} ${c.challenged?.last_name || ''}`.trim();
+    const date = (c.completed_at || c.responded_at || c.issued_at || '').slice(0, 10);
+    return `<tr>
+      <td>${statusLabel[c.status] || c.status}</td>
+      <td>${cr}</td>
+      <td>${cd}</td>
+      <td>${date}</td>
+      <td><button class="btn-icon-sm btn-icon-danger" onclick="deleteAdminChallenge('${c.id}')">Delete</button></td>
+    </tr>`;
+  }).join('');
+
+  section.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <h3 style="font-size:14px;margin:0">Challenges (${(data||[]).length})</h3>
+      <button class="btn-secondary" style="font-size:12px" onclick="loadAdminChallenges()">Refresh</button>
+    </div>
+    ${rows ? `<table class="data-table" style="font-size:12px">
+      <thead><tr><th>Status</th><th>Challenger</th><th>Challenged</th><th>Date</th><th></th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>` : '<p style="color:#888;font-size:13px">No challenges found.</p>'}`;
+}
+
+async function deleteAdminChallenge(id) {
+  if (!confirm('Delete this challenge record?')) return;
+  const { error } = await sb.from('ladder_challenges').delete().eq('id', id);
+  if (error) { alert(error.message); return; }
+  await loadAdminChallenges();
 }
 
 // ── Drag and drop (mouse) + touch drag (iOS/mobile) ───────────────────────
