@@ -280,7 +280,7 @@ const _ICONS_IDLE   = ['👀','🤔','⬆️','🏃','🧗','⏰','😏','🗣�
 function _rndQuip(quips, icons) {
   const q = quips[Math.floor(Math.random() * quips.length)];
   const i = icons[Math.floor(Math.random() * icons.length)];
-  return `${i} ${q}`;
+  return `${i} <em>${q}</em> ${i}`;
 }
 function _cr(iconL, nameL, iconR, nameR) {
   return `<div class="divladder-challenge-row"><span class="dlcr-ic">${iconL}</span><span class="dlcr-nl">${nameL}</span><span class="dlcr-v">v</span><span class="dlcr-nr">${nameR}</span><span class="dlcr-ic">${iconR}</span></div>`;
