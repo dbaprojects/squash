@@ -1,9 +1,8 @@
 // ── Division Ladder (Phase 1 + 2) ────────────────────────────────────────────
 // Loaded after app.js in both index.html (production) and dev.html.
-// Phase 1 (ladder display + admin reorder) is live in production.
-// Phase 2 (challenge system) is dev-only — gated by _CHALLENGES_ENABLED.
+// Challenge system promoted to production.
 
-const _CHALLENGES_ENABLED = location.pathname.includes('dev');
+const _CHALLENGES_ENABLED = true;
 
 (function () {
   // ── Patch showSection ──────────────────────────────────────────────────
