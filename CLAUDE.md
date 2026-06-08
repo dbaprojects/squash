@@ -5,7 +5,7 @@
 - **Owner:** Club admin — personal project
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `[local project directory]`
-- **Current version:** v5.44
+- **Current version:** v5.45
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -518,3 +518,4 @@ echo "{\"version\":\"4.XX\",\"build\":\"$(date +%s)\"}" > docs/version.json
 | v5.42 | Ladders home tile tiles: remove icons, "vs" prefix, and position number — name only (+ status on active challenges) |
 | v5.43 | Ladders home tile: remove status label from active challenge tiles — name only |
 | v5.44 | Ladders home tile: random witty quip — 40 "active challenge" quips + 40 "idle" quips; shown at bottom of tile |
+| v5.45 | Ladders home tile quip: random icon prefix from themed pool (20 active / 20 idle); font 13px, darker colour |

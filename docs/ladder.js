@@ -275,7 +275,13 @@ const _QUIPS_IDLE = [
   "Climb now, boast later", "Spot up there. Your name on it.",
   "No excuses, only excuses"
 ];
-function _rndQuip(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+const _ICONS_ACTIVE = ['🔥','💪','👊','⚡','🎯','🚀','😤','🦁','🐯','🏆','💥','🤜','🥊','🌟','👑','🏋️','⚔️','🍺','🤩','😈'];
+const _ICONS_IDLE   = ['👀','🤔','⬆️','🏃','🧗','⏰','😏','🗣️','🐔','💨','🔝','👆','😬','🙄','😤','🤷','🫵','👻','🎯','🥱'];
+function _rndQuip(quips, icons) {
+  const q = quips[Math.floor(Math.random() * quips.length)];
+  const i = icons[Math.floor(Math.random() * icons.length)];
+  return `${i} ${q}`;
+}
 function _cr(iconL, nameL, iconR, nameR) {
   return `<div class="divladder-challenge-row"><span class="dlcr-ic">${iconL}</span><span class="dlcr-nl">${nameL}</span><span class="dlcr-v">v</span><span class="dlcr-nr">${nameR}</span><span class="dlcr-ic">${iconR}</span></div>`;
 }
@@ -336,7 +342,8 @@ function _injectLadderHomeCard() {
         c.challenger_id === myId || c.challenged_id === myId
       );
 
-      const quip = _rndQuip(myActive.length > 0 ? _QUIPS_ACTIVE : _QUIPS_IDLE);
+      const quip = _rndQuip(myActive.length > 0 ? _QUIPS_ACTIVE : _QUIPS_IDLE,
+                            myActive.length > 0 ? _ICONS_ACTIVE : _ICONS_IDLE);
 
       let rows = '';
       if (myActive.length > 0) {
