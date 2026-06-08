@@ -5,7 +5,7 @@
 - **Owner:** Club admin — personal project
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `[local project directory]`
-- **Current version:** v5.55
+- **Current version:** v5.56
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -529,3 +529,4 @@ echo "{\"version\":\"4.XX\",\"build\":\"$(date +%s)\"}" > docs/version.json
 | v5.53 | Division Ladder: clicking anywhere on a challengeable row triggers challenge/result modal; hint text updated to "Click a player's name…" in bold |
 | v5.54 | Division Ladder: position numbers replaced with most-recent-result icons (🍺 win / 😢 loss / 🐔 declined / 👻 ghosted); blank if no history; skip injury/pending |
 | v5.55 | Rules of Engagement admin note updated: "Ladders updated automatically — any issues, ping David B" |
+| v5.56 | Sign-Up home card: "Click to sign-up →" flashes red when player has no upcoming bookings |

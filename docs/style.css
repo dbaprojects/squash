@@ -1275,6 +1275,15 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
   transform-origin: bottom;
   animation: doom-charge 5s linear forwards;
 }
+@keyframes signup-flash {
+  0%, 100% { opacity: 1; color: #dc2626; }
+  50%       { opacity: 0.25; color: #dc2626; }
+}
+.home-card-link--urgent {
+  color: #dc2626 !important;
+  font-weight: 700;
+  animation: signup-flash 1.2s ease-in-out infinite;
+}
 @keyframes doom-charge {
   from { transform: scaleY(0); }
   to   { transform: scaleY(1); }

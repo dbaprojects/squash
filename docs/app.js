@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '5.55';
+const APP_VERSION = '5.56';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -1927,7 +1927,7 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
   const signupCard = `
     <div class="home-card home-card-signup" onclick="navTo('schedule')">
       ${signupInner}
-      <div class="home-card-link">Click to sign-up →</div>
+      <div class="home-card-link${myBookings.length === 0 ? ' home-card-link--urgent' : ''}">Click to sign-up →</div>
     </div>`;
 
   // ── Card 3: Handicaps ────────────────────────────────────────────────────
