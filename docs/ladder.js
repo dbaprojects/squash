@@ -1001,6 +1001,8 @@ function renderLadderAdmin() {
 }
 
 // ── Admin challenges section ───────────────────────────────────────────────
+let _adminChallengesData = [];
+
 async function loadAdminChallenges() {
   const wrap = document.getElementById('tab-ladder');
   if (!wrap) return;
@@ -1021,32 +1023,84 @@ async function loadAdminChallenges() {
     .order('issued_at', { ascending: false });
 
   if (error) { section.innerHTML = `<p style="color:#c00">${error.message}</p>`; return; }
+  _adminChallengesData = data || [];
+  _renderAdminChallenges('');
+}
+
+function _renderAdminChallenges(filter) {
+  const section = document.getElementById('admin-challenges-section');
+  if (!section) return;
+
+  const q = (filter || '').toLowerCase();
+  const filtered = q
+    ? _adminChallengesData.filter(c => {
+        const cr = `${c.challenger?.first_name||''} ${c.challenger?.last_name||''}`.toLowerCase();
+        const cd = `${c.challenged?.first_name||''} ${c.challenged?.last_name||''}`.toLowerCase();
+        return cr.includes(q) || cd.includes(q);
+      })
+    : _adminChallengesData;
 
   const statusLabel = { pending:'⏳ Pending', accepted:'💥 Accepted', completed:'🍺 Completed',
     declined:'🐔 Declined', declined_injury:'🩹 Injury', forfeited:'👻 Forfeited', withdrawn:'↩️ Withdrawn' };
 
-  const rows = (data || []).map(c => {
-    const cr = `${c.challenger?.first_name || '?'} ${c.challenger?.last_name || ''}`.trim();
-    const cd = `${c.challenged?.first_name || '?'} ${c.challenged?.last_name || ''}`.trim();
+  const rows = filtered.map(c => {
+    const cr = `${c.challenger?.first_name||'?'} ${c.challenger?.last_name||''}`.trim();
+    const cd = `${c.challenged?.first_name||'?'} ${c.challenged?.last_name||''}`.trim();
     const date = (c.completed_at || c.responded_at || c.issued_at || '').slice(0, 10);
     return `<tr>
+      <td><input type="checkbox" class="ac-chk" data-id="${c.id}" onchange="_acUpdateBulkBtn()"></td>
       <td>${statusLabel[c.status] || c.status}</td>
       <td>${cr}</td>
       <td>${cd}</td>
       <td>${date}</td>
-      <td><button class="btn-icon-sm btn-icon-danger" onclick="deleteAdminChallenge('${c.id}')">Delete</button></td>
     </tr>`;
   }).join('');
 
   section.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-      <h3 style="font-size:14px;margin:0">Challenges (${(data||[]).length})</h3>
-      <button class="btn-secondary" style="font-size:12px" onclick="loadAdminChallenges()">Refresh</button>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+      <h3 style="font-size:14px;margin:0;flex-shrink:0">Challenges (${_adminChallengesData.length})</h3>
+      <input id="ac-filter" type="text" placeholder="Filter by name…" value="${filter||''}"
+             oninput="_renderAdminChallenges(this.value)"
+             style="flex:1;min-width:120px;font-size:12px;padding:4px 8px;border:1px solid #cbd5e1;border-radius:6px">
+      <button class="btn-secondary" style="font-size:12px;flex-shrink:0" onclick="loadAdminChallenges()">Refresh</button>
     </div>
-    ${rows ? `<table class="data-table" style="font-size:12px">
-      <thead><tr><th>Status</th><th>Challenger</th><th>Challenged</th><th>Date</th><th></th></tr></thead>
+    ${rows ? `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+      <label style="font-size:12px;display:flex;align-items:center;gap:4px;cursor:pointer">
+        <input type="checkbox" id="ac-select-all" onchange="_acSelectAll(this.checked)"> Select all
+      </label>
+      <button id="ac-bulk-delete" class="btn-icon-sm btn-icon-danger" style="display:none" onclick="deleteAdminChallengesSelected()">Delete selected (0)</button>
+    </div>
+    <table class="data-table" style="font-size:12px">
+      <thead><tr><th></th><th>Status</th><th>Challenger</th><th>Challenged</th><th>Date</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>` : '<p style="color:#888;font-size:13px">No challenges found.</p>'}`;
+}
+
+function _acSelectAll(checked) {
+  document.querySelectorAll('.ac-chk').forEach(cb => cb.checked = checked);
+  _acUpdateBulkBtn();
+}
+
+function _acUpdateBulkBtn() {
+  const checked = document.querySelectorAll('.ac-chk:checked');
+  const allCbs  = document.querySelectorAll('.ac-chk');
+  const btn = document.getElementById('ac-bulk-delete');
+  const selAll = document.getElementById('ac-select-all');
+  if (btn) {
+    btn.style.display = checked.length ? '' : 'none';
+    btn.textContent = `Delete selected (${checked.length})`;
+  }
+  if (selAll) selAll.indeterminate = checked.length > 0 && checked.length < allCbs.length;
+}
+
+async function deleteAdminChallengesSelected() {
+  const ids = [...document.querySelectorAll('.ac-chk:checked')].map(cb => cb.dataset.id);
+  if (!ids.length) return;
+  if (!confirm(`Delete ${ids.length} challenge${ids.length > 1 ? 's' : ''}?`)) return;
+  const { error } = await sb.from('ladder_challenges').delete().in('id', ids);
+  if (error) { alert(error.message); return; }
+  await loadAdminChallenges();
 }
 
 async function deleteAdminChallenge(id) {
