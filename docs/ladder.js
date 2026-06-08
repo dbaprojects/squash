@@ -636,6 +636,7 @@ function renderDivisionLadder() {
   wrap.innerHTML = `
     <div style="max-width:600px;margin:0 auto 0;padding:0 8px">
       <button class="hc-calc-banner" onclick="showLadderRules()">⚔️ Rules of Engagement ⚔️</button>
+      ${_CHALLENGES_ENABLED ? '<p style="text-align:center;font-size:12px;color:#64748b;margin:4px 0 0">Tap ⚔️ next to a player\'s name to issue a challenge</p>' : ''}
     </div>
     <div class="div-ladder-grid">${divCards.join('')}</div>
     ${challengesPanelHtml}`;
