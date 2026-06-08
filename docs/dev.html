@@ -217,6 +217,15 @@
     .dlhc-quip span { display: flex; align-items: center; line-height: 1; flex-shrink: 0; }
     .dlhc-quip em { flex: 1; text-align: center; }
 
+    /* Active challenge banner (top of ladder view) */
+    .my-challenge-banner { max-width: 600px; margin: 8px auto 0; padding: 0 8px; }
+    .mcb-card { background: linear-gradient(135deg, #1B2A6B 0%, #2d3f8a 100%); border-radius: 10px; padding: 14px 16px; display: flex; align-items: center; gap: 14px; margin-bottom: 6px; }
+    .mcb-icon { font-size: 28px; flex-shrink: 0; }
+    .mcb-info { flex: 1; min-width: 0; }
+    .mcb-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #fbbf24; margin-bottom: 2px; }
+    .mcb-match { font-size: 17px; font-weight: 800; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .mcb-btn { background: #fbbf24; color: #1B2A6B; border: none; border-radius: 8px; font-size: 14px; font-weight: 800; padding: 10px 16px; cursor: pointer; flex-shrink: 0; white-space: nowrap; }
+
     /* Injury badge in challenge list */
     .challenge-status-badge.injury { background: #ffedd5; color: #c2410c; }
   </style>
@@ -236,7 +245,7 @@
     </div>
     <div id="login-phone-error" class="error-msg" style="margin-bottom:8px"></div>
     <button class="btn-google-full" onclick="submitLoginPhone()">Sign In</button>
-    <p class="login-version">v5.50</p>
+    <p class="login-version">v5.51</p>
     <p class="login-terms"><button class="login-terms-link" onclick="openTermsModal()">Terms of Use</button></p>
   </div>
 </div>
@@ -300,7 +309,7 @@
       <img src="bcss.png" class="header-logo" alt="BC">
       <div class="header-title">
         <span class="logo">British Club</span>
-        <span class="logo-sub">Squash Section <span class="version">v5.50</span></span>
+        <span class="logo-sub">Squash Section <span class="version">v5.51</span></span>
       </div>
     </div>
     <div id="header-page-title" class="header-page-title"></div>

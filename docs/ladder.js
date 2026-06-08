@@ -633,7 +633,27 @@ function renderDivisionLadder() {
       </div>
     </div>` : '';
 
+  const myAccepted = _CHALLENGES_ENABLED && myId
+    ? _activeChallenges.filter(c => c.status === 'accepted' && (c.challenger_id === myId || c.challenged_id === myId))
+    : [];
+  const myAcceptedBannerHtml = myAccepted.length > 0 ? `
+    <div class="my-challenge-banner">
+      ${myAccepted.map(c => {
+        const oppObj = c.challenger_id === myId ? c.challenged : c.challenger;
+        const opp = `${oppObj?.first_name || ''} ${oppObj?.last_name || ''}`.trim();
+        return `<div class="mcb-card">
+          <div class="mcb-icon">💥</div>
+          <div class="mcb-info">
+            <div class="mcb-label">Game On!</div>
+            <div class="mcb-match">You vs ${opp}</div>
+          </div>
+          <button class="mcb-btn" onclick="openChallengeResult('${c.id}')">Record Result</button>
+        </div>`;
+      }).join('')}
+    </div>` : '';
+
   wrap.innerHTML = `
+    ${myAcceptedBannerHtml}
     <div style="max-width:600px;margin:0 auto 0;padding:0 8px">
       <button class="hc-calc-banner" onclick="showLadderRules()">⚔️ Rules of Engagement ⚔️</button>
       ${_CHALLENGES_ENABLED ? '<p style="text-align:center;font-size:12px;color:#64748b;margin:4px 0 0">Tap ⚔️ next to a player\'s name to issue a challenge</p>' : ''}
