@@ -5,7 +5,7 @@
 - **Owner:** Club admin — personal project
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `[local project directory]`
-- **Current version:** v5.42
+- **Current version:** v5.43
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -516,3 +516,4 @@ echo "{\"version\":\"4.XX\",\"build\":\"$(date +%s)\"}" > docs/version.json
 | v5.40 | Ladders home tile (dev): personal view — "Can challenge" (players in range, not already matched) + "My challenges" (active pending/accepted); falls back to D1-D4 grid if not on ladder |
 | v5.41 | Ladders home tile: challenge rows replaced with 2-column chip tiles to save vertical space |
 | v5.42 | Ladders home tile tiles: remove icons, "vs" prefix, and position number — name only (+ status on active challenges) |
+| v5.43 | Ladders home tile: remove status label from active challenge tiles — name only |

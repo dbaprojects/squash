@@ -305,11 +305,7 @@ function _injectLadderHomeCard() {
         rows += `<div class="divladder-section-label" style="padding:0 2px;margin-top:6px">My challenges</div>`;
         rows += `<div class="dlhc-tiles">` + myActive.map(c => {
           const opp  = c.challenger_id === myId ? c.challenged : c.challenger;
-          const meta = c.status === 'accepted' ? 'Game on!' : 'Pending';
-          return `<div class="dlhc-tile dlhc-active">`
-            + `<span class="dlhc-tile-name">${fn1(opp)}</span>`
-            + `<span class="dlhc-tile-meta">${meta}</span>`
-            + `</div>`;
+          return `<div class="dlhc-tile dlhc-active"><span class="dlhc-tile-name">${fn1(opp)}</span></div>`;
         }).join('') + `</div>`;
       }
 
