@@ -717,13 +717,13 @@ function showLadderRules() {
 function _issueChallengeForm(targetId, targetName, targetPos) {
   const msg = CHALLENGE_MESSAGES[Math.floor(Math.random() * CHALLENGE_MESSAGES.length)];
   showFormModal(`⚔️ Challenge ${targetName}`, `
-    <p style="margin-bottom:12px">Send a challenge to <strong>${targetName}</strong> (position ${targetPos}).</p>
+    <p style="margin-bottom:14px;font-size:15px">Send a challenge to <strong>${targetName}</strong> (position ${targetPos}).</p>
     <div class="form-group">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-        <label style="margin:0">Message</label>
-        <button type="button" onclick="_shuffleChallengeMsg()" style="border:none;background:none;font-size:13px;cursor:pointer;color:#1B2A6B;font-weight:600;padding:0">🔀 Shuffle</button>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <label style="margin:0;font-size:14px">Trash talk</label>
+        <button type="button" onclick="_shuffleChallengeMsg()" style="border:none;background:#f1f5f9;border-radius:6px;font-size:13px;cursor:pointer;color:#1B2A6B;font-weight:600;padding:4px 10px">🔀 New message</button>
       </div>
-      <textarea id="challenge-msg" rows="2" style="width:100%;padding:8px;border:1.5px solid #cbd5e1;border-radius:6px;font-size:13px;resize:vertical">${msg}</textarea>
+      <textarea id="challenge-msg" rows="3" style="width:100%;padding:10px;border:1.5px solid #cbd5e1;border-radius:6px;font-size:14px;resize:vertical">${msg}</textarea>
     </div>
     <div id="challenge-form-error" class="error-msg" style="margin-bottom:8px"></div>
     <button class="btn-primary" style="width:100%;margin-top:4px" onclick="submitChallenge('${targetId}')">Send Challenge ⚔️</button>

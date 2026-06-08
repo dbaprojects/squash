@@ -5,7 +5,7 @@
 - **Owner:** Club admin — personal project
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `[local project directory]`
-- **Current version:** v5.58
+- **Current version:** v5.59
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -532,3 +532,4 @@ echo "{\"version\":\"4.XX\",\"build\":\"$(date +%s)\"}" > docs/version.json
 | v5.56 | Sign-Up home card: "Click to sign-up →" flashes red when player has no upcoming bookings |
 | v5.57 | Challenge system promoted to production — _CHALLENGES_ENABLED = true on all pages |
 | v5.58 | Fix: all ladder/challenge CSS moved from dev.html <style> block into style.css — was missing on production, causing unstyled ladder tile and challenge panels on iOS |
+| v5.59 | Challenge form: bigger text/textarea (15px intro, 14px textarea, 3 rows); "Shuffle" → "🔀 New message" button with pill background; fix asset query strings always bumped from now |
