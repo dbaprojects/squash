@@ -240,6 +240,42 @@ async function _loadMyChallenges() {
 }
 
 // ── Home tile injection ────────────────────────────────────────────────────
+const _QUIPS_ACTIVE = [
+  "Get 'em tiger", "Game face on!", "Make it count", "Court's calling",
+  "Show no mercy", "Time to shine", "Let's settle this", "Bring the heat",
+  "No pressure... loads of it", "You've got this", "They won't see it coming",
+  "Eyes on the prize", "It's go time", "Ready? Thought so",
+  "Sweat now, beer later", "Winners make moves", "Smash it",
+  "Inner champion time", "Racket up, let's go", "Someone's buying tonight",
+  "Go bring it home", "Fear no one", "Play hard, drink harder",
+  "Own the court", "Do it for the beer", "Today's the day",
+  "No backing down now", "This is your moment", "They're nervous. Good.",
+  "Take their spot", "Leave it all on court", "Handle it",
+  "Hunger game time", "Believe", "All in", "Win it",
+  "Sorted. Now go win.", "Make the move", "That spot's yours for taking",
+  "One of you owes a beer"
+];
+const _QUIPS_IDLE = [
+  "C'mon then, step up", "The ladder won't climb itself",
+  "Move up or move over", "Fortune favours the bold",
+  "What are you waiting for?", "Go on, make a move",
+  "That spot won't hold itself", "Pick a fight, win a beer",
+  "Your move, squash hero", "Don't be shy",
+  "They're yours for the taking", "Tick tock, climb the clock",
+  "Comfort zone? Overrated", "Make them nervous", "Prove something",
+  "Challenge or be challenged", "Move or be moved", "Go shake things up",
+  "Waiting changes nothing", "The brave get the beer",
+  "Aim higher", "Don't let them relax", "Time to stir the pot",
+  "You're better than this", "Someone needs a knock",
+  "Strike while you can", "Make your mark", "Shake the ladder up",
+  "Progress means moving up", "You know you want to",
+  "Won't climb itself", "Channel that hunger", "Hungry? Take a spot.",
+  "Be the bully today", "They're not scared enough",
+  "Go on — they deserve it", "Still waiting? Really?",
+  "Climb now, boast later", "Spot up there. Your name on it.",
+  "No excuses, only excuses"
+];
+function _rndQuip(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 function _cr(iconL, nameL, iconR, nameR) {
   return `<div class="divladder-challenge-row"><span class="dlcr-ic">${iconL}</span><span class="dlcr-nl">${nameL}</span><span class="dlcr-v">v</span><span class="dlcr-nr">${nameR}</span><span class="dlcr-ic">${iconR}</span></div>`;
 }
@@ -300,6 +336,8 @@ function _injectLadderHomeCard() {
         c.challenger_id === myId || c.challenged_id === myId
       );
 
+      const quip = _rndQuip(myActive.length > 0 ? _QUIPS_ACTIVE : _QUIPS_IDLE);
+
       let rows = '';
       if (myActive.length > 0) {
         rows += `<div class="divladder-section-label" style="padding:0 2px;margin-top:6px">My challenges</div>`;
@@ -316,9 +354,7 @@ function _injectLadderHomeCard() {
           + `</div>`).join('') + `</div>`;
       }
 
-      if (!rows) {
-        rows = `<div style="font-size:11px;color:#94a3b8;text-align:center;padding:6px 0">No open challenges</div>`;
-      }
+      rows += `<div class="dlhc-quip">${quip}</div>`;
 
       bodyHtml = `<div class="dlhc-rows">${rows}</div>`;
     }
