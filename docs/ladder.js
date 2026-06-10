@@ -338,8 +338,8 @@ function _injectLadderHomeCard() {
     const myPos = myId ? (_ladderPositions.find(p => p.player_id === myId)?.position ?? null) : null;
 
     if (myPos === null) {
-      // Not on ladder — show D1-D4 grid
-      bodyHtml = _divGridHtml();
+      // Not on ladder — show D1-D4 grid + nudge
+      bodyHtml = _divGridHtml() + `<div class="ladder-signup-nudge">Don't be shy — sign up! Ping David B 🏃</div>`;
     } else {
       const fn1 = obj => `${obj?.first_name || ''} ${(obj?.last_name || '')[0] || ''}`.trim();
 
