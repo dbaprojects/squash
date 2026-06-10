@@ -87,13 +87,27 @@ names and hcs.xlsx    — player name/HC reference data
 
 ## RLS policy pattern
 
-All tables use inline admin check (NOT a helper function — Supabase SQL editor can't resolve functions defined outside the policy):
+**All tables now use open `USING (TRUE)` policies** — the app uses the Supabase anon key with no Supabase Auth JWT, so `auth.uid()` and `auth.email()` are always NULL. Admin/super-admin operations are guarded at the app level in JS, not at the DB level.
 
-```sql
-COALESCE((SELECT is_admin FROM players WHERE email = auth.email() AND active = TRUE LIMIT 1), FALSE)
-```
+`db/fix-rls-anon.sql` was applied in June 2026 to:
+1. Replace all `TO authenticated` / `is_admin_user()` policies with `USING (TRUE) WITH CHECK (TRUE)` equivalents
+2. Enable RLS on the 5 previously unprotected tables: `players`, `handicap_history`, `session_templates`, `events`, `signups`
 
-HoF SELECT policy allows anon access (`FOR SELECT USING (TRUE)` with no role restriction) because the app queries HoF before Supabase session is always restored on mobile.
+Current RLS state:
+| Table | RLS | Policy |
+|---|---|---|
+| `players` | ✅ enabled | `players_read` (SELECT), `players_write` (ALL) — both `USING (TRUE)` |
+| `handicap_history` | ✅ enabled | `handicaps_read` + `handicaps_write` — both `USING (TRUE)` |
+| `session_templates` | ✅ enabled | `templates_read` + `templates_write` — both `USING (TRUE)` |
+| `events` | ✅ enabled | `events_read` + `events_write` — both `USING (TRUE)` |
+| `signups` | ✅ enabled | `signups_read` + `signups_write` — both `USING (TRUE)` |
+| `hof_results` | ✅ enabled | `hof_write` (ALL) — `USING (TRUE)` |
+| `audit_log` | ✅ enabled | permissive anon policies |
+| `ladder_positions` | ✅ enabled | permissive anon policies |
+| `ladder_challenges` | ✅ enabled | permissive anon policies |
+| `ladder_config` | ✅ enabled | permissive anon policies |
+
+To roll back RLS on the 5 core tables: `ALTER TABLE <table> DISABLE ROW LEVEL SECURITY;`
 
 ---
 
