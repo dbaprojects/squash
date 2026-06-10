@@ -2053,6 +2053,7 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 .dlhc-quip { font-size: 13px; color: #334155; display: flex; align-items: center; justify-content: center; gap: 5px; padding: 6px 2px 2px; }
 .dlhc-quip span { display: flex; align-items: center; line-height: 1; flex-shrink: 0; }
 .dlhc-quip em { flex: 1; text-align: center; }
+.dlhc-quip--urgent { color: #dc2626 !important; font-weight: 700; animation: signup-flash 1.2s ease-in-out infinite; }
 
 /* Active challenge banner (top of ladder view) */
 .my-challenge-banner { max-width: 600px; margin: 8px auto 0; padding: 0 8px; }

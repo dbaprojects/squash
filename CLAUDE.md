@@ -560,3 +560,4 @@ echo "{\"version\":\"4.XX\",\"build\":\"$(date +%s)\"}" > docs/version.json
 | v5.70 | Challenge range by division: `_divRange(div) = base + (div-1)`; effective range = target's division range; D1=base, D2=base+1, D3=base+2, D4=base+3; admin label → "D1 challenge range"; Rules of Engagement shows all four ranges dynamically |
 | v5.71 | Fix stale ladder state on user-switch: clear `_ladderPositions`, `_activeChallenges`, `_myChallenges`, `_recentCompleted`, `_notifiedChallengeIds` at start of patched `loadHome`; `_notifiedChallengeIds` changed `const`→`let` |
 | v5.72 | Ladders home tile: flashing red "Don't be shy — sign up! Ping David B" nudge for players not on the ladder |
+| v5.73 | Ladders home tile: moved to after Sign-Up tile; quip flashes red when ladder player has no active challenges |

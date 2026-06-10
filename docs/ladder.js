@@ -362,8 +362,9 @@ function _injectLadderHomeCard() {
         c.challenger_id === myId || c.challenged_id === myId
       );
 
-      const quip = _rndQuip(myActive.length > 0 ? _QUIPS_ACTIVE : _QUIPS_IDLE,
-                            myActive.length > 0 ? _ICONS_ACTIVE : _ICONS_IDLE);
+      const quipUrgent = myActive.length === 0;
+      const quip = _rndQuip(quipUrgent ? _QUIPS_IDLE : _QUIPS_ACTIVE,
+                            quipUrgent ? _ICONS_IDLE : _ICONS_ACTIVE);
 
       let rows = '';
       if (myActive.length > 0) {
@@ -381,7 +382,7 @@ function _injectLadderHomeCard() {
           + `</div>`).join('') + `</div>`;
       }
 
-      rows += `<div class="dlhc-quip">${quip}</div>`;
+      rows += `<div class="dlhc-quip${quipUrgent ? ' dlhc-quip--urgent' : ''}">${quip}</div>`;
 
       bodyHtml = `<div class="dlhc-rows">${rows}</div>`;
     }
@@ -404,8 +405,8 @@ function _injectLadderHomeCard() {
     ${bodyHtml}
     <div style="font-size:11px;color:#64748b;text-align:center;padding:4px 10px 6px">Click for Ladder Action →</div>`;
 
-  const adminCard = grid.querySelector('.home-card-admin');
-  if (adminCard) grid.insertBefore(card, adminCard);
+  const hcCard = grid.querySelector('.home-card-ladder');
+  if (hcCard) grid.insertBefore(card, hcCard);
   else grid.appendChild(card);
 }
 
