@@ -672,9 +672,9 @@ function renderDivisionLadder() {
                 onclick="event.stopPropagation();openChallengeResult('${existing.id}')"
                 title="${title}">${icon}</button>`;
             } else {
-              rowClick = `_issueChallengeForm('${p.player_id}','${first} ${last}',${p.position})`;
+              rowClick = `_issueChallengeForm('${p.player_id}',${p.position})`;
               badge = `<button class="div-challenge-btn"
-                onclick="event.stopPropagation();_issueChallengeForm('${p.player_id}','${first} ${last}',${p.position})"
+                onclick="event.stopPropagation();_issueChallengeForm('${p.player_id}',${p.position})"
                 title="Challenge ${first}">⚔️</button>`;
             }
           }
@@ -813,7 +813,11 @@ function showLadderRules() {
 }
 
 // ── Issue a challenge ──────────────────────────────────────────────────────
-function _issueChallengeForm(targetId, targetName, targetPos) {
+function _issueChallengeForm(targetId, targetPos) {
+  const entry = _ladderPositions.find(p => p.player_id === targetId);
+  const targetName = entry?.players
+    ? `${entry.players.first_name} ${(entry.players.last_name || '')[0] || ''}`.trim()
+    : 'Player';
   const msg = CHALLENGE_MESSAGES[Math.floor(Math.random() * CHALLENGE_MESSAGES.length)];
   showFormModal(`⚔️ Challenge ${targetName}`, `
     <p style="margin-bottom:14px;font-size:17px">Send a challenge to <strong>${targetName}</strong> (position ${targetPos}).</p>
