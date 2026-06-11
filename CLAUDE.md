@@ -5,7 +5,7 @@
 - **Owner:** Club admin — personal project
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `[local project directory]`
-- **Current version:** v5.62
+- **Current version:** v5.75
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -562,3 +562,4 @@ echo "{\"version\":\"4.XX\",\"build\":\"$(date +%s)\"}" > docs/version.json
 | v5.72 | Ladders home tile: flashing red "Don't be shy — sign up! Ping David B" nudge for players not on the ladder |
 | v5.73 | Ladders home tile: moved to after Sign-Up tile; quip flashes red when ladder player has no active challenges |
 | v5.74 | Serial ghoster rule: 3 consecutive forfeits as challenged → demoted to last place; 👻 badge on their row and home tile chips; `_serialGhosters` Set rebuilt after every challenge load |
+| v5.75 | Snail badge 🐌: when `_processAutoForfeits` reshuffles the ladder, any active challenges now out of range are set to `voided` status in DB; challengers whose most-recent-as-challenger challenge is `voided` get 🐌 on their row and home tile chips; clears when they earn any other outcome; `_snailBadges` Set rebuilt after every `_loadChallenges`; `voided` filter in history panel; `_voidOutOfRangeChallenges()` called after all auto-forfeits + serial-ghost demotions |

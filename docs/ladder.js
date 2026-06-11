@@ -42,6 +42,7 @@ const _CHALLENGES_ENABLED = true;
     _myChallenges = [];
     _recentCompleted = [];
     _serialGhosters = new Set();
+    _snailBadges = new Set();
     _notifiedChallengeIds = new Set();
     const basePromises = [
       _origLoadHome(),
@@ -91,6 +92,7 @@ let _ladderPositions  = [];
 let _ladderDivSize    = 9;
 let _challengeRange   = 3;
 let _serialGhosters   = new Set();
+let _snailBadges      = new Set();
 let _ladderInList     = [];
 let _ladderPool       = [];
 let _ladderAllPlayers = [];
@@ -242,12 +244,13 @@ async function _loadChallenges() {
       .select(`id, challenger_id, challenged_id, status, completed_at, responded_at, winner_id, winner_pos_change,
                challenger:players!challenger_id(first_name, last_name),
                challenged:players!challenged_id(first_name, last_name)`)
-      .in('status', ['completed', 'forfeited', 'declined', 'declined_injury'])
+      .in('status', ['completed', 'forfeited', 'declined', 'declined_injury', 'voided'])
       .order('completed_at', { ascending: false })
   ]);
   _activeChallenges = activeRes.data || [];
   _recentCompleted  = completedRes.data || [];
   _rebuildSerialGhosters();
+  _rebuildSnailBadges();
 }
 
 function _rebuildSerialGhosters() {
@@ -267,6 +270,41 @@ function _rebuildSerialGhosters() {
 
 function _isSerialGhoster(playerId) {
   return _serialGhosters.has(playerId);
+}
+
+function _rebuildSnailBadges() {
+  _snailBadges = new Set();
+  // For each player, look at their most recent challenge as *challenger*.
+  // If it's voided → 🐌. Any other terminal status clears it.
+  const latestAsChallengerByPlayer = {};
+  for (const c of _recentCompleted) {
+    if (!latestAsChallengerByPlayer[c.challenger_id]) {
+      latestAsChallengerByPlayer[c.challenger_id] = c;
+    }
+  }
+  for (const [pid, c] of Object.entries(latestAsChallengerByPlayer)) {
+    if (c.status === 'voided') _snailBadges.add(pid);
+  }
+}
+
+function _isSnailBadged(playerId) {
+  return _snailBadges.has(playerId);
+}
+
+// Called after any ladder reshuffle: void all active challenges now out of range.
+// Challengers whose challenge gets voided earn a 🐌 badge.
+async function _voidOutOfRangeChallenges() {
+  const outOfRange = _activeChallenges.filter(c => {
+    const myPos     = _ladderPositions.find(p => p.player_id === c.challenger_id)?.position;
+    const targetPos = _ladderPositions.find(p => p.player_id === c.challenged_id)?.position;
+    if (!myPos || !targetPos) return false;
+    return !_canChallenge(myPos, targetPos);
+  });
+  if (outOfRange.length === 0) return;
+  const now = new Date().toISOString();
+  for (const c of outOfRange) {
+    await sb.from('ladder_challenges').update({ status: 'voided', completed_at: now }).eq('id', c.id);
+  }
 }
 
 async function _demoteToLastPlace(playerId) {
@@ -410,7 +448,7 @@ function _injectLadderHomeCard() {
       if (challengeable.length > 0) {
         rows += `<div class="divladder-section-label" style="padding:0 2px;margin-top:${myActive.length ? 6 : 6}px">Can challenge</div>`;
         rows += `<div class="dlhc-tiles">` + challengeable.map(p => `<div class="dlhc-tile dlhc-can">`
-          + `<span class="dlhc-tile-name">${fn1(p.players)}${_isSerialGhoster(p.player_id) ? ' 👻' : ''}</span>`
+          + `<span class="dlhc-tile-name">${fn1(p.players)}${_isSerialGhoster(p.player_id) ? ' 👻' : ''}${_isSnailBadged(p.player_id) ? ' 🐌' : ''}</span>`
           + `</div>`).join('') + `</div>`;
       }
 
@@ -531,6 +569,7 @@ function _renderResultsList() {
     case 'declined': filtered = _recentCompleted.filter(c => c.status === 'declined'); break;
     case 'forfeit':  filtered = _recentCompleted.filter(c => c.status === 'forfeited'); break;
     case 'injury':   filtered = _recentCompleted.filter(c => c.status === 'declined_injury'); break;
+    case 'voided':   filtered = _recentCompleted.filter(c => c.status === 'voided'); break;
     default:         filtered = _recentCompleted;
   }
 
@@ -561,6 +600,7 @@ function _renderResultsList() {
         const ln = c.winner_id === c.challenger_id ? dn : cn;
         label = `🍺 ${wn} 👻 ${ln} ghosted`; break;
       }
+      case 'voided': label = `🐌 ${cn} challenge voided`; break;
       default: label = `⚔️ ${cn} v ${dn}`;
     }
     return `<div class="ch-res-row">
@@ -652,7 +692,7 @@ function renderDivisionLadder() {
       }
       return `<div class="div-player-row${cls}"${rowClick ? ` onclick="${rowClick}" style="cursor:pointer"` : ''}>
         <span class="div-pos">${recentIconMap[p.player_id] || ''}</span>
-        <span class="div-player-name">${first} ${last}<span class="div-hc">${hc}</span>${_isSerialGhoster(p.player_id) ? '<span class="div-ghost-badge" title="3 consecutive ghosts — moved to last place">👻</span>' : ''}</span>
+        <span class="div-player-name">${first} ${last}<span class="div-hc">${hc}</span>${_isSerialGhoster(p.player_id) ? '<span class="div-ghost-badge" title="3 consecutive ghosts — moved to last place">👻</span>' : ''}${_isSnailBadged(p.player_id) ? '<span class="div-snail-badge" title="Challenge voided — ladder reshuffled before match was played">🐌</span>' : ''}</span>
         ${badge}
       </div>`;
     }).join('');
@@ -697,6 +737,7 @@ function renderDivisionLadder() {
             <option value="declined">🐔 Decline</option>
             <option value="forfeit">👻 Forfeit</option>
             <option value="injury">🩹 Injury</option>
+            <option value="voided">🐌 Voided</option>
           </select>
         </div>
         <div id="challenge-results-list"></div>
@@ -755,6 +796,7 @@ function showLadderRules() {
       <strong>Note:</strong> Ladders updated automatically — any issues, ping David B.
     </p>
     <ol style="padding-left:20px;margin:0;font-size:15px;line-height:1.8;color:#1e293b">
+      <li><strong>No bloody whinging, whining or complaining!</strong> 🍼😭</li>
       <li><strong>Challenge whenever you like</strong> — agree a time, or find each other at a session. <em>(Rocking up late when your opponent has already been playing for an hour can be respectfully declined — we're not tennis players.)</em></li>
       <li><strong>Winner</strong> 🍺 takes the loser's spot on the ladder — or stays put if they're already higher.</li>
       <li><strong>Loser</strong> 😢 always drops one place. No exceptions.</li>
@@ -763,6 +805,8 @@ function showLadderRules() {
       <li><strong>One ladder game per session</strong> is all that's required. No one can demand a rematch the same night.</li>
       <li><strong>Challenge range increases by division</strong> — D1: ${_divRange(1)}, D2: ${_divRange(2)}, D3: ${_divRange(3)}, D4: ${_divRange(4)}. When challenging into a higher division the target division's (smaller) range applies.</li>
       <li><strong>Ghost rule</strong> 👻 — If you don't accept <em>or</em> decline within 7 days, you automatically drop one place. Don't go quiet.</li>
+      <li><strong>Serial ghoster</strong> 👻 — Three consecutive ghosts as the challenged player and you get dropped straight to last place. The badge stays until you play a game.</li>
+      <li><strong>Snail rule</strong> 🐌 — If the ladder reshuffles while your challenge is sitting idle and your opponent is now out of your range, the challenge gets voided and you earn a 🐌. Don't let the ladder move around you — play your games.</li>
     </ol>
   `);
 }
@@ -908,6 +952,11 @@ async function respondToChallenge(challengeId, response) {
   }
   closeFormModal();
   await _loadChallenges();
+  if (response === 'decline') {
+    // Decline reshuffles positions — check for newly out-of-range challenges
+    await _voidOutOfRangeChallenges();
+    await _loadChallenges();
+  }
   await _loadMyChallenges();
   _injectLadderHomeCard();
   _injectMyChallenges();
@@ -1085,6 +1134,10 @@ async function _processAutoForfeits() {
       if (_isSerialGhoster(pid)) await _demoteToLastPlace(pid);
     }
   }
+  // Always check — any reshuffle (forfeit, serial ghost demotion, or none)
+  // may leave active challenges out of range; void them and rebuild snail badges
+  await _voidOutOfRangeChallenges();
+  await _loadChallenges();
 }
 
 // ── Admin reorder ──────────────────────────────────────────────────────────
@@ -1250,7 +1303,7 @@ function _renderAdminChallenges(filter) {
     : _adminChallengesData;
 
   const statusLabel = { pending:'⏳ Pending', accepted:'💥 Accepted', completed:'🍺 Completed',
-    declined:'🐔 Declined', declined_injury:'🩹 Injury', forfeited:'👻 Forfeited', withdrawn:'↩️ Withdrawn' };
+    declined:'🐔 Declined', declined_injury:'🩹 Injury', forfeited:'👻 Forfeited', withdrawn:'↩️ Withdrawn', voided:'🐌 Voided' };
 
   const rows = filtered.map(c => {
     const cr = `${c.challenger?.first_name||'?'} ${c.challenger?.last_name||''}`.trim();
