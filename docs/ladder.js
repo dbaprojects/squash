@@ -41,6 +41,7 @@ const _CHALLENGES_ENABLED = true;
     _activeChallenges = [];
     _myChallenges = [];
     _recentCompleted = [];
+    _serialGhosters = new Set();
     _notifiedChallengeIds = new Set();
     const basePromises = [
       _origLoadHome(),
@@ -89,6 +90,7 @@ const _CHALLENGES_ENABLED = true;
 let _ladderPositions  = [];
 let _ladderDivSize    = 9;
 let _challengeRange   = 3;
+let _serialGhosters   = new Set();
 let _ladderInList     = [];
 let _ladderPool       = [];
 let _ladderAllPlayers = [];
@@ -245,6 +247,36 @@ async function _loadChallenges() {
   ]);
   _activeChallenges = activeRes.data || [];
   _recentCompleted  = completedRes.data || [];
+  _rebuildSerialGhosters();
+}
+
+function _rebuildSerialGhosters() {
+  _serialGhosters = new Set();
+  const byPlayer = {};
+  for (const c of _recentCompleted) {
+    if (!byPlayer[c.challenged_id]) byPlayer[c.challenged_id] = [];
+    byPlayer[c.challenged_id].push(c); // already sorted desc by completed_at
+  }
+  for (const [pid, challenges] of Object.entries(byPlayer)) {
+    const recent = challenges.slice(0, 3);
+    if (recent.length >= 3 && recent.every(c => c.status === 'forfeited')) {
+      _serialGhosters.add(pid);
+    }
+  }
+}
+
+function _isSerialGhoster(playerId) {
+  return _serialGhosters.has(playerId);
+}
+
+async function _demoteToLastPlace(playerId) {
+  const sorted = [..._ladderPositions].sort((a, b) => a.position - b.position);
+  const idx = sorted.findIndex(p => p.player_id === playerId);
+  if (idx === -1 || idx === sorted.length - 1) return; // not found or already last
+  const [removed] = sorted.splice(idx, 1);
+  sorted.push(removed);
+  const updates = sorted.map((p, i) => ({ player_id: p.player_id, position: i + 1 }));
+  await _savePositions(updates);
 }
 
 async function _loadMyChallenges() {
@@ -378,7 +410,7 @@ function _injectLadderHomeCard() {
       if (challengeable.length > 0) {
         rows += `<div class="divladder-section-label" style="padding:0 2px;margin-top:${myActive.length ? 6 : 6}px">Can challenge</div>`;
         rows += `<div class="dlhc-tiles">` + challengeable.map(p => `<div class="dlhc-tile dlhc-can">`
-          + `<span class="dlhc-tile-name">${fn1(p.players)}</span>`
+          + `<span class="dlhc-tile-name">${fn1(p.players)}${_isSerialGhoster(p.player_id) ? ' 👻' : ''}</span>`
           + `</div>`).join('') + `</div>`;
       }
 
@@ -620,7 +652,7 @@ function renderDivisionLadder() {
       }
       return `<div class="div-player-row${cls}"${rowClick ? ` onclick="${rowClick}" style="cursor:pointer"` : ''}>
         <span class="div-pos">${recentIconMap[p.player_id] || ''}</span>
-        <span class="div-player-name">${first} ${last}<span class="div-hc">${hc}</span></span>
+        <span class="div-player-name">${first} ${last}<span class="div-hc">${hc}</span>${_isSerialGhoster(p.player_id) ? '<span class="div-ghost-badge" title="3 consecutive ghosts — moved to last place">👻</span>' : ''}</span>
         ${badge}
       </div>`;
     }).join('');
@@ -1045,7 +1077,14 @@ async function _processAutoForfeits() {
       loser_pos_change: 1
     }).eq('id', c.id);
   }
-  if (expired.length > 0) await _loadChallenges();
+  if (expired.length > 0) {
+    await _loadChallenges();
+    // Demote any player who has now ghosted 3 consecutive times
+    const uniqueChallenged = [...new Set(expired.map(c => c.challenged_id))];
+    for (const pid of uniqueChallenged) {
+      if (_isSerialGhoster(pid)) await _demoteToLastPlace(pid);
+    }
+  }
 }
 
 // ── Admin reorder ──────────────────────────────────────────────────────────

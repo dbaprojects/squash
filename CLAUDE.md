@@ -561,3 +561,4 @@ echo "{\"version\":\"4.XX\",\"build\":\"$(date +%s)\"}" > docs/version.json
 | v5.71 | Fix stale ladder state on user-switch: clear `_ladderPositions`, `_activeChallenges`, `_myChallenges`, `_recentCompleted`, `_notifiedChallengeIds` at start of patched `loadHome`; `_notifiedChallengeIds` changed `const`→`let` |
 | v5.72 | Ladders home tile: flashing red "Don't be shy — sign up! Ping David B" nudge for players not on the ladder |
 | v5.73 | Ladders home tile: moved to after Sign-Up tile; quip flashes red when ladder player has no active challenges |
+| v5.74 | Serial ghoster rule: 3 consecutive forfeits as challenged → demoted to last place; 👻 badge on their row and home tile chips; `_serialGhosters` Set rebuilt after every challenge load |
