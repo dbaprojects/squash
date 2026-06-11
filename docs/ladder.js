@@ -796,7 +796,7 @@ function showLadderRules() {
       <strong>Note:</strong> Ladders updated automatically — any issues, ping David B.
     </p>
     <ol style="padding-left:20px;margin:0;font-size:15px;line-height:1.8;color:#1e293b">
-      <li><strong>No bloody whinging, whining or complaining!</strong> 🍼😭</li>
+      <li><strong>No bloody whinging, whining or complaining!</strong> 🍼😭🤓</li>
       <li><strong>Challenge whenever you like</strong> — agree a time, or find each other at a session. <em>(Rocking up late when your opponent has already been playing for an hour can be respectfully declined — we're not tennis players.)</em></li>
       <li><strong>Winner</strong> 🍺 takes the loser's spot on the ladder — or stays put if they're already higher.</li>
       <li><strong>Loser</strong> 😢 always drops one place. No exceptions.</li>
