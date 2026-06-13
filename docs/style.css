@@ -2017,6 +2017,7 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 .challenge-status-badge.accepted { background: #dcfce7; color: #15803d; }
 .challenge-status-badge.injury { background: #ffedd5; color: #c2410c; }
 .challenge-date { font-size: 11px; color: #94a3b8; flex-shrink: 0; }
+.challenge-ago { font-size: 11px; color: #cbd5e1; font-style: italic; flex-shrink: 0; }
 .challenges-panel-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; max-width: 600px; margin: 10px auto 0; padding: 0 8px; }
 .ch-col { min-width: 0; }
 .ch-history-header { display: flex; align-items: center; justify-content: space-between; padding: 6px 0 4px; }
@@ -2038,6 +2039,7 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 .divladder-section-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8; margin-bottom: 2px; }
 .me-challenges-wrap { margin-top: 8px; border-top: 1px solid rgba(255,255,255,.15); padding-top: 6px; cursor: pointer; }
 .me-challenge-row { font-size: 11px; color: rgba(255,255,255,.75); padding: 1px 0; line-height: 1.4; }
+.me-challenge-ago { color: rgba(255,255,255,.5); font-style: italic; }
 
 /* Ladder home tile — personal challenge tiles */
 .dlhc-rows { margin-top: 4px; border-top: 1px solid #e2e8f0; padding-top: 4px; }

@@ -235,7 +235,7 @@ function _canChallenge(myPos, targetPos) {
 async function _loadChallenges() {
   const [activeRes, completedRes] = await Promise.all([
     sb.from('ladder_challenges')
-      .select(`id, challenger_id, challenged_id, message, status, issued_at,
+      .select(`id, challenger_id, challenged_id, message, status, issued_at, responded_at,
                challenger:players!challenger_id(first_name, last_name),
                challenged:players!challenged_id(first_name, last_name)`)
       .in('status', ['pending', 'accepted'])
@@ -321,7 +321,7 @@ async function _loadMyChallenges() {
   if (!ST?.player?.id) return;
   const myId = ST.player.id;
   const { data } = await sb.from('ladder_challenges')
-    .select(`id, challenger_id, challenged_id, status, issued_at, winner_id,
+    .select(`id, challenger_id, challenged_id, status, issued_at, responded_at, winner_id,
              challenger:players!challenger_id(first_name, last_name),
              challenged:players!challenged_id(first_name, last_name)`)
     .or(`challenger_id.eq.${myId},challenged_id.eq.${myId}`)
@@ -480,6 +480,21 @@ function _injectLadderHomeCard() {
   else grid.appendChild(card);
 }
 
+// ── Elapsed-time since a timestamp — "3d 4h", "5h", "20m", "just now" ───────
+function _elapsed(dateStr) {
+  if (!dateStr) return '';
+  const ms = Date.now() - new Date(dateStr).getTime();
+  if (ms < 0) return 'just now';
+  const mins = Math.floor(ms / 60000);
+  if (mins < 1)  return 'just now';
+  if (mins < 60) return `${mins}m`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24)  return `${hrs}h`;
+  const days = Math.floor(hrs / 24);
+  const remHrs = hrs % 24;
+  return remHrs ? `${days}d ${remHrs}h` : `${days}d`;
+}
+
 // ── Me tile: inject my personal challenges ─────────────────────────────────
 function _myChallengeStatusLabel(c, myId) {
   const isMe = id => id === myId;
@@ -518,7 +533,10 @@ function _injectMyChallenges() {
     const opp = c.challenger_id === myId ? c.challenged : c.challenger;
     const oppName = `${opp?.first_name || ''} ${(opp?.last_name || '')[0] || ''}`.trim();
     const statusHtml = _myChallengeStatusLabel(c, myId);
-    return `<div class="me-challenge-row">vs ${oppName} · ${statusHtml}</div>`;
+    const stampSrc = c.status === 'accepted' ? (c.responded_at || c.issued_at) : c.issued_at;
+    const ago = _elapsed(stampSrc);
+    const agoHtml = ago ? `<span class="me-challenge-ago"> · ${ago}</span>` : '';
+    return `<div class="me-challenge-row">vs ${oppName} · ${statusHtml}${agoHtml}</div>`;
   }).join('');
   const wrap = document.createElement('div');
   wrap.className = 'me-challenges-wrap';
@@ -715,14 +733,19 @@ function renderDivisionLadder() {
               const cn = (c.challenger?.first_name || '') + ' ' + ((c.challenger?.last_name || '')[0] || '');
               const dn = (c.challenged?.first_name || '') + ' ' + ((c.challenged?.last_name || '')[0] || '');
               const canAct = myId && (c.challenger_id === myId || c.challenged_id === myId);
-              const statusCls   = c.status === 'accepted' ? ' accepted' : '';
-              const statusLabel = c.status === 'accepted' ? 'Accepted' : 'Pending';
-              const issuedDate  = c.issued_at ? new Date(c.issued_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
+              const isAccepted  = c.status === 'accepted';
+              const statusCls   = isAccepted ? ' accepted' : '';
+              const statusLabel = isAccepted ? 'Accepted' : 'Pending';
+              const stampSrc    = isAccepted ? (c.responded_at || c.issued_at) : c.issued_at;
+              const issuedDate  = stampSrc ? new Date(stampSrc).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
+              const ago         = _elapsed(stampSrc);
+              const agoLabel    = ago ? `${isAccepted ? 'accepted' : 'pending'} ${ago}` : '';
               return `<div class="ch-act-row${canAct ? ' clickable' : ''}"${canAct ? ` onclick="openChallengeResult('${c.id}')"` : ''}>
                 <div class="ch-act-names">⚔️ ${cn} vs ${dn}</div>
                 <div class="ch-act-foot">
                   <span class="challenge-status-badge${statusCls}">${statusLabel}</span>
                   <span class="challenge-date">${issuedDate}</span>
+                  ${agoLabel ? `<span class="challenge-ago">${agoLabel}</span>` : ''}
                 </div>
               </div>`;
             }).join('')
