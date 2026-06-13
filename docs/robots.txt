@@ -1,2 +1,10 @@
+# Indexing is blocked via <meta name="robots" content="noindex,nofollow">
+# on every page — that is the mechanism that keeps this site out of search
+# results. We deliberately ALLOW crawling here so that crawlers can actually
+# read the noindex tag. Do NOT add "Disallow: /": blocking the crawl would
+# stop crawlers from ever seeing the noindex, and a linked URL could then be
+# indexed without a snippet. (Also note: on a GitHub Pages *project* site this
+# file is served under /squash/ and is ignored by crawlers anyway — but if a
+# custom domain is added later, this file becomes the domain-root robots.txt.)
 User-agent: *
-Disallow: /
+Disallow:
