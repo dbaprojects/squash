@@ -1067,7 +1067,7 @@ function openChallengeResult(challengeId) {
     ${canWithdraw ? `<button class="btn-secondary" style="width:100%;color:#dc2626;border-color:#dc2626;margin-bottom:0"
       onclick="withdrawChallenge('${challengeId}')">Withdraw Challenge</button>` : ''}
     <p style="font-size:11px;color:#94a3b8;text-align:center;margin-top:10px">Recording a result updates ladder positions immediately.</p>
-    ${isPending ? '' : '<p style="font-size:12px;color:#92400e;background:#fffbeb;border:1.5px solid #fbbf24;border-radius:6px;padding:8px 12px;margin:10px 0 0;text-align:center">If you\'ve <strong>mutually agreed to cancel</strong> this match, don\'t record a result here — ping David B and it <em>may</em> be removed without penalty.</p>'}
+    ${isPending ? '' : '<p style="font-size:12px;color:#92400e;background:#fffbeb;border:1.5px solid #fbbf24;border-radius:6px;padding:8px 12px;margin:10px 0 0;text-align:center">If you\'ve <strong>mutually agreed to cancel</strong> this match, don\'t record a result here — ping David B and it <strong>may</strong> be removed without penalty.</p>'}
   `);
 }
 
