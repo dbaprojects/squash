@@ -5,7 +5,7 @@
 - **Owner:** Club admin — personal project
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `[local project directory]`
-- **Current version:** v5.76
+- **Current version:** v5.77
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -562,5 +562,6 @@ echo "{\"version\":\"4.XX\",\"build\":\"$(date +%s)\"}" > docs/version.json
 | v5.72 | Ladders home tile: flashing red "Don't be shy — sign up! Ping David B" nudge for players not on the ladder |
 | v5.73 | Ladders home tile: moved to after Sign-Up tile; quip flashes red when ladder player has no active challenges |
 | v5.74 | Serial ghoster rule: 3 consecutive forfeits as challenged → demoted to last place; 👻 badge on their row and home tile chips; `_serialGhosters` Set rebuilt after every challenge load |
+| v5.77 | Got-jumped badge 🦘: when a challenger wins a match and leaps above another player they also had a live challenge with (pending OR accepted), that challenge is set to `superseded` status (the leapt-over/challenged player "got jumped" 🦘). `_supersedeJumpedChallenges(winnerId, excludeId)` runs in `submitChallengeResult` BEFORE `loadDivisionLadder`'s reshuffle pass so jumped challenges aren't mistaken for out-of-range 🐌 voids; winner gets NO snail penalty (they caused it by winning). `_jumpedBadges` Set rebuilt in `_loadChallenges` via `_rebuildJumpedBadges()` (most-recent-as-challenged challenge is `superseded` → 🦘, clears on next outcome); `_isJumped()` helper. Badge on row + home tile chips; `superseded` added to completed query `.in()`, history label "🦘 X got jumped!", `jumped` history filter, admin status map, Rules of Engagement entry, `.div-jumped-badge` CSS. No schema change (status is plain TEXT) |
 | v5.76 | Elapsed time on challenges: ladder Active panel shows "pending Xd Yh" / "accepted Xh"; Me home tile challenge rows append " · Xd Yh" since issue (pending) or acceptance (accepted); new `_elapsed()` helper formats d/h/m; `responded_at` added to active + my-challenges queries; `.challenge-ago` + `.me-challenge-ago` CSS |
 | v5.75 | Snail badge 🐌: when `_processAutoForfeits` reshuffles the ladder, any active challenges now out of range are set to `voided` status in DB; challengers whose most-recent-as-challenger challenge is `voided` get 🐌 on their row and home tile chips; clears when they earn any other outcome; `_snailBadges` Set rebuilt after every `_loadChallenges`; `voided` filter in history panel; `_voidOutOfRangeChallenges()` called after all auto-forfeits + serial-ghost demotions |

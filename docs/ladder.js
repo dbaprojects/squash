@@ -43,6 +43,7 @@ const _CHALLENGES_ENABLED = true;
     _recentCompleted = [];
     _serialGhosters = new Set();
     _snailBadges = new Set();
+    _jumpedBadges = new Set();
     _notifiedChallengeIds = new Set();
     const basePromises = [
       _origLoadHome(),
@@ -93,6 +94,7 @@ let _ladderDivSize    = 9;
 let _challengeRange   = 3;
 let _serialGhosters   = new Set();
 let _snailBadges      = new Set();
+let _jumpedBadges     = new Set();
 let _ladderInList     = [];
 let _ladderPool       = [];
 let _ladderAllPlayers = [];
@@ -244,13 +246,14 @@ async function _loadChallenges() {
       .select(`id, challenger_id, challenged_id, status, completed_at, responded_at, winner_id, winner_pos_change,
                challenger:players!challenger_id(first_name, last_name),
                challenged:players!challenged_id(first_name, last_name)`)
-      .in('status', ['completed', 'forfeited', 'declined', 'declined_injury', 'voided'])
+      .in('status', ['completed', 'forfeited', 'declined', 'declined_injury', 'voided', 'superseded'])
       .order('completed_at', { ascending: false })
   ]);
   _activeChallenges = activeRes.data || [];
   _recentCompleted  = completedRes.data || [];
   _rebuildSerialGhosters();
   _rebuildSnailBadges();
+  _rebuildJumpedBadges();
 }
 
 function _rebuildSerialGhosters() {
@@ -291,6 +294,26 @@ function _isSnailBadged(playerId) {
   return _snailBadges.has(playerId);
 }
 
+function _rebuildJumpedBadges() {
+  _jumpedBadges = new Set();
+  // For each player, look at their most recent challenge as *challenged*.
+  // If it's superseded (challenger won another match and leapt above them
+  // before this match was played) → 🦘 "got jumped". Any other terminal status clears it.
+  const latestAsChallengedByPlayer = {};
+  for (const c of _recentCompleted) {
+    if (!latestAsChallengedByPlayer[c.challenged_id]) {
+      latestAsChallengedByPlayer[c.challenged_id] = c;
+    }
+  }
+  for (const [pid, c] of Object.entries(latestAsChallengedByPlayer)) {
+    if (c.status === 'superseded') _jumpedBadges.add(pid);
+  }
+}
+
+function _isJumped(playerId) {
+  return _jumpedBadges.has(playerId);
+}
+
 // Called after any ladder reshuffle: void all active challenges now out of range.
 // Challengers whose challenge gets voided earn a 🐌 badge.
 async function _voidOutOfRangeChallenges() {
@@ -304,6 +327,28 @@ async function _voidOutOfRangeChallenges() {
   const now = new Date().toISOString();
   for (const c of outOfRange) {
     await sb.from('ladder_challenges').update({ status: 'voided', completed_at: now }).eq('id', c.id);
+  }
+}
+
+// Called after a win cascade: the winner may have leapt above players they
+// also had a live challenge with. Those matches will never be played, so mark
+// them 'superseded' (the challenged player "got jumped" 🦘). Distinct from
+// 'voided'/🐌 — the winner caused this by winning, so they get no snail penalty.
+// excludeId skips the just-recorded challenge itself.
+async function _supersedeJumpedChallenges(winnerId, excludeId) {
+  const winnerPos = _ladderPositions.find(p => p.player_id === winnerId)?.position;
+  if (!winnerPos) return;
+  const jumped = _activeChallenges.filter(c => {
+    if (c.id === excludeId) return false;
+    if (c.challenger_id !== winnerId) return false;
+    const targetPos = _ladderPositions.find(p => p.player_id === c.challenged_id)?.position;
+    if (!targetPos) return false;
+    return !_canChallenge(winnerPos, targetPos);
+  });
+  if (jumped.length === 0) return;
+  const now = new Date().toISOString();
+  for (const c of jumped) {
+    await sb.from('ladder_challenges').update({ status: 'superseded', completed_at: now }).eq('id', c.id);
   }
 }
 
@@ -448,7 +493,7 @@ function _injectLadderHomeCard() {
       if (challengeable.length > 0) {
         rows += `<div class="divladder-section-label" style="padding:0 2px;margin-top:${myActive.length ? 6 : 6}px">Can challenge</div>`;
         rows += `<div class="dlhc-tiles">` + challengeable.map(p => `<div class="dlhc-tile dlhc-can">`
-          + `<span class="dlhc-tile-name">${fn1(p.players)}${_isSerialGhoster(p.player_id) ? ' 👻' : ''}${_isSnailBadged(p.player_id) ? ' 🐌' : ''}</span>`
+          + `<span class="dlhc-tile-name">${fn1(p.players)}${_isSerialGhoster(p.player_id) ? ' 👻' : ''}${_isSnailBadged(p.player_id) ? ' 🐌' : ''}${_isJumped(p.player_id) ? ' 🦘' : ''}</span>`
           + `</div>`).join('') + `</div>`;
       }
 
@@ -588,6 +633,7 @@ function _renderResultsList() {
     case 'forfeit':  filtered = _recentCompleted.filter(c => c.status === 'forfeited'); break;
     case 'injury':   filtered = _recentCompleted.filter(c => c.status === 'declined_injury'); break;
     case 'voided':   filtered = _recentCompleted.filter(c => c.status === 'voided'); break;
+    case 'jumped':   filtered = _recentCompleted.filter(c => c.status === 'superseded'); break;
     default:         filtered = _recentCompleted;
   }
 
@@ -619,6 +665,7 @@ function _renderResultsList() {
         label = `🍺 ${wn} 👻 ${ln} ghosted`; break;
       }
       case 'voided': label = `🐌 ${cn} challenge voided`; break;
+      case 'superseded': label = `🦘 ${dn} got jumped!`; break;
       default: label = `⚔️ ${cn} v ${dn}`;
     }
     return `<div class="ch-res-row">
@@ -710,7 +757,7 @@ function renderDivisionLadder() {
       }
       return `<div class="div-player-row${cls}"${rowClick ? ` onclick="${rowClick}" style="cursor:pointer"` : ''}>
         <span class="div-pos">${recentIconMap[p.player_id] || ''}</span>
-        <span class="div-player-name">${first} ${last}<span class="div-hc">${hc}</span>${_isSerialGhoster(p.player_id) ? '<span class="div-ghost-badge" title="3 consecutive ghosts — moved to last place">👻</span>' : ''}${_isSnailBadged(p.player_id) ? '<span class="div-snail-badge" title="Challenge voided — ladder reshuffled before match was played">🐌</span>' : ''}</span>
+        <span class="div-player-name">${first} ${last}<span class="div-hc">${hc}</span>${_isSerialGhoster(p.player_id) ? '<span class="div-ghost-badge" title="3 consecutive ghosts — moved to last place">👻</span>' : ''}${_isSnailBadged(p.player_id) ? '<span class="div-snail-badge" title="Challenge voided — ladder reshuffled before match was played">🐌</span>' : ''}${_isJumped(p.player_id) ? '<span class="div-jumped-badge" title="Got jumped — challenger won another match and leapt above them; match no longer played">🦘</span>' : ''}</span>
         ${badge}
       </div>`;
     }).join('');
@@ -761,6 +808,7 @@ function renderDivisionLadder() {
             <option value="forfeit">👻 Forfeit</option>
             <option value="injury">🩹 Injury</option>
             <option value="voided">🐌 Voided</option>
+            <option value="jumped">🦘 Jumped</option>
           </select>
         </div>
         <div id="challenge-results-list"></div>
@@ -831,6 +879,7 @@ function showLadderRules() {
       <li><strong>Ghost rule</strong> 👻 — If you don't accept <em>or</em> decline within 7 days, you automatically drop one place. Don't go quiet.</li>
       <li><strong>Serial ghoster</strong> 👻 — Three consecutive ghosts as the challenged player and you get dropped straight to last place. The badge stays until you play a game.</li>
       <li><strong>Snail rule</strong> 🐌 — If the ladder reshuffles while your challenge is sitting idle and your opponent is now out of your range, the challenge gets voided and you earn a 🐌. Don't let the ladder move around you — play your games.</li>
+      <li><strong>Got jumped</strong> 🦘 — If someone challenges you, then wins a different match and leaps above you before your game is played, that challenge is off and you earn a 🦘. No penalty — just bad timing.</li>
     </ol>
   `);
 }
@@ -1048,6 +1097,10 @@ async function submitChallengeResult(challengeId, winnerId) {
     loser_pos_change: 1
   }).eq('id', challengeId);
   if (error) { alert(error.message); return; }
+  // Winner may have leapt above players they also had a live challenge with —
+  // mark those 'superseded' (🦘 "got jumped") before loadDivisionLadder's
+  // reshuffle pass runs, so they aren't mistaken for out-of-range 🐌 voids.
+  await _supersedeJumpedChallenges(winnerId, challengeId);
   closeFormModal();
   await _loadMyChallenges();
   await loadDivisionLadder();
@@ -1331,7 +1384,7 @@ function _renderAdminChallenges(filter) {
     : _adminChallengesData;
 
   const statusLabel = { pending:'⏳ Pending', accepted:'💥 Accepted', completed:'🍺 Completed',
-    declined:'🐔 Declined', declined_injury:'🩹 Injury', forfeited:'👻 Forfeited', withdrawn:'↩️ Withdrawn', voided:'🐌 Voided' };
+    declined:'🐔 Declined', declined_injury:'🩹 Injury', forfeited:'👻 Forfeited', withdrawn:'↩️ Withdrawn', voided:'🐌 Voided', superseded:'🦘 Jumped' };
 
   const rows = filtered.map(c => {
     const cr = `${c.challenger?.first_name||'?'} ${c.challenger?.last_name||''}`.trim();
