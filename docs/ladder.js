@@ -881,6 +881,7 @@ function showLadderRules() {
       <li><strong>Ghost rule</strong> 👻 — If you don't accept <em>or</em> decline within 7 days, you automatically drop one place. Don't go quiet.</li>
       <li><strong>Serial ghoster</strong> 👻 — Three consecutive ghosts as the challenged player and you get dropped straight to last place. The badge stays until you play a game.</li>
       <li><strong>Snail rule</strong> 🐌 — If the ladder reshuffles while your challenge is sitting idle and your opponent is now out of your range, the challenge gets voided and you earn a 🐌. Don't let the ladder move around you — play your games.</li>
+      <li><strong>Refer rule #1.</strong></li>
       <li><strong>You got jumped!</strong> 🦘 — If someone challenges you, then wins a different match and leaps above you before your game is played, that challenge is off and you earn a 🦘. No penalty — just bad timing.</li>
     </ol>
   `);
