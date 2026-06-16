@@ -495,7 +495,7 @@ function _injectLadderHomeCard() {
       if (challengeable.length > 0) {
         rows += `<div class="divladder-section-label" style="padding:0 2px;margin-top:${myActive.length ? 6 : 6}px">Can challenge</div>`;
         rows += `<div class="dlhc-tiles">` + challengeable.map(p => `<div class="dlhc-tile dlhc-can">`
-          + `<span class="dlhc-tile-name">${fn1(p.players)}${_isSerialGhoster(p.player_id) ? ' 👻' : ''}${_isSnailBadged(p.player_id) ? ' 🐌' : ''}${_isJumped(p.player_id) ? ' 🦘' : ''}</span>`
+          + `<span class="dlhc-tile-name">${fn1(p.players)}${_isSerialGhoster(p.player_id) ? ' 🪦' : ''}${_isSnailBadged(p.player_id) ? ' 🐌' : ''}${_isJumped(p.player_id) ? ' 🦘' : ''}</span>`
           + `</div>`).join('') + `</div>`;
       }
 
@@ -759,7 +759,7 @@ function renderDivisionLadder() {
       }
       return `<div class="div-player-row${cls}"${rowClick ? ` onclick="${rowClick}" style="cursor:pointer"` : ''}>
         <span class="div-pos">${recentIconMap[p.player_id] || ''}</span>
-        <span class="div-player-name">${first} ${last}<span class="div-hc">${hc}</span>${_isSerialGhoster(p.player_id) ? '<span class="div-ghost-badge" title="3 consecutive ghosts — moved to last place">👻</span>' : ''}${_isSnailBadged(p.player_id) ? '<span class="div-snail-badge" title="Challenge voided — ladder reshuffled before match was played">🐌</span>' : ''}${_isJumped(p.player_id) ? '<span class="div-jumped-badge" title="Got jumped — challenger won another match and leapt above them; match no longer played">🦘</span>' : ''}</span>
+        <span class="div-player-name">${first} ${last}<span class="div-hc">${hc}</span>${_isSerialGhoster(p.player_id) ? '<span class="div-ghost-badge" title="3 consecutive ghosts — moved to last place">🪦</span>' : ''}${_isSnailBadged(p.player_id) ? '<span class="div-snail-badge" title="Challenge voided — ladder reshuffled before match was played">🐌</span>' : ''}${_isJumped(p.player_id) ? '<span class="div-jumped-badge" title="Got jumped — challenger won another match and leapt above them; match no longer played">🦘</span>' : ''}</span>
         ${badge}
       </div>`;
     }).join('');
@@ -879,7 +879,7 @@ function showLadderRules() {
       <li><strong>One ladder game per session</strong> is all that's required. No one can demand a rematch the same night.</li>
       <li><strong>Challenge range increases by division</strong> — D1: ${_divRange(1)}, D2: ${_divRange(2)}, D3: ${_divRange(3)}, D4: ${_divRange(4)}. When challenging into a higher division the target division's (smaller) range applies.</li>
       <li><strong>Ghost rule</strong> 👻 — If you don't accept <em>or</em> decline within 7 days, you automatically drop one place. Don't go quiet.</li>
-      <li><strong>Serial ghoster</strong> 👻 — Three consecutive ghosts as the challenged player and you get dropped straight to last place. The badge stays until you play a game.</li>
+      <li><strong>Serial ghoster</strong> 🪦 — Three consecutive ghosts as the challenged player and you get dropped straight to last place. The badge stays until you play a game.</li>
       <li><strong>Snail rule</strong> 🐌 — If the ladder reshuffles while your challenge is sitting idle and your opponent is now out of your range, the challenge gets voided and you earn a 🐌. Don't let the ladder move around you — play your games.</li>
       <li><strong>You got jumped!</strong> 🦘 — If someone challenges you, then wins a different match and leaps above you before your game is played, that challenge is off and you earn a 🦘. No penalty — just bad timing.</li>
       <li><strong>Refer rule #1.</strong></li>
