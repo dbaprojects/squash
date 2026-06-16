@@ -871,7 +871,7 @@ function showLadderRules() {
     <ol style="padding-left:20px;margin:0;font-size:15px;line-height:1.8;color:#1e293b">
       <li><strong>No bloody whinging, whining or complaining!</strong> 🍼😭🤓</li>
       <li><strong>Challenge whenever you like</strong> — agree a time, or find each other at a session. <em>(Rocking up late when your opponent has already been playing for an hour can be respectfully declined — we're not tennis players.)</em></li>
-      <li><strong>Ladder games are best of 3, no handicaps.</strong></li>
+      <li><strong>Unless otherwise agreed by the players — ladder games are best of 3, no handicaps.</strong></li>
       <li><strong>Winner</strong> 🍺 takes the loser's spot on the ladder — or stays put if they're already higher.</li>
       <li><strong>Loser</strong> 😢 always drops one place. No exceptions.</li>
       <li><strong>Refuse a challenge?</strong> You lose a place and earn yourself a 🐔. Cluck cluck.</li>
