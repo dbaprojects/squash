@@ -250,7 +250,9 @@ async function _loadChallenges() {
       .order('completed_at', { ascending: false })
   ]);
   _activeChallenges = activeRes.data || [];
-  _recentCompleted  = completedRes.data || [];
+  _recentCompleted  = (completedRes.data || []).sort((a, b) =>
+    new Date(b.completed_at || b.responded_at || 0) - new Date(a.completed_at || a.responded_at || 0)
+  );
   _rebuildSerialGhosters();
   _rebuildSnailBadges();
   _rebuildJumpedBadges();
