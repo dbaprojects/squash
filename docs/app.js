@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '5.80';
+const APP_VERSION = '5.81';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -1495,15 +1495,18 @@ function renderHof() {
       const wHc = r.winner_hc    != null ? ` <span class="hof-hc-inline">(${r.winner_hc})</span>` : '';
       const rHc = r.runner_up_hc != null ? ` <span class="hof-hc-inline">(${r.runner_up_hc})</span>` : '';
       const hasBoxes = !!(r.hcrr_data && Array.isArray(r.hcrr_data.groups) && r.hcrr_data.groups.length);
-      const suClick = isSU ? ` hof-card-clickable" onclick="hcrrOpenForMonth('${r.event_month}')` : '';
-      return `<div class="hof-result-card${suClick}">
+      // Everyone can open the read-only detail view when results exist;
+      // super_admins can always open it (to create/edit).
+      const clickable = hasBoxes || isSU;
+      const clk = clickable ? ` hof-card-clickable" onclick="hcrrViewForMonth('${r.event_month}')` : '';
+      return `<div class="hof-result-card${clk}">
         <div class="hof-card-month">${fmtHofMonthShort(r.event_month)}</div>
         <div class="hof-card-body">
           <div class="hof-card-winner">🏆 ${esc(r.winner_name || '–')}${wHc}</div>
           <div class="hof-card-runnerup">🥈 ${esc(r.runner_up_name || '–')}${rHc}</div>
         </div>
         ${score ? `<div class="hof-card-score">${score}</div>` : ''}
-        ${isSU && hasBoxes ? '<div class="hof-card-boxes">🗂</div>' : ''}
+        ${hasBoxes ? '<div class="hof-card-boxes">🗂</div>' : ''}
       </div>`;
     }).join('');
 

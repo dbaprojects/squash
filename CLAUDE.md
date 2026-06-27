@@ -5,7 +5,7 @@
 - **Owner:** Club admin — personal project
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `[local project directory]`
-- **Current version:** v5.80
+- **Current version:** v5.81
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -564,6 +564,7 @@ echo "{\"version\":\"4.XX\",\"build\":\"$(date +%s)\"}" > docs/version.json
 | v5.72 | Ladders home tile: flashing red "Don't be shy — sign up! Ping David B" nudge for players not on the ladder |
 | v5.73 | Ladders home tile: moved to after Sign-Up tile; quip flashes red when ladder player has no active challenges |
 | v5.74 | Serial ghoster rule: 3 consecutive forfeits as challenged → demoted to last place; 👻 badge on their row and home tile chips; `_serialGhosters` Set rebuilt after every challenge load |
+| v5.81 | HCRR detail: clicking any HoF month card opens a **read-only detailed results view** for everyone (cards show 🗂 when results exist); super_admins get an ✏️ Edit / ➕ Create button in that view → the matrix editor. `_hcrrRenderGroup(g, ro)` gained a read-only mode (static cells, no add/remove); new `hcrrViewForMonth()` + `renderHcrrView()` + `_hcrrView` state. HoF cards now call `hcrrViewForMonth` (was super-only `hcrrOpenForMonth`); editor "← Done" returns to the read-only view |
 | v5.80 | HCRR detailed results recorder (super_admin only): new `docs/hcrr.js` module + `view-hcrr` section. Detailed box-by-box results stored as JSONB in new `hof_results.hcrr_data` column (one HCRR/month, `db/schema-hcrr.sql`). Entry points (super_admin): "+ Add HCRR Result" button in HoF top leaders box → simple winner/runner-up modal (`openHofForm`, now upserts by `event_month`); clickable HoF month cards → `hcrrOpenForMonth()`; "🗂 Detailed box results →" button in the HoF form. Editor: add Box/Semi-Final/Final groups, add players from picker (HC frozen/denormalised) or guest, Excel-style editable matrix grid with live row totals. Performance above/below-HC indicator (cell shading) deferred. JSON shape: `{groups:[{id,stage,name,players:[{pid,player_id,name,initials,hc}],scores:{rowPid:{colPid:n}}}]}` |
 | v5.79 | HCRR Rules modal: "🏆 HCRR Rules 🏆" button under the HC Calculator banner in the Handicaps section (`loadLadder`); `showHcrrRules()` opens an 8-rule `showFormModal` (no whinging + fun/adjustments clause, play everyone in your box → semi/final, handicapped starts via HC Calc, lower HC = stronger, single game to 11 sudden-death, report scores, most total points wins box with head-to-head tiebreak, semis/finals straight knockout). Ladder matches are no-handicap (Rules of Engagement #3); HCRR is the handicapped comp |
 | v5.78 | SEO: `<meta name="robots" content="noindex,nofollow">` on all 5 HTML pages + `docs/robots.txt` (allows crawling so noindex is seen — NOT a blanket Disallow, which would defeat noindex and become a footgun on a custom domain). Search-visibility only, not access control — site + Supabase anon key remain public. Confirmed neither Pages site nor repo currently indexed by Google |

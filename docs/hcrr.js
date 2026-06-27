@@ -37,6 +37,7 @@
 // ── State ────────────────────────────────────────────────────────────────────
 let _hcrrRows    = [];    // hof_results: {id, event_month, winner_name, hcrr_data}
 let _hcrrEditing = null;  // { id|null, event_month, data:{groups:[]} }
+let _hcrrView    = null;  // { month, id|null, data:{groups:[]} } — read-only viewer
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function _hcrrUid() {
@@ -189,6 +190,42 @@ function hcrrFromHofForm() {
   hcrrOpenForMonth(m + '-01');
 }
 
+// ── Read-only viewer (everyone) — opened by clicking a HoF month card ─────────
+async function hcrrViewForMonth(month) {
+  const { data } = await sb.from('hof_results')
+    .select('id, event_month, hcrr_data').eq('event_month', month).maybeSingle();
+  _hcrrView = {
+    month,
+    id: data ? data.id : null,
+    data: (data && data.hcrr_data && Array.isArray(data.hcrr_data.groups)) ? data.hcrr_data : { groups: [] },
+  };
+  showSection('view-hcrr');
+  renderHcrrView();
+}
+
+function renderHcrrView() {
+  const wrap = document.getElementById('hcrr-wrap');
+  const v = _hcrrView;
+  if (!wrap || !v) return;
+  const isSU = ST?.player?.is_super_admin === true;
+  const groups = v.data.groups || [];
+  const groupsHtml = groups.length
+    ? groups.map(g => _hcrrRenderGroup(g, true)).join('')
+    : `<p style="color:#888;padding:12px 0">No detailed results recorded for ${_hcrrMonthLabel(v.month)}${isSU ? ' yet.' : '.'}</p>`;
+  const editBtn = isSU
+    ? `<div class="hcrr-save-row"><button class="btn-primary" style="flex:1" onclick="hcrrOpenForMonth('${v.month}')">${groups.length ? '✏️ Edit results' : '➕ Create results'}</button></div>`
+    : '';
+  wrap.innerHTML = `
+    <div class="hcrr-panel">
+      <div class="hcrr-editor-head">
+        <button class="hcrr-back-btn" onclick="navTo('hof')">← Hall of Fame</button>
+        <div class="hcrr-editor-month">${_hcrrMonthLabel(v.month)} HCRR</div>
+      </div>
+      ${groupsHtml}
+      ${editBtn}
+    </div>`;
+}
+
 // ── Editor ───────────────────────────────────────────────────────────────────
 function renderHcrrEditor() {
   const wrap = document.getElementById('hcrr-wrap');
@@ -201,8 +238,8 @@ function renderHcrrEditor() {
   wrap.innerHTML = `
     <div class="hcrr-panel">
       <div class="hcrr-editor-head">
-        <button class="hcrr-back-btn" onclick="navTo('hof')">← Hall of Fame</button>
-        <div class="hcrr-editor-month">${_hcrrMonthLabel(e.event_month)} HCRR</div>
+        <button class="hcrr-back-btn" onclick="hcrrViewForMonth('${e.event_month}')">← Done</button>
+        <div class="hcrr-editor-month">Editing ${_hcrrMonthLabel(e.event_month)} HCRR</div>
       </div>
 
       ${groupsHtml}
@@ -219,7 +256,7 @@ function renderHcrrEditor() {
     </div>`;
 }
 
-function _hcrrRenderGroup(g) {
+function _hcrrRenderGroup(g, ro) {
   const players = g.players || [];
   // Column headers (initials)
   const colHead = players.map(p => `<th class="hcrr-col-init" title="${esc(p.name)}">${esc(p.initials || '?')}</th>`).join('');
@@ -229,6 +266,7 @@ function _hcrrRenderGroup(g) {
       if (cp.pid === rp.pid) return `<td class="hcrr-diag"></td>`;
       const v = (g.scores && g.scores[rp.pid] && g.scores[rp.pid][cp.pid] != null)
         ? g.scores[rp.pid][cp.pid] : '';
+      if (ro) return `<td class="hcrr-cell-ro">${v}</td>`;
       return `<td><input class="hcrr-cell" type="number" inputmode="numeric" min="0" max="99"
         value="${v}" onchange="hcrrSetScore('${g.id}','${rp.pid}','${cp.pid}',this.value)"></td>`;
     }).join('');
@@ -237,7 +275,7 @@ function _hcrrRenderGroup(g) {
       <td class="hcrr-rp-name">${esc(rp.name)} <span class="hcrr-rp-init">${esc(rp.initials || '')}</span></td>
       ${cells}
       <td class="hcrr-total" id="hcrr-tot-${g.id}-${rp.pid}">${_hcrrTotal(g, rp.pid)}</td>
-      <td><button class="hcrr-x" title="Remove player" onclick="hcrrRemovePlayer('${g.id}','${rp.pid}')">×</button></td>
+      ${ro ? '' : `<td><button class="hcrr-x" title="Remove player" onclick="hcrrRemovePlayer('${g.id}','${rp.pid}')">×</button></td>`}
     </tr>`;
   }).join('');
 
@@ -248,20 +286,27 @@ function _hcrrRenderGroup(g) {
            <th class="hcrr-name-head">Player</th>
            ${colHead}
            <th class="hcrr-total-head">Total</th>
-           <th></th>
+           ${ro ? '' : '<th></th>'}
          </tr></thead>
          <tbody>${bodyRows}</tbody>
        </table></div>`
-    : '<p style="color:#aaa;font-size:12px;padding:4px 0">No players yet.</p>';
+    : (ro ? '' : '<p style="color:#aaa;font-size:12px;padding:4px 0">No players yet.</p>');
+
+  const head = ro
+    ? `<div class="hcrr-group-head">
+        <span class="hcrr-group-name-ro">${esc(g.name)}</span>
+        <span class="hcrr-stage-tag">${_hcrrStageLabel(g.stage)}</span>
+      </div>`
+    : `<div class="hcrr-group-head">
+        <input class="hcrr-group-name" value="${esc(g.name)}" onchange="hcrrRenameGroup('${g.id}',this.value)">
+        <span class="hcrr-stage-tag">${_hcrrStageLabel(g.stage)}</span>
+        <button class="hcrr-group-x" title="Remove ${_hcrrStageLabel(g.stage)}" onclick="hcrrRemoveGroup('${g.id}')">🗑</button>
+      </div>`;
 
   return `<div class="hcrr-group">
-    <div class="hcrr-group-head">
-      <input class="hcrr-group-name" value="${esc(g.name)}" onchange="hcrrRenameGroup('${g.id}',this.value)">
-      <span class="hcrr-stage-tag">${_hcrrStageLabel(g.stage)}</span>
-      <button class="hcrr-group-x" title="Remove ${_hcrrStageLabel(g.stage)}" onclick="hcrrRemoveGroup('${g.id}')">🗑</button>
-    </div>
+    ${head}
     ${matrix}
-    <button class="hcrr-addplayer-btn" onclick="hcrrAddPlayerPrompt('${g.id}')">+ Add player</button>
+    ${ro ? '' : `<button class="hcrr-addplayer-btn" onclick="hcrrAddPlayerPrompt('${g.id}')">+ Add player</button>`}
   </div>`;
 }
 
