@@ -2130,6 +2130,18 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 .hcrr-cell { width: 36px; border: none; text-align: center; font-size: 12px; padding: 4px 2px; -moz-appearance: textfield; }
 .hcrr-cell::-webkit-outer-spin-button, .hcrr-cell::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .hcrr-cell:focus { outline: 2px solid #5b9bd5; background: #eff6ff; }
+/* Player picker (type-to-filter) */
+.hcrr-pick-search { width: 100%; }
+.hcrr-pick-list { max-height: 260px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; margin-top: 6px; }
+.hcrr-pick-item {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 9px 12px; border-bottom: 1px solid #f1f5f9; cursor: pointer; font-size: 14px;
+}
+.hcrr-pick-item:last-child { border-bottom: none; }
+.hcrr-pick-item:hover { background: #f0fdf4; }
+.hcrr-pick-hc { color: #94a3b8; font-weight: 600; font-size: 12px; }
+.hcrr-pick-empty { padding: 12px; color: #94a3b8; font-size: 13px; text-align: center; }
+
 .hcrr-cell-ro { min-width: 36px; padding: 5px 2px !important; }
 .hcrr-group-name-ro { flex: 1; font-size: 15px; font-weight: 700; color: #1B2A6B; }
 .hcrr-total { font-weight: 800; background: #f8fafc; min-width: 36px; }

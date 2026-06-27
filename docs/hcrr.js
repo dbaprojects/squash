@@ -340,36 +340,52 @@ function hcrrRenameGroup(gid, val) {
   if (g) g.name = val;
 }
 
+let _hcrrPickGid = null;   // group currently having a player added
+
 function hcrrAddPlayerPrompt(gid) {
   const g = _hcrrFindGroup(gid);
   if (!g) return;
-  const existingIds = new Set(g.players.map(p => p.player_id).filter(Boolean));
-  const opts = (ST.players || [])
-    .filter(p => p.active !== false && !existingIds.has(p.id))
-    .sort((a, b) => (a.first_name + a.last_name).localeCompare(b.first_name + b.last_name))
-    .map(p => `<option value="${p.id}">${esc(p.first_name)} ${esc(p.last_name)} (${p.current_handicap != null ? p.current_handicap : '–'})</option>`)
-    .join('');
+  _hcrrPickGid = gid;
   showFormModal(`Add player to ${esc(g.name)}`, `
     <div class="form-group">
       <label>Player</label>
-      <select id="hcrr-pick-player"><option value="">— choose —</option>${opts}</select>
+      <input type="text" id="hcrr-pick-search" class="hcrr-pick-search" placeholder="Type a name…"
+        autocomplete="off" oninput="hcrrFilterPick()">
     </div>
-    <button class="btn-primary" style="width:100%;margin-bottom:14px" onclick="hcrrPickPlayer('${gid}')">Add Player</button>
-    <div style="border-top:1px solid #e2e8f0;padding-top:12px">
-      <p style="font-size:12px;color:#64748b;margin:0 0 8px">…or add a guest (not in the player list):</p>
-      <div class="form-group"><label>Name</label><input id="hcrr-guest-name" placeholder="Guest name"></div>
-      <div class="form-group"><label>Handicap</label><input id="hcrr-guest-hc" type="number" inputmode="numeric" placeholder="e.g. -3"></div>
-      <button class="btn-secondary" style="width:100%" onclick="hcrrAddGuest('${gid}')">Add Guest</button>
-    </div>
+    <div id="hcrr-pick-list" class="hcrr-pick-list">${_hcrrPickItems('')}</div>
   `);
+  setTimeout(() => document.getElementById('hcrr-pick-search')?.focus(), 50);
 }
 
-function hcrrPickPlayer(gid) {
-  const g = _hcrrFindGroup(gid);
+// Build the filtered candidate list (active players not already in the group).
+function _hcrrPickItems(filterStr) {
+  const g = _hcrrFindGroup(_hcrrPickGid);
+  if (!g) return '';
+  const existingIds = new Set(g.players.map(p => p.player_id).filter(Boolean));
+  const q = (filterStr || '').toLowerCase().trim();
+  const list = (ST.players || [])
+    .filter(p => p.active !== false && !existingIds.has(p.id))
+    .filter(p => !q || `${p.first_name} ${p.last_name}`.toLowerCase().includes(q))
+    .sort((a, b) => (a.first_name + a.last_name).localeCompare(b.first_name + b.last_name));
+  if (!list.length) return '<div class="hcrr-pick-empty">No matching players</div>';
+  return list.map(p =>
+    `<div class="hcrr-pick-item" onclick="hcrrPickPlayer('${p.id}')">
+      <span>${esc(p.first_name)} ${esc(p.last_name)}</span>
+      <span class="hcrr-pick-hc">${p.current_handicap != null ? p.current_handicap : '–'}</span>
+    </div>`
+  ).join('');
+}
+
+function hcrrFilterPick() {
+  const q = document.getElementById('hcrr-pick-search')?.value || '';
+  const listEl = document.getElementById('hcrr-pick-list');
+  if (listEl) listEl.innerHTML = _hcrrPickItems(q);
+}
+
+function hcrrPickPlayer(playerId) {
+  const g = _hcrrFindGroup(_hcrrPickGid);
   if (!g) return;
-  const id = document.getElementById('hcrr-pick-player')?.value;
-  if (!id) { alert('Choose a player'); return; }
-  const p = (ST.players || []).find(x => x.id === id);
+  const p = (ST.players || []).find(x => x.id === playerId);
   if (!p) return;
   const name = `${p.first_name} ${p.last_name}`.trim();
   g.players.push({
@@ -378,23 +394,6 @@ function hcrrPickPlayer(gid) {
     name,
     initials: _hcrrInitials(name),
     hc: p.current_handicap != null ? p.current_handicap : null,
-  });
-  closeFormModal();
-  renderHcrrEditor();
-}
-
-function hcrrAddGuest(gid) {
-  const g = _hcrrFindGroup(gid);
-  if (!g) return;
-  const name = (document.getElementById('hcrr-guest-name')?.value || '').trim();
-  if (!name) { alert('Enter a name'); return; }
-  const hcRaw = document.getElementById('hcrr-guest-hc')?.value;
-  g.players.push({
-    pid: _hcrrUid(),
-    player_id: null,
-    name,
-    initials: _hcrrInitials(name),
-    hc: hcRaw === '' || hcRaw == null ? null : Number(hcRaw),
   });
   closeFormModal();
   renderHcrrEditor();
