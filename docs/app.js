@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '5.78';
+const APP_VERSION = '5.79';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -698,6 +698,7 @@ function renderLadder() {
       <div id="ladder-section-card" class="home-card home-card-ladder"></div>
     </div>
     <button class="hc-calc-banner" onclick="openHcCalculator()">Calculate your starting scores →</button>
+    <button class="hc-calc-banner" onclick="showHcrrRules()">🏆 HCRR Rules 🏆</button>
     <div id="ladder-view-toggle"></div>
     <div id="ladder-filter-bar"></div>
     <div id="ladder-section-history"></div>`;
@@ -3837,6 +3838,21 @@ function _hccFmt(v) {
   if (!v || v === '-') return v || '--';
   const n = parseFloat(v);
   return isNaN(n) ? '--' : (n > 0 ? '+' + n : String(n));
+}
+
+function showHcrrRules() {
+  showFormModal('🏆 HCRR Rules 🏆', `
+    <ol style="padding-left:20px;margin:0;font-size:15px;line-height:1.8;color:#1e293b">
+      <li><strong>No bloody whinging, whining or complaining!</strong> 🍼😭🤓 It's meant to be fun, and some adjustments may be made on the day <em>(subject to this rule, of course!)</em></li>
+      <li><strong>Play everyone in your box</strong> — the winner of the box goes through to the Semi Final or Final, depending on how many people are in the day's HCRR.</li>
+      <li><strong>Starting scores are handicapped</strong> — work them out with the HC Calculator: if both players are the same side of zero, net off the weaker player to 0; if they straddle zero, no netting; then both scores rise by 1 for every 6-point gap, capped at +6.</li>
+      <li><strong>Lower handicap = stronger player</strong> — the scale runs from −35 (the gun) to +6 (just starting out).</li>
+      <li><strong>Single game to 11</strong> — point-a-rally, one game per pairing. <strong>Sudden death</strong> (no 2 points clear).</li>
+      <li><strong>Report every score</strong> — log all your results so the standings stay honest.</li>
+      <li><strong>Most total points wins the box</strong> — every point counts! A draw between two players is decided by whoever won the individual game between those two.</li>
+      <li><strong>Semi Finals &amp; Finals</strong> — straight knockout, whoever wins (single game to 11) 🍺🏆</li>
+    </ol>
+  `);
 }
 
 function openHcCalculator() {

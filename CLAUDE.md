@@ -5,7 +5,7 @@
 - **Owner:** Club admin — personal project
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `[local project directory]`
-- **Current version:** v5.77
+- **Current version:** v5.79
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -562,6 +562,8 @@ echo "{\"version\":\"4.XX\",\"build\":\"$(date +%s)\"}" > docs/version.json
 | v5.72 | Ladders home tile: flashing red "Don't be shy — sign up! Ping David B" nudge for players not on the ladder |
 | v5.73 | Ladders home tile: moved to after Sign-Up tile; quip flashes red when ladder player has no active challenges |
 | v5.74 | Serial ghoster rule: 3 consecutive forfeits as challenged → demoted to last place; 👻 badge on their row and home tile chips; `_serialGhosters` Set rebuilt after every challenge load |
+| v5.79 | HCRR Rules modal: "🏆 HCRR Rules 🏆" button under the HC Calculator banner in the Handicaps section (`loadLadder`); `showHcrrRules()` opens an 8-rule `showFormModal` (no whinging + fun/adjustments clause, play everyone in your box → semi/final, handicapped starts via HC Calc, lower HC = stronger, single game to 11 sudden-death, report scores, most total points wins box with head-to-head tiebreak, semis/finals straight knockout). Ladder matches are no-handicap (Rules of Engagement #3); HCRR is the handicapped comp |
+| v5.78 | SEO: `<meta name="robots" content="noindex,nofollow">` on all 5 HTML pages + `docs/robots.txt` (allows crawling so noindex is seen — NOT a blanket Disallow, which would defeat noindex and become a footgun on a custom domain). Search-visibility only, not access control — site + Supabase anon key remain public. Confirmed neither Pages site nor repo currently indexed by Google |
 | v5.77 | Got-jumped badge 🦘: when a challenger wins a match and leaps above another player they also had a live challenge with (pending OR accepted), that challenge is set to `superseded` status (the leapt-over/challenged player "got jumped" 🦘). `_supersedeJumpedChallenges(winnerId, excludeId)` runs in `submitChallengeResult` BEFORE `loadDivisionLadder`'s reshuffle pass so jumped challenges aren't mistaken for out-of-range 🐌 voids; winner gets NO snail penalty (they caused it by winning). `_jumpedBadges` Set rebuilt in `_loadChallenges` via `_rebuildJumpedBadges()` (most-recent-as-challenged challenge is `superseded` → 🦘, clears on next outcome); `_isJumped()` helper. Badge on row + home tile chips; `superseded` added to completed query `.in()`, history label "🦘 X got jumped!", `jumped` history filter, admin status map, Rules of Engagement entry, `.div-jumped-badge` CSS. No schema change (status is plain TEXT) |
 | v5.76 | Elapsed time on challenges: ladder Active panel shows "pending Xd Yh" / "accepted Xh"; Me home tile challenge rows append " · Xd Yh" since issue (pending) or acceptance (accepted); new `_elapsed()` helper formats d/h/m; `responded_at` added to active + my-challenges queries; `.challenge-ago` + `.me-challenge-ago` CSS |
 | v5.75 | Snail badge 🐌: when `_processAutoForfeits` reshuffles the ladder, any active challenges now out of range are set to `voided` status in DB; challengers whose most-recent-as-challenger challenge is `voided` get 🐌 on their row and home tile chips; clears when they earn any other outcome; `_snailBadges` Set rebuilt after every `_loadChallenges`; `voided` filter in history panel; `_voidOutOfRangeChallenges()` called after all auto-forfeits + serial-ghost demotions |
