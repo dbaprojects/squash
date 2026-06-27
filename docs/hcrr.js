@@ -182,14 +182,6 @@ async function hcrrOpenForMonth(month) {
   renderHcrrEditor();
 }
 
-// Bridge from the HoF winner/runner-up modal's "Detailed box results →" button.
-function hcrrFromHofForm() {
-  const m = document.getElementById('hof-month')?.value;
-  if (!m) { alert('Pick a month first'); return; }
-  closeFormModal();
-  hcrrOpenForMonth(m + '-01');
-}
-
 // ── Read-only viewer (everyone) — opened by clicking a HoF month card ─────────
 async function hcrrViewForMonth(month) {
   const { data } = await sb.from('hof_results')

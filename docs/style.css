@@ -1544,6 +1544,10 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
   border: 1px solid var(--bc-border);
   padding: 12px 14px;
   display: flex;
+  flex-direction: column;
+}
+.hof-card-top {
+  display: flex;
   align-items: flex-start;
   gap: 12px;
 }
@@ -2083,9 +2087,23 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
   font-weight: 600;
 }
 .hof-add-orange:hover { background: #d97706 !important; border-color: #d97706 !important; }
-.hof-result-card.hof-card-clickable { cursor: pointer; position: relative; }
-.hof-result-card.hof-card-clickable:hover { background: #f8fafc; }
-.hof-card-boxes { position: absolute; top: 4px; right: 6px; font-size: 12px; opacity: 0.6; }
+/* HoF card "full results" footer link */
+.hof-card-results {
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px solid var(--bc-border);
+  font-size: 13px;
+  font-weight: 700;
+  color: #1B2A6B;
+  text-align: center;
+  cursor: pointer;
+}
+.hof-card-results:hover { color: #f59e0b; }
+.hof-card-results-add { color: #f59e0b; }
+.hof-card-results-add:hover { color: #d97706; }
+.hof-card-results-none {
+  color: #94a3b8; font-weight: 500; font-style: italic; cursor: default;
+}
 
 /* HCRR view container */
 #view-hcrr .hcrr-panel { max-width: 760px; margin: 0 auto; padding: 8px 10px 40px; }

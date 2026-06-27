@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '5.84';
+const APP_VERSION = '5.85';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -1487,26 +1487,32 @@ function renderHof() {
     const cards = byYear[yr].map(r => {
       if (r.not_played) {
         return `<div class="hof-result-card hof-card-not-played-row">
-          <div class="hof-card-month">${fmtHofMonthShort(r.event_month)}</div>
-          <div class="hof-card-body"><span class="hof-card-np-label">Not played</span></div>
+          <div class="hof-card-top">
+            <div class="hof-card-month">${fmtHofMonthShort(r.event_month)}</div>
+            <div class="hof-card-body"><span class="hof-card-np-label">Not played</span></div>
+          </div>
         </div>`;
       }
       const score = fmtScore(r.winner_score, r.runner_up_score);
       const wHc = r.winner_hc    != null ? ` <span class="hof-hc-inline">(${r.winner_hc})</span>` : '';
       const rHc = r.runner_up_hc != null ? ` <span class="hof-hc-inline">(${r.runner_up_hc})</span>` : '';
       const hasBoxes = !!(r.hcrr_data && Array.isArray(r.hcrr_data.groups) && r.hcrr_data.groups.length);
-      // Everyone can open the read-only detail view when results exist;
-      // super_admins can always open it (to create/edit).
-      const clickable = hasBoxes || isSU;
-      const clk = clickable ? ` hof-card-clickable" onclick="hcrrViewForMonth('${r.event_month}')` : '';
-      return `<div class="hof-result-card${clk}">
-        <div class="hof-card-month">${fmtHofMonthShort(r.event_month)}</div>
-        <div class="hof-card-body">
-          <div class="hof-card-winner">🏆 ${esc(r.winner_name || '–')}${wHc}</div>
-          <div class="hof-card-runnerup">🥈 ${esc(r.runner_up_name || '–')}${rHc}</div>
+      // Footer link: everyone sees full results when they exist; super_admins can
+      // always open the view (to add/edit); regular users get a clear "none" note.
+      let footer;
+      if (hasBoxes)   footer = `<div class="hof-card-results" onclick="hcrrViewForMonth('${r.event_month}')">📋 Full results →</div>`;
+      else if (isSU)  footer = `<div class="hof-card-results hof-card-results-add" onclick="hcrrViewForMonth('${r.event_month}')">➕ Add detailed results</div>`;
+      else            footer = `<div class="hof-card-results hof-card-results-none">No detailed results</div>`;
+      return `<div class="hof-result-card">
+        <div class="hof-card-top">
+          <div class="hof-card-month">${fmtHofMonthShort(r.event_month)}</div>
+          <div class="hof-card-body">
+            <div class="hof-card-winner">🏆 ${esc(r.winner_name || '–')}${wHc}</div>
+            <div class="hof-card-runnerup">🥈 ${esc(r.runner_up_name || '–')}${rHc}</div>
+          </div>
+          ${score ? `<div class="hof-card-score">${score}</div>` : ''}
         </div>
-        ${score ? `<div class="hof-card-score">${score}</div>` : ''}
-        ${hasBoxes ? '<div class="hof-card-boxes">🗂</div>' : ''}
+        ${footer}
       </div>`;
     }).join('');
 
@@ -1622,7 +1628,6 @@ function openHofForm(record = null) {
     <button class="btn-google-full" onclick="submitHofForm('${isEdit ? r.id : ''}')">
       ${isEdit ? 'Save Changes' : 'Add Result'}
     </button>
-    ${ST.player?.is_super_admin ? `<button class="btn-secondary" style="width:100%;margin-top:10px" onclick="hcrrFromHofForm()">🗂 Detailed box results →</button>` : ''}
   `);
   toggleHofNotPlayed();
   if (r.winner_name)     hofCheckName('hof-winner', 'hof-winner-warn');
@@ -1745,13 +1750,18 @@ async function submitHofForm(id) {
     notes:           document.getElementById('hof-notes').value.trim() || null,
   };
 
+  // Only one result per month — block adding over an existing month.
+  if (!id && hofResults.some(r => r.event_month === payload.event_month)) {
+    document.getElementById('hof-form-error').textContent =
+      'A result already exists for this month. Open that month from the list to edit it.';
+    return;
+  }
+
   let error;
   if (id) {
     ({ error } = await sb.from('hof_results').update(payload).eq('id', id));
   } else {
-    // Upsert by month so it merges with any row already created by the
-    // detailed HCRR editor (same month) instead of hitting the unique index.
-    ({ error } = await sb.from('hof_results').upsert(payload, { onConflict: 'event_month' }));
+    ({ error } = await sb.from('hof_results').insert(payload));
   }
 
   if (error) { document.getElementById('hof-form-error').textContent = error.message; return; }
