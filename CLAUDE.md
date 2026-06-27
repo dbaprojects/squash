@@ -5,7 +5,7 @@
 - **Owner:** Club admin — personal project
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `[local project directory]`
-- **Current version:** v5.79
+- **Current version:** v5.80
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -44,6 +44,7 @@ docs/
   dev.html            — SPA shell (development/staging — ladder.js loaded here first)
   app.js              — all frontend logic (~2700 lines)
   ladder.js           — Division Ladder feature; patches showSection/navTo/loadHome/loadAdminTab
+  hcrr.js             — HCRR detailed results recorder (super_admin); patches showSection/navTo; view-hcrr editor
   style.css           — mobile-first styles, BC navy/gold palette
   bcss.png            — BC crest logo
   manifest.json       — PWA manifest
@@ -53,6 +54,7 @@ db/
   schema-hof.sql      — DDL for hof_results table + RLS
   schema-audit.sql    — DDL for audit_log table + RLS
   schema-ladder.sql   — DDL for ladder_positions + ladder_config tables + RLS
+  schema-hcrr.sql     — ALTER: adds hof_results.hcrr_data JSONB (detailed HCRR results)
   seed-ladder.sql     — One-time seed of initial ladder order from whiteboard
   load-hof.js         — seeds hof_results from hof.xlsx (run once with service role key)
   reseed.js           — rebuilds historical signups/handicap data
@@ -71,7 +73,7 @@ names and hcs.xlsx    — player name/HC reference data
 | `session_templates` | id, name, day_of_week (1=Mon,3=Wed,6=Sat), start_time, end_time, max_signups |
 | `events` | id, title, event_date, start_time, end_time, max_signups, template_id |
 | `signups` | id, event_id, signed_up_by, player_id (nullable), guest_name (nullable), is_reserve, signed_up_at, notes |
-| `hof_results` | id, event_month (DATE, unique, always 1st), winner_name, winner_hc, winner_score, runner_up_name, runner_up_hc, runner_up_score, not_played, notes, created_by, created_at |
+| `hof_results` | id, event_month (DATE, unique, always 1st), winner_name, winner_hc, winner_score, runner_up_name, runner_up_hc, runner_up_score, not_played, notes, created_by, created_at, **hcrr_data (JSONB — detailed HCRR box results, v5.80)** |
 | `audit_log` | id, player_id, event_type, metadata (JSONB), created_at |
 | `ladder_positions` | player_id (UUID PK → players), position (INTEGER UNIQUE), updated_at |
 | `ladder_config` | key (TEXT PK), value (TEXT) — stores division_size and challenge_range |
@@ -562,6 +564,7 @@ echo "{\"version\":\"4.XX\",\"build\":\"$(date +%s)\"}" > docs/version.json
 | v5.72 | Ladders home tile: flashing red "Don't be shy — sign up! Ping David B" nudge for players not on the ladder |
 | v5.73 | Ladders home tile: moved to after Sign-Up tile; quip flashes red when ladder player has no active challenges |
 | v5.74 | Serial ghoster rule: 3 consecutive forfeits as challenged → demoted to last place; 👻 badge on their row and home tile chips; `_serialGhosters` Set rebuilt after every challenge load |
+| v5.80 | HCRR detailed results recorder (super_admin only): new `docs/hcrr.js` module + `view-hcrr` section. Detailed box-by-box results stored as JSONB in new `hof_results.hcrr_data` column (one HCRR/month, `db/schema-hcrr.sql`). Entry points (super_admin): "+ Add HCRR Result" button in HoF top leaders box → simple winner/runner-up modal (`openHofForm`, now upserts by `event_month`); clickable HoF month cards → `hcrrOpenForMonth()`; "🗂 Detailed box results →" button in the HoF form. Editor: add Box/Semi-Final/Final groups, add players from picker (HC frozen/denormalised) or guest, Excel-style editable matrix grid with live row totals. Performance above/below-HC indicator (cell shading) deferred. JSON shape: `{groups:[{id,stage,name,players:[{pid,player_id,name,initials,hc}],scores:{rowPid:{colPid:n}}}]}` |
 | v5.79 | HCRR Rules modal: "🏆 HCRR Rules 🏆" button under the HC Calculator banner in the Handicaps section (`loadLadder`); `showHcrrRules()` opens an 8-rule `showFormModal` (no whinging + fun/adjustments clause, play everyone in your box → semi/final, handicapped starts via HC Calc, lower HC = stronger, single game to 11 sudden-death, report scores, most total points wins box with head-to-head tiebreak, semis/finals straight knockout). Ladder matches are no-handicap (Rules of Engagement #3); HCRR is the handicapped comp |
 | v5.78 | SEO: `<meta name="robots" content="noindex,nofollow">` on all 5 HTML pages + `docs/robots.txt` (allows crawling so noindex is seen — NOT a blanket Disallow, which would defeat noindex and become a footgun on a custom domain). Search-visibility only, not access control — site + Supabase anon key remain public. Confirmed neither Pages site nor repo currently indexed by Google |
 | v5.77 | Got-jumped badge 🦘: when a challenger wins a match and leaps above another player they also had a live challenge with (pending OR accepted), that challenge is set to `superseded` status (the leapt-over/challenged player "got jumped" 🦘). `_supersedeJumpedChallenges(winnerId, excludeId)` runs in `submitChallengeResult` BEFORE `loadDivisionLadder`'s reshuffle pass so jumped challenges aren't mistaken for out-of-range 🐌 voids; winner gets NO snail penalty (they caused it by winning). `_jumpedBadges` Set rebuilt in `_loadChallenges` via `_rebuildJumpedBadges()` (most-recent-as-challenged challenge is `superseded` → 🦘, clears on next outcome); `_isJumped()` helper. Badge on row + home tile chips; `superseded` added to completed query `.in()`, history label "🦘 X got jumped!", `jumped` history filter, admin status map, Rules of Engagement entry, `.div-jumped-badge` CSS. No schema change (status is plain TEXT) |

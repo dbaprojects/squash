@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '5.79';
+const APP_VERSION = '5.80';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -1367,7 +1367,14 @@ function fmtScore(ws, ls) {
 
 function renderHof() {
   const wrap = document.getElementById('hof-wrap');
-  if (!hofResults.length) { wrap.innerHTML = '<p style="color:#888">No records yet.</p>'; return; }
+  const isSU = ST.player?.is_super_admin === true;
+  const hcrrAddBtn = isSU
+    ? `<button class="hof-hcrr-add-btn" onclick="openHofForm()">+ Add HCRR Result</button>`
+    : '';
+  if (!hofResults.length) {
+    wrap.innerHTML = `<p style="color:#888">No records yet.</p>${isSU ? `<div style="margin-top:12px">${hcrrAddBtn}</div>` : ''}`;
+    return;
+  }
 
   // Ensure three sub-divs exist in correct order (leaders → filter → results)
   if (!document.getElementById('hof-leaders-div')) {
@@ -1439,7 +1446,8 @@ function renderHof() {
       <button class="hof-lstatus-btn${hofStatusFilter==='all'?' active':''}" onclick="hofStatusFilter='all';renderHof()">All Time</button>
       <button class="hof-lstatus-btn${hofStatusFilter==='active'?' active':''}" onclick="hofStatusFilter='active';renderHof()">Active Players Only</button>
     </div>`;
-    leadersHtml = `<div class="hof-leaders-card">${dualHtml}${statusHtml}</div>`;
+    const suToolsHtml = isSU ? `<div class="hof-su-tools">${hcrrAddBtn}</div>` : '';
+    leadersHtml = `<div class="hof-leaders-card">${dualHtml}${statusHtml}${suToolsHtml}</div>`;
   }
   leadersDiv.innerHTML = leadersHtml;
 
@@ -1486,13 +1494,16 @@ function renderHof() {
       const score = fmtScore(r.winner_score, r.runner_up_score);
       const wHc = r.winner_hc    != null ? ` <span class="hof-hc-inline">(${r.winner_hc})</span>` : '';
       const rHc = r.runner_up_hc != null ? ` <span class="hof-hc-inline">(${r.runner_up_hc})</span>` : '';
-      return `<div class="hof-result-card">
+      const hasBoxes = !!(r.hcrr_data && Array.isArray(r.hcrr_data.groups) && r.hcrr_data.groups.length);
+      const suClick = isSU ? ` hof-card-clickable" onclick="hcrrOpenForMonth('${r.event_month}')` : '';
+      return `<div class="hof-result-card${suClick}">
         <div class="hof-card-month">${fmtHofMonthShort(r.event_month)}</div>
         <div class="hof-card-body">
           <div class="hof-card-winner">🏆 ${esc(r.winner_name || '–')}${wHc}</div>
           <div class="hof-card-runnerup">🥈 ${esc(r.runner_up_name || '–')}${rHc}</div>
         </div>
         ${score ? `<div class="hof-card-score">${score}</div>` : ''}
+        ${isSU && hasBoxes ? '<div class="hof-card-boxes">🗂</div>' : ''}
       </div>`;
     }).join('');
 
@@ -1608,6 +1619,7 @@ function openHofForm(record = null) {
     <button class="btn-google-full" onclick="submitHofForm('${isEdit ? r.id : ''}')">
       ${isEdit ? 'Save Changes' : 'Add Result'}
     </button>
+    ${ST.player?.is_super_admin ? `<button class="btn-secondary" style="width:100%;margin-top:10px" onclick="hcrrFromHofForm()">🗂 Detailed box results →</button>` : ''}
   `);
   toggleHofNotPlayed();
   if (r.winner_name)     hofCheckName('hof-winner', 'hof-winner-warn');
@@ -1734,12 +1746,16 @@ async function submitHofForm(id) {
   if (id) {
     ({ error } = await sb.from('hof_results').update(payload).eq('id', id));
   } else {
-    ({ error } = await sb.from('hof_results').insert(payload));
+    // Upsert by month so it merges with any row already created by the
+    // detailed HCRR editor (same month) instead of hitting the unique index.
+    ({ error } = await sb.from('hof_results').upsert(payload, { onConflict: 'event_month' }));
   }
 
   if (error) { document.getElementById('hof-form-error').textContent = error.message; return; }
   closeFormModal();
-  loadAdminHof();
+  // Refresh whichever HoF surface is currently visible.
+  if (!document.getElementById('view-hof')?.classList.contains('hidden')) loadHof();
+  else loadAdminHof();
 }
 
 function editHofResult(id) {

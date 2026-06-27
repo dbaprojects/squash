@@ -2073,3 +2073,69 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 .mcb-note { font-size: 11px; color: #94a3b8; margin-top: 2px; }
 .mcb-btn-withdraw { background: #f1f5f9; color: #475569; }
 .hc-calc-rules p:last-child { margin-bottom: 0; }
+
+/* ── HCRR detailed results ────────────────────────────────────────────────── */
+/* HoF super-admin entry points */
+.hof-su-tools { margin-top: 10px; display: flex; justify-content: center; }
+.hof-hcrr-add-btn {
+  background: #fbbf24; color: #1e1e1e; border: none; border-radius: 8px;
+  font-size: 13px; font-weight: 700; padding: 8px 16px; cursor: pointer;
+}
+.hof-hcrr-add-btn:hover { background: #f59e0b; }
+.hof-result-card.hof-card-clickable { cursor: pointer; position: relative; }
+.hof-result-card.hof-card-clickable:hover { background: #f8fafc; }
+.hof-card-boxes { position: absolute; top: 4px; right: 6px; font-size: 12px; opacity: 0.6; }
+
+/* HCRR view container */
+#view-hcrr .hcrr-panel { max-width: 760px; margin: 0 auto; padding: 8px 10px 40px; }
+.hcrr-link { color: #1B2A6B; font-weight: 600; cursor: pointer; font-size: 13px; }
+
+/* List view */
+.hcrr-list-row {
+  display: flex; align-items: center; justify-content: space-between;
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;
+  padding: 10px 12px; margin-bottom: 8px; cursor: pointer;
+}
+.hcrr-list-row:hover { background: #f8fafc; }
+.hcrr-list-month { font-weight: 700; font-size: 15px; color: #1B2A6B; }
+.hcrr-list-champ { font-size: 12px; color: #475569; margin-top: 2px; }
+.hcrr-list-badge { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 10px; }
+.hcrr-list-badge.recorded { background: #dcfce7; color: #15803d; }
+.hcrr-list-badge.empty { background: #f1f5f9; color: #94a3b8; }
+
+/* Editor */
+.hcrr-editor-head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.hcrr-back-btn { background: none; border: none; color: #1B2A6B; font-weight: 600; font-size: 14px; cursor: pointer; padding: 4px 0; }
+.hcrr-editor-month { font-size: 16px; font-weight: 800; color: #1B2A6B; }
+
+.hcrr-group { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px; margin-bottom: 14px; }
+.hcrr-group-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.hcrr-group-name { flex: 1; font-size: 15px; font-weight: 700; color: #1B2A6B; border: 1px solid #e2e8f0; border-radius: 6px; padding: 5px 8px; }
+.hcrr-stage-tag { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; background: #f1f5f9; border-radius: 6px; padding: 3px 7px; flex-shrink: 0; }
+.hcrr-group-x { border: none; background: none; cursor: pointer; font-size: 15px; flex-shrink: 0; opacity: 0.6; }
+.hcrr-group-x:hover { opacity: 1; }
+
+.hcrr-matrix-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.hcrr-matrix { border-collapse: collapse; width: 100%; font-size: 12px; }
+.hcrr-matrix th, .hcrr-matrix td { border: 1px solid #e5e7eb; padding: 2px; text-align: center; }
+.hcrr-matrix thead th { background: #5b9bd5; color: #fff; font-weight: 700; }
+.hcrr-hc-head, .hcrr-name-head { background: #1B2A6B !important; }
+.hcrr-name-head { text-align: left; padding-left: 8px; }
+.hcrr-total-head { background: #1B2A6B !important; }
+.hcrr-col-init { min-width: 30px; font-style: italic; }
+.hcrr-rp-hc { width: 34px; color: #475569; font-weight: 600; }
+.hcrr-rp-name { text-align: left; padding-left: 8px !important; white-space: nowrap; font-weight: 500; }
+.hcrr-rp-init { color: #94a3b8; font-style: italic; font-size: 11px; }
+.hcrr-diag { background: #cbd5e1; }
+.hcrr-cell { width: 36px; border: none; text-align: center; font-size: 12px; padding: 4px 2px; -moz-appearance: textfield; }
+.hcrr-cell::-webkit-outer-spin-button, .hcrr-cell::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.hcrr-cell:focus { outline: 2px solid #5b9bd5; background: #eff6ff; }
+.hcrr-total { font-weight: 800; background: #f8fafc; min-width: 36px; }
+.hcrr-x { border: none; background: none; color: #cbd5e1; cursor: pointer; font-size: 15px; padding: 0 4px; }
+.hcrr-x:hover { color: #dc2626; }
+.hcrr-addplayer-btn { margin-top: 8px; background: none; border: 1px dashed #cbd5e1; color: #1B2A6B; border-radius: 6px; font-size: 12px; font-weight: 600; padding: 5px 10px; cursor: pointer; }
+.hcrr-addplayer-btn:hover { background: #f8fafc; }
+
+.hcrr-add-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 16px; }
+.hcrr-add-row .btn-secondary { flex: 1; min-width: 110px; }
+.hcrr-save-row { display: flex; position: sticky; bottom: 0; padding: 10px 0 4px; background: #fff; border-top: 1px solid #e2e8f0; }
