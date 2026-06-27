@@ -267,7 +267,7 @@ function _hcrrRenderGroup(g, ro) {
       const v = (g.scores && g.scores[rp.pid] && g.scores[rp.pid][cp.pid] != null)
         ? g.scores[rp.pid][cp.pid] : '';
       if (ro) return `<td class="hcrr-cell-ro">${v}</td>`;
-      return `<td><input class="hcrr-cell" type="number" inputmode="numeric" min="0" max="99"
+      return `<td><input class="hcrr-cell" id="hcrr-cell-${g.id}-${rp.pid}-${cp.pid}" type="number" min="-35" max="11" step="1"
         value="${v}" onchange="hcrrSetScore('${g.id}','${rp.pid}','${cp.pid}',this.value)"></td>`;
     }).join('');
     return `<tr>
@@ -410,6 +410,9 @@ function hcrrRemovePlayer(gid, pid) {
   renderHcrrEditor();
 }
 
+const HCRR_SCORE_MIN = -35;  // worst possible — lowest handicap start
+const HCRR_SCORE_MAX = 11;   // game won
+
 function hcrrSetScore(gid, rowPid, colPid, val) {
   const g = _hcrrFindGroup(gid);
   if (!g) return;
@@ -418,7 +421,15 @@ function hcrrSetScore(gid, rowPid, colPid, val) {
   if (val === '' || val == null) {
     delete g.scores[rowPid][colPid];
   } else {
-    g.scores[rowPid][colPid] = Number(val);
+    let n = Math.round(Number(val));
+    if (isNaN(n)) { delete g.scores[rowPid][colPid]; }
+    else {
+      n = Math.max(HCRR_SCORE_MIN, Math.min(HCRR_SCORE_MAX, n));
+      g.scores[rowPid][colPid] = n;
+      // Reflect any clamp/rounding back into the input
+      const inp = document.getElementById(`hcrr-cell-${gid}-${rowPid}-${colPid}`);
+      if (inp && String(n) !== val) inp.value = n;
+    }
   }
   // Live-update the row total
   const totEl = document.getElementById(`hcrr-tot-${gid}-${rowPid}`);
