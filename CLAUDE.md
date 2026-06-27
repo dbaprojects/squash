@@ -5,7 +5,7 @@
 - **Owner:** Club admin — personal project
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `[local project directory]`
-- **Current version:** v5.83
+- **Current version:** v5.84
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -564,6 +564,7 @@ echo "{\"version\":\"4.XX\",\"build\":\"$(date +%s)\"}" > docs/version.json
 | v5.72 | Ladders home tile: flashing red "Don't be shy — sign up! Ping David B" nudge for players not on the ladder |
 | v5.73 | Ladders home tile: moved to after Sign-Up tile; quip flashes red when ladder player has no active challenges |
 | v5.74 | Serial ghoster rule: 3 consecutive forfeits as challenged → demoted to last place; 👻 badge on their row and home tile chips; `_serialGhosters` Set rebuilt after every challenge load |
+| v5.84 | HoF "+ Add HCRR Result" button moved inline into the leaders `.hof-leaders-status` row (right of All Time / Active Players Only), same size/shape as those (`.hof-lstatus-btn`) with an orange `.hof-add-orange` modifier; removed `.hof-su-tools`/`.hof-hcrr-add-btn`. Also: Jan–May 2026 HCRR detailed results entered into `hof_results.hcrr_data` via REST PATCH (totals reconciled to source sheets; player_id left null) |
 | v5.83 | HCRR score cells: validated/clamped to **[−35, 11]** (max 11 = game won; −35 = lowest possible handicap start). `hcrrSetScore` rounds + clamps via `HCRR_SCORE_MIN`/`HCRR_SCORE_MAX` and reflects the clamped value back into the input (now id'd `hcrr-cell-{gid}-{rowPid}-{colPid}`); input `min=-35 max=11 step=1` |
 | v5.82 | HCRR add-player: replaced the `<select>` dropdown with a **type-to-filter** search (`hcrr-pick-search` → `hcrrFilterPick()` rebuilds `_hcrrPickItems()` list; click a row to add). **Removed the guest feature** (`hcrrAddGuest` deleted) — box players must be existing players. `hcrrPickPlayer(playerId)` now takes the id directly; `_hcrrPickGid` tracks the target group |
 | v5.81 | HCRR detail: clicking any HoF month card opens a **read-only detailed results view** for everyone (cards show 🗂 when results exist); super_admins get an ✏️ Edit / ➕ Create button in that view → the matrix editor. `_hcrrRenderGroup(g, ro)` gained a read-only mode (static cells, no add/remove); new `hcrrViewForMonth()` + `renderHcrrView()` + `_hcrrView` state. HoF cards now call `hcrrViewForMonth` (was super-only `hcrrOpenForMonth`); editor "← Done" returns to the read-only view |

@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '5.83';
+const APP_VERSION = '5.84';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -1369,7 +1369,7 @@ function renderHof() {
   const wrap = document.getElementById('hof-wrap');
   const isSU = ST.player?.is_super_admin === true;
   const hcrrAddBtn = isSU
-    ? `<button class="hof-hcrr-add-btn" onclick="openHofForm()">+ Add HCRR Result</button>`
+    ? `<button class="hof-lstatus-btn hof-add-orange" onclick="openHofForm()">+ Add HCRR Result</button>`
     : '';
   if (!hofResults.length) {
     wrap.innerHTML = `<p style="color:#888">No records yet.</p>${isSU ? `<div style="margin-top:12px">${hcrrAddBtn}</div>` : ''}`;
@@ -1445,9 +1445,9 @@ function renderHof() {
     const statusHtml = `<div class="hof-leaders-status">
       <button class="hof-lstatus-btn${hofStatusFilter==='all'?' active':''}" onclick="hofStatusFilter='all';renderHof()">All Time</button>
       <button class="hof-lstatus-btn${hofStatusFilter==='active'?' active':''}" onclick="hofStatusFilter='active';renderHof()">Active Players Only</button>
+      ${hcrrAddBtn}
     </div>`;
-    const suToolsHtml = isSU ? `<div class="hof-su-tools">${hcrrAddBtn}</div>` : '';
-    leadersHtml = `<div class="hof-leaders-card">${dualHtml}${statusHtml}${suToolsHtml}</div>`;
+    leadersHtml = `<div class="hof-leaders-card">${dualHtml}${statusHtml}</div>`;
   }
   leadersDiv.innerHTML = leadersHtml;
 
