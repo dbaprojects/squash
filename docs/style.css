@@ -2087,16 +2087,21 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
   font-weight: 600;
 }
 .hof-add-orange:hover { background: #d97706 !important; border-color: #d97706 !important; }
-/* HoF card "full results" footer link */
+/* HoF card right column: score on top, results link beneath it */
+.hof-card-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+  text-align: right;
+}
 .hof-card-results {
-  margin-top: 10px;
-  padding-top: 9px;
-  border-top: 1px solid var(--bc-border);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   color: #1B2A6B;
-  text-align: center;
   cursor: pointer;
+  white-space: nowrap;
 }
 .hof-card-results:hover { color: #f59e0b; }
 .hof-card-results-add { color: #f59e0b; }

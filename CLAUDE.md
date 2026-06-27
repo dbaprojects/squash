@@ -5,7 +5,7 @@
 - **Owner:** Club admin — personal project
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `[local project directory]`
-- **Current version:** v5.85
+- **Current version:** v5.86
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -564,6 +564,7 @@ echo "{\"version\":\"4.XX\",\"build\":\"$(date +%s)\"}" > docs/version.json
 | v5.72 | Ladders home tile: flashing red "Don't be shy — sign up! Ping David B" nudge for players not on the ladder |
 | v5.73 | Ladders home tile: moved to after Sign-Up tile; quip flashes red when ladder player has no active challenges |
 | v5.74 | Serial ghoster rule: 3 consecutive forfeits as challenged → demoted to last place; 👻 badge on their row and home tile chips; `_serialGhosters` Set rebuilt after every challenge load |
+| v5.86 | HoF card: moved the results link into a right-hand column beneath the score (`.hof-card-right`) to save a row; link is compact && right-aligned (was a full-width footer). |
 | v5.85 | HoF/HCRR polish: (1) **one result per month** — `submitHofForm` blocks adding when `hofResults` already has that `event_month` (clear error; insert not upsert). (2) Removed the "Detailed box results" button from the add/edit modal (`hcrrFromHofForm` deleted) — details are reached from the tiles. (3) HoF month cards restructured to a `.hof-card-top` row + explicit footer link `.hof-card-results`: "📋 Full results →" when results exist; "➕ Add detailed results" (orange) for super_admins on empty months; muted "No detailed results" otherwise. Card is now a flex column; footer is a full-width tap target (mobile-friendly) |
 | v5.84 | HoF "+ Add HCRR Result" button moved inline into the leaders `.hof-leaders-status` row (right of All Time / Active Players Only), same size/shape as those (`.hof-lstatus-btn`) with an orange `.hof-add-orange` modifier; removed `.hof-su-tools`/`.hof-hcrr-add-btn`. Also: Jan–May 2026 HCRR detailed results entered into `hof_results.hcrr_data` via REST PATCH (totals reconciled to source sheets; player_id left null) |
 | v5.83 | HCRR score cells: validated/clamped to **[−35, 11]** (max 11 = game won; −35 = lowest possible handicap start). `hcrrSetScore` rounds + clamps via `HCRR_SCORE_MIN`/`HCRR_SCORE_MAX` and reflects the clamped value back into the input (now id'd `hcrr-cell-{gid}-{rowPid}-{colPid}`); input `min=-35 max=11 step=1` |
