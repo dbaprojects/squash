@@ -1544,24 +1544,28 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
   border: 1px solid var(--bc-border);
   padding: 12px 14px;
   display: flex;
-  flex-direction: column;
-}
-.hof-card-top {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
+  align-items: center;
+  gap: 12px;
 }
 
 .hof-card-not-played-row { opacity: 0.55; }
 
+.hof-card-thumb {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+/* Month now sits as a small label above the names (3-row layout) */
 .hof-card-month {
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 700;
   color: var(--bc-text-dim);
-  min-width: 26px;
-  flex-shrink: 0;
-  padding-top: 2px;
   text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 3px;
 }
 
 .hof-card-body { flex: 1; min-width: 0; }

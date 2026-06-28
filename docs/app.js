@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '5.90';
+const APP_VERSION = '5.91';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -1487,9 +1487,9 @@ function renderHof() {
     const cards = byYear[yr].map(r => {
       if (r.not_played) {
         return `<div class="hof-result-card hof-card-not-played-row">
-          <div class="hof-card-top">
+          <div class="hof-card-body">
             <div class="hof-card-month">${fmtHofMonthShort(r.event_month)}</div>
-            <div class="hof-card-body"><span class="hof-card-np-label">Not played</span></div>
+            <span class="hof-card-np-label">Not played</span>
           </div>
         </div>`;
       }
@@ -1506,17 +1506,17 @@ function renderHof() {
       if (hasContent) footer = `<div class="hof-card-results">📋 Details →</div>`;
       else if (isSU)  footer = `<div class="hof-card-results hof-card-results-add">➕ Add details</div>`;
       else            footer = `<div class="hof-card-results hof-card-results-none">No details</div>`;
+      const thumb = hasPhoto ? `<img class="hof-card-thumb" src="${esc(r.hcrr_data.photo)}" alt="" loading="lazy">` : '';
       return `<div class="hof-result-card${clickable ? ' hof-card-clickable' : ''}"${clickable ? ` onclick="hcrrViewForMonth('${r.event_month}')"` : ''}>
-        <div class="hof-card-top">
+        ${thumb}
+        <div class="hof-card-body">
           <div class="hof-card-month">${fmtHofMonthShort(r.event_month)}</div>
-          <div class="hof-card-body">
-            <div class="hof-card-winner">🏆 ${esc(r.winner_name || '–')}${wHc}</div>
-            <div class="hof-card-runnerup">🥈 ${esc(r.runner_up_name || '–')}${rHc}</div>
-          </div>
-          <div class="hof-card-right">
-            ${score ? `<div class="hof-card-score">${score}</div>` : ''}
-            ${footer}
-          </div>
+          <div class="hof-card-winner">🏆 ${esc(r.winner_name || '–')}${wHc}</div>
+          <div class="hof-card-runnerup">🥈 ${esc(r.runner_up_name || '–')}${rHc}</div>
+        </div>
+        <div class="hof-card-right">
+          ${score ? `<div class="hof-card-score">${score}</div>` : ''}
+          ${footer}
         </div>
       </div>`;
     }).join('');
