@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '5.87';
+const APP_VERSION = '5.88';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -1497,13 +1497,14 @@ function renderHof() {
       const wHc = r.winner_hc    != null ? ` <span class="hof-hc-inline">(${r.winner_hc})</span>` : '';
       const rHc = r.runner_up_hc != null ? ` <span class="hof-hc-inline">(${r.runner_up_hc})</span>` : '';
       const hasBoxes = !!(r.hcrr_data && Array.isArray(r.hcrr_data.groups) && r.hcrr_data.groups.length);
-      // Footer link: everyone sees full results when they exist; super_admins can
-      // always open the view (to add/edit); regular users get a clear "none" note.
+      // Whole card is clickable when results exist (anyone) or for super_admins
+      // (to add/edit); the right-column text is the visible affordance.
+      const clickable = hasBoxes || isSU;
       let footer;
-      if (hasBoxes)   footer = `<div class="hof-card-results" onclick="hcrrViewForMonth('${r.event_month}')">📋 Results →</div>`;
-      else if (isSU)  footer = `<div class="hof-card-results hof-card-results-add" onclick="hcrrViewForMonth('${r.event_month}')">➕ Add results</div>`;
+      if (hasBoxes)   footer = `<div class="hof-card-results">📋 Results →</div>`;
+      else if (isSU)  footer = `<div class="hof-card-results hof-card-results-add">➕ Add results</div>`;
       else            footer = `<div class="hof-card-results hof-card-results-none">No results</div>`;
-      return `<div class="hof-result-card">
+      return `<div class="hof-result-card${clickable ? ' hof-card-clickable' : ''}"${clickable ? ` onclick="hcrrViewForMonth('${r.event_month}')"` : ''}>
         <div class="hof-card-top">
           <div class="hof-card-month">${fmtHofMonthShort(r.event_month)}</div>
           <div class="hof-card-body">
