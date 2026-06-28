@@ -2,7 +2,7 @@
 'use strict';
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '5.86';
+const APP_VERSION = '5.87';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -1500,9 +1500,9 @@ function renderHof() {
       // Footer link: everyone sees full results when they exist; super_admins can
       // always open the view (to add/edit); regular users get a clear "none" note.
       let footer;
-      if (hasBoxes)   footer = `<div class="hof-card-results" onclick="hcrrViewForMonth('${r.event_month}')">📋 Full results →</div>`;
-      else if (isSU)  footer = `<div class="hof-card-results hof-card-results-add" onclick="hcrrViewForMonth('${r.event_month}')">➕ Add detailed results</div>`;
-      else            footer = `<div class="hof-card-results hof-card-results-none">No detailed results</div>`;
+      if (hasBoxes)   footer = `<div class="hof-card-results" onclick="hcrrViewForMonth('${r.event_month}')">📋 Results →</div>`;
+      else if (isSU)  footer = `<div class="hof-card-results hof-card-results-add" onclick="hcrrViewForMonth('${r.event_month}')">➕ Add results</div>`;
+      else            footer = `<div class="hof-card-results hof-card-results-none">No results</div>`;
       return `<div class="hof-result-card">
         <div class="hof-card-top">
           <div class="hof-card-month">${fmtHofMonthShort(r.event_month)}</div>

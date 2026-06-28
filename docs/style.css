@@ -1549,7 +1549,7 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 .hof-card-top {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  gap: 8px;
 }
 
 .hof-card-not-played-row { opacity: 0.55; }
@@ -1558,7 +1558,7 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
   font-size: 13px;
   font-weight: 700;
   color: var(--bc-text-dim);
-  min-width: 30px;
+  min-width: 26px;
   flex-shrink: 0;
   padding-top: 2px;
   text-transform: uppercase;
@@ -1569,11 +1569,11 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 .hof-card-winner {
   font-weight: 700;
   color: var(--bc-navy);
-  font-size: 15px;
+  font-size: 14px;
   margin-bottom: 4px;
 }
 
-.hof-card-runnerup { font-size: 14px; color: var(--bc-text-dim); }
+.hof-card-runnerup { font-size: 13px; color: var(--bc-text-dim); }
 
 .hof-card-score {
   font-weight: 700;
@@ -2097,7 +2097,7 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
   text-align: right;
 }
 .hof-card-results {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   color: #1B2A6B;
   cursor: pointer;
