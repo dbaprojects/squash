@@ -5,7 +5,7 @@
 - **Owner:** Club admin — personal project
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `[local project directory]`
-- **Current version:** v5.91
+- **Current version:** v5.92
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
