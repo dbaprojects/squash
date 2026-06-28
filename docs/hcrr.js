@@ -214,10 +214,12 @@ async function hcrrOpenForMonth(month) {
 // ── Read-only viewer (everyone) — opened by clicking a HoF month card ─────────
 async function hcrrViewForMonth(month) {
   const { data } = await sb.from('hof_results')
-    .select('id, event_month, hcrr_data').eq('event_month', month).maybeSingle();
+    .select('id, event_month, hcrr_data, winner_name, runner_up_name').eq('event_month', month).maybeSingle();
   _hcrrView = {
     month,
     id: data ? data.id : null,
+    winner: data?.winner_name || null,
+    runnerUp: data?.runner_up_name || null,
     data: (data && data.hcrr_data && Array.isArray(data.hcrr_data.groups)) ? data.hcrr_data : { groups: [] },
   };
   showSection('view-hcrr');
@@ -236,33 +238,103 @@ function hcrrCopyLink(month) {
   }
 }
 
+// Rank players within a box: most total points, head-to-head tiebreak.
+function _hcrrRanks(g) {
+  const arr = (g.players || []).map(p => ({ pid: p.pid, total: _hcrrTotal(g, p.pid) }));
+  arr.sort((a, b) => {
+    if (b.total !== a.total) return b.total - a.total;
+    const ab = g.scores?.[a.pid]?.[b.pid];
+    const ba = g.scores?.[b.pid]?.[a.pid];
+    if (typeof ab === 'number' && typeof ba === 'number') return ba - ab;
+    return 0;
+  });
+  const ranks = {};
+  arr.forEach((x, i) => { ranks[x.pid] = i + 1; });
+  return ranks;
+}
+
+function _hcrrRenderBoxView(g) {
+  const players = g.players || [];
+  if (!players.length) return '';
+  const n = players.length;
+  const ranks = _hcrrRanks(g);
+  const tmpl = `26px minmax(84px,1fr) repeat(${n}, 26px) 30px 34px`;
+
+  const colHead = players.map(p =>
+    `<span class="hb-colh" title="${esc(p.name)}">${esc(p.initials || '?')}</span>`).join('');
+  const head = `<div class="hb-head" style="grid-template-columns:${tmpl}">
+    <span class="hb-title">${esc(g.name)}</span>
+    ${colHead}
+    <span class="hb-colh hb-tot">TOT</span>
+    <span class="hb-colh hb-net">±HC</span>
+  </div>`;
+
+  const rows = players.map(rp => {
+    const cells = players.map(cp => {
+      if (cp.pid === rp.pid) return `<span class="hb-cell diag"></span>`;
+      const v = (g.scores?.[rp.pid]?.[cp.pid] != null) ? g.scores[rp.pid][cp.pid] : '';
+      return `<span class="hb-cell ${_hcrrCellClass(g, rp.pid, cp.pid)}">${v}</span>`;
+    }).join('');
+    const net = _hcrrNet(g, rp.pid);
+    const netCls = net == null ? '' : net > 0 ? 'pos' : net < 0 ? 'neg' : '';
+    const netTxt = net == null ? '' : (net > 0 ? '+' : '') + net;
+    const pos = ranks[rp.pid];
+    const hcTxt = rp.hc != null ? `HC ${rp.hc}` : '';
+    return `<div class="hb-row" style="grid-template-columns:${tmpl}">
+      <span class="hb-pos${pos === 1 ? ' pos1' : ''}">${pos}</span>
+      <span class="hb-id">
+        <span class="hb-name">${esc(rp.name)}</span>
+        <span class="hb-sub">${hcTxt}${rp.initials ? ` · ${esc(rp.initials)}` : ''}</span>
+      </span>
+      ${cells}
+      <span class="hb-rtot">${_hcrrTotal(g, rp.pid)}</span>
+      <span class="hb-rnet ${netCls}">${netTxt}</span>
+    </div>`;
+  }).join('');
+
+  return `<div class="hbox">${head}${rows}</div>`;
+}
+
 function renderHcrrView() {
   const wrap = document.getElementById('hcrr-wrap');
   const v = _hcrrView;
   if (!wrap || !v) return;
   const isSU = ST?.player?.is_super_admin === true;
   const groups = v.data.groups || [];
-  const groupsHtml = groups.length
-    ? groups.map(g => _hcrrRenderGroup(g, true)).join('')
+
+  const cap = v.winner ? `${esc(v.winner)}${v.runnerUp ? ` def. ${esc(v.runnerUp)}` : ''} · Final` : '';
+  const banner = (v.data.photo || cap || isSU) ? `<div class="hcrr-banner">
+      ${v.data.photo
+        ? `<img class="hcrr-banner-img" src="${v.data.photo}" alt="Winners">`
+        : `<div class="hcrr-banner-ph">winners photo</div>`}
+      ${cap ? `<div class="hcrr-banner-cap">${cap}</div>` : ''}
+    </div>` : '';
+
+  const legend = groups.length ? `<div class="hcrr-legend2">
+      <span class="lg-chip"><i class="lg-dot over"></i> above HC</span>
+      <span class="lg-chip"><i class="lg-dot under"></i> below HC</span>
+      <span class="lg-chip"><i class="lg-dot neutral"></i> ±${HCRR_SENS}</span>
+      <span class="lg-net">net pts vs box</span>
+    </div>` : '';
+
+  const body = groups.length
+    ? groups.map(g => _hcrrRenderBoxView(g)).join('')
     : `<p style="color:#888;padding:12px 0">No detailed results recorded for ${_hcrrMonthLabel(v.month)}${isSU ? ' yet.' : '.'}</p>`;
+
   const editBtn = isSU
-    ? `<div class="hcrr-save-row"><button class="btn-primary" style="flex:1" onclick="hcrrOpenForMonth('${v.month}')">${groups.length ? '✏️ Edit results' : '➕ Create results'}</button></div>`
+    ? `<button class="hcrr-edit-btn" onclick="hcrrOpenForMonth('${v.month}')">✏️ ${groups.length ? 'Edit results' : 'Create results'}</button>`
     : '';
+
   wrap.innerHTML = `
     <div class="hcrr-panel">
-      <div class="hcrr-editor-head">
-        <button class="hcrr-back-btn" onclick="navTo('hof')">← Hall of Fame</button>
-        <div class="hcrr-editor-month">${_hcrrMonthLabel(v.month)} HCRR</div>
-        <button class="hcrr-share-btn" onclick="hcrrCopyLink('${v.month}')">🔗 Copy link</button>
+      <button class="hcrr-back2" onclick="navTo('hof')">← Hall of Fame</button>
+      <div class="hcrr-vtop">
+        <div class="hcrr-vtitle">${_hcrrMonthLabel(v.month)} HCRR</div>
+        <button class="hcrr-copy2" onclick="hcrrCopyLink('${v.month}')">Copy link</button>
       </div>
-      ${v.data.photo ? `<img src="${v.data.photo}" class="hcrr-photo" alt="Winners">` : ''}
-      ${groups.length ? `<div class="hcrr-legend">
-        <span><i class="hcrr-sw hcrr-over"></i> above handicap</span>
-        <span><i class="hcrr-sw hcrr-under"></i> below handicap</span>
-        <span><i class="hcrr-sw"></i> to handicap (±${HCRR_SENS})</span>
-        <span class="hcrr-legend-net">± HC = net points vs box</span>
-      </div>` : ''}
-      ${groupsHtml}
+      ${banner}
+      ${legend}
+      ${body}
       ${editBtn}
     </div>`;
 }
