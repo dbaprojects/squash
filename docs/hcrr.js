@@ -350,9 +350,10 @@ function renderHcrrEditor() {
 
   wrap.innerHTML = `
     <div class="hcrr-panel">
-      <div class="hcrr-editor-head">
-        <button class="hcrr-back-btn" onclick="hcrrViewForMonth('${e.event_month}')">← Done</button>
-        <div class="hcrr-editor-month">Editing ${_hcrrMonthLabel(e.event_month)} HCRR</div>
+      <button class="hcrr-back2" onclick="hcrrViewForMonth('${e.event_month}')">← Done</button>
+      <div class="hcrr-vtop">
+        <div class="hcrr-vtitle">${_hcrrMonthLabel(e.event_month)} HCRR</div>
+        <span class="hcrr-edit-tag">Editing</span>
       </div>
 
       <div class="hcrr-photo-section">
@@ -375,7 +376,7 @@ function renderHcrrEditor() {
       </div>
 
       <div class="hcrr-save-row">
-        <button class="btn-primary" style="flex:1" onclick="hcrrSave()">💾 Save HCRR</button>
+        <button class="hcrr-edit-btn" onclick="hcrrSave()">💾 Save HCRR</button>
       </div>
     </div>`;
 }

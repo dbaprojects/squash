@@ -2219,28 +2219,31 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 }
 .hcrr-share-btn:hover { background: #142052; }
 
-.hcrr-group { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px; margin-bottom: 14px; }
-.hcrr-group-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-.hcrr-group-name { flex: 1; font-size: 15px; font-weight: 700; color: #1B2A6B; border: 1px solid #e2e8f0; border-radius: 6px; padding: 5px 8px; }
+.hcrr-edit-tag { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #b45309; background: #fef3c7; border-radius: 12px; padding: 4px 10px; }
+.hcrr-group { background: #fff; border: 1px solid #e8edf3; border-radius: 14px; padding: 10px 12px; margin-bottom: 14px; }
+.hcrr-group-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #f1f5f9; }
+.hcrr-group-name { flex: 1; font-size: 15px; font-weight: 800; color: #1B2A6B; border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px 8px; }
 .hcrr-stage-tag { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; background: #f1f5f9; border-radius: 6px; padding: 3px 7px; flex-shrink: 0; }
 .hcrr-group-x { border: none; background: none; cursor: pointer; font-size: 15px; flex-shrink: 0; opacity: 0.6; }
 .hcrr-group-x:hover { opacity: 1; }
 
 .hcrr-matrix-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-.hcrr-matrix { border-collapse: collapse; width: 100%; font-size: 12px; }
-.hcrr-matrix th, .hcrr-matrix td { border: 1px solid #e5e7eb; padding: 2px; text-align: center; }
-.hcrr-matrix thead th { background: #5b9bd5; color: #fff; font-weight: 700; }
-.hcrr-hc-head, .hcrr-name-head { background: #1B2A6B !important; }
-.hcrr-name-head { text-align: left; padding-left: 8px; }
-.hcrr-total-head { background: #1B2A6B !important; }
-.hcrr-col-init { min-width: 30px; font-style: italic; }
-.hcrr-rp-hc { width: 34px; color: #475569; font-weight: 600; }
-.hcrr-rp-name { text-align: left; padding-left: 8px !important; white-space: nowrap; font-weight: 500; }
-.hcrr-rp-init { color: #94a3b8; font-style: italic; font-size: 11px; }
-.hcrr-diag { background: #cbd5e1; }
-.hcrr-cell { width: 36px; border: none; text-align: center; font-size: 12px; padding: 4px 2px; -moz-appearance: textfield; }
+.hcrr-matrix { border-collapse: separate; border-spacing: 3px; width: 100%; font-size: 12px; }
+.hcrr-matrix th, .hcrr-matrix td { text-align: center; }
+.hcrr-matrix thead th { color: #94a3b8; font-weight: 700; font-size: 10px; text-transform: uppercase; padding: 0 2px 2px; }
+.hcrr-name-head { text-align: left; padding-left: 4px !important; }
+.hcrr-col-init { min-width: 30px; }
+.hcrr-rp-hc { width: 30px; color: #94a3b8; font-weight: 600; font-size: 11px; }
+.hcrr-rp-name { text-align: left; padding-left: 4px !important; white-space: nowrap; font-weight: 700; color: #1e293b; font-size: 13px; }
+.hcrr-rp-init { color: #94a3b8; font-weight: 400; font-size: 11px; }
+.hcrr-diag { background: #e5e7eb; border-radius: 6px; }
+.hcrr-cell {
+  width: 34px; height: 26px; text-align: center; font-size: 12px; font-weight: 600;
+  border: 1px solid #e2e8f0; border-radius: 6px; background: #fff; color: #334155;
+  padding: 0; -moz-appearance: textfield;
+}
 .hcrr-cell::-webkit-outer-spin-button, .hcrr-cell::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-.hcrr-cell:focus { outline: 2px solid #5b9bd5; background: #eff6ff; }
+.hcrr-cell:focus { outline: none; border-color: #1B2A6B; background: #eff6ff; }
 /* HCRR winners photo */
 .hcrr-photo {
   display: block; width: 100%; max-width: 480px; margin: 0 auto 12px;
@@ -2286,7 +2289,7 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 }
 .hcrr-legend-net { color: #64748b; font-style: italic; }
 .hcrr-group-name-ro { flex: 1; font-size: 15px; font-weight: 700; color: #1B2A6B; }
-.hcrr-total { font-weight: 800; background: #f8fafc; min-width: 36px; }
+.hcrr-total { font-weight: 800; color: #1B2A6B; min-width: 30px; }
 .hcrr-x { border: none; background: none; color: #cbd5e1; cursor: pointer; font-size: 15px; padding: 0 4px; }
 .hcrr-x:hover { color: #dc2626; }
 .hcrr-addplayer-btn { margin-top: 8px; background: none; border: 1px dashed #cbd5e1; color: #1B2A6B; border-radius: 6px; font-size: 12px; font-weight: 600; padding: 5px 10px; cursor: pointer; }

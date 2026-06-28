@@ -5,7 +5,7 @@
 - **Owner:** Club admin — personal project
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `[local project directory]`
-- **Current version:** v5.95
+- **Current version:** v5.96
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -565,6 +565,7 @@ echo "{\"version\":\"4.XX\",\"build\":\"$(date +%s)\"}" > docs/version.json
 | v5.72 | Ladders home tile: flashing red "Don't be shy — sign up! Ping David B" nudge for players not on the ladder |
 | v5.73 | Ladders home tile: moved to after Sign-Up tile; quip flashes red when ladder player has no active challenges |
 | v5.74 | Serial ghoster rule: 3 consecutive forfeits as challenged → demoted to last place; 👻 badge on their row and home tile chips; `_serialGhosters` Set rebuilt after every challenge load |
+| v5.96 | HCRR editor restyled to match the new view's look-and-feel: header now uses `.hcrr-back2` + `.hcrr-vtop`/`.hcrr-vtitle` + an "Editing" tag; box cards lighter (14px radius, divider under group head); matrix re-themed from the blue Excel header to airy chips — grey uppercase column initials, rounded bordered `.hcrr-cell` inputs, light-grey diagonal, navy bold totals; Save button uses the navy full-width `.hcrr-edit-btn`. Functionality unchanged |
 | v5.95 | HCRR results view redesigned to a card layout: header (← Hall of Fame · big month title · Copy link pill); winners-photo **banner** with gradient caption "Winner def. Runner-up · Final" (striped placeholder when none); legend chips; each box a **CSS-grid card** — position badge (gold #1), name + "HC x · INIT", score **chips** (green/amber/grey-diag), TOT, ±HC (green+/red−); full-width Edit/Create button for super_admins. `_hcrrRenderBoxView`/`_hcrrRanks` (rank by total, head-to-head tiebreak); `hcrrViewForMonth` also fetches winner_name/runner_up_name. Editor unchanged. GOTCHA: IDE reverted style.css/app.js/index.html/dev.html/CLAUDE.md to old versions mid-edit — restored via `git checkout HEAD -- <file>` |
 | v5.94 | HCRR performance-vs-handicap shading in the read-only results view. Games are handicapped at the start (HC Calculator), so the handicap is already in the scoreline → metric is simply the **raw margin** (NOT re-adding HC, which would double-count). Per cell: margin > `HCRR_SENS` (=3) → 🟩 `hcrr-over`; < −3 → 🟧 `hcrr-under`; else neutral (`_hcrrCellClass`). New **± HC** column = net points scored−conceded across the box (`_hcrrNet`), coloured the same — the signal for handicap maintenance. Legend shown above the boxes. Editor stays unshaded for clean entry. NOTE: the old Excel formula `(p1Score+p1HC)−(p2Score+p2HC)` double-counted the handicap (could invert the verdict) — dropped here |
 | v5.93 | HCRR shareable deep link: `<site>/#hcrr=YYYY-MM` opens that month's results. `captureDeepLink()` (top of app.js, before the cache-bust reload) stashes the month in `sessionStorage._pending_hcrr` so it survives the reload + phone-login flow; `_routePendingDeepLink()` (end of `loginSuccess`) consumes it via `hcrrViewForMonth`. "🔗 Copy link" button in the HCRR view (`hcrrCopyLink`). Not-logged-in recipients pass through login first, then land on the result |
