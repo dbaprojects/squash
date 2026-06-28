@@ -78,6 +78,35 @@ function _hcrrFindGroup(gid) {
   return _hcrrEditing?.data.groups.find(g => g.id === gid);
 }
 
+// ── Performance vs handicap ──────────────────────────────────────────────────
+// Games are played with handicapped starts (HC Calculator), so the handicap is
+// already in the scoreline. "To / over / under handicap" is simply the margin:
+// a well-handicapped game finishes close; a big margin means the winner
+// over-performed (and the loser under-performed). Threshold = dead-band.
+const HCRR_SENS = 3;
+
+function _hcrrCellClass(g, rowPid, colPid) {
+  const a = g.scores?.[rowPid]?.[colPid];
+  const b = g.scores?.[colPid]?.[rowPid];
+  if (typeof a !== 'number' || typeof b !== 'number') return '';
+  const m = a - b;
+  if (m >  HCRR_SENS) return 'hcrr-over';
+  if (m < -HCRR_SENS) return 'hcrr-under';
+  return '';
+}
+
+// Net points scored vs conceded across the box — over/under-performance signal.
+function _hcrrNet(g, pid) {
+  let net = 0, any = false;
+  for (const p of (g.players || [])) {
+    if (p.pid === pid) continue;
+    const a = g.scores?.[pid]?.[p.pid];
+    const b = g.scores?.[p.pid]?.[pid];
+    if (typeof a === 'number' && typeof b === 'number') { net += a - b; any = true; }
+  }
+  return any ? net : null;
+}
+
 // ── Entry / list ─────────────────────────────────────────────────────────────
 async function loadHcrr() {
   const wrap = document.getElementById('hcrr-wrap');
@@ -227,6 +256,12 @@ function renderHcrrView() {
         <button class="hcrr-share-btn" onclick="hcrrCopyLink('${v.month}')">🔗 Copy link</button>
       </div>
       ${v.data.photo ? `<img src="${v.data.photo}" class="hcrr-photo" alt="Winners">` : ''}
+      ${groups.length ? `<div class="hcrr-legend">
+        <span><i class="hcrr-sw hcrr-over"></i> above handicap</span>
+        <span><i class="hcrr-sw hcrr-under"></i> below handicap</span>
+        <span><i class="hcrr-sw"></i> to handicap (±${HCRR_SENS})</span>
+        <span class="hcrr-legend-net">± HC = net points vs box</span>
+      </div>` : ''}
       ${groupsHtml}
       ${editBtn}
     </div>`;
@@ -283,16 +318,24 @@ function _hcrrRenderGroup(g, ro) {
       if (cp.pid === rp.pid) return `<td class="hcrr-diag"></td>`;
       const v = (g.scores && g.scores[rp.pid] && g.scores[rp.pid][cp.pid] != null)
         ? g.scores[rp.pid][cp.pid] : '';
-      if (ro) return `<td class="hcrr-cell-ro">${v}</td>`;
+      // Read-only view: shade by handicapped-game margin (start already applied).
+      if (ro) return `<td class="hcrr-cell-ro ${_hcrrCellClass(g, rp.pid, cp.pid)}">${v}</td>`;
       return `<td><input class="hcrr-cell" id="hcrr-cell-${g.id}-${rp.pid}-${cp.pid}" type="number" min="-35" max="11" step="1"
         value="${v}" onchange="hcrrSetScore('${g.id}','${rp.pid}','${cp.pid}',this.value)"></td>`;
     }).join('');
+    let netCell = '';
+    if (ro) {
+      const net = _hcrrNet(g, rp.pid);
+      const cls = net == null ? '' : net > HCRR_SENS ? 'hcrr-over' : net < -HCRR_SENS ? 'hcrr-under' : '';
+      const txt = net == null ? '' : (net > 0 ? '+' : '') + net;
+      netCell = `<td class="hcrr-net ${cls}">${txt}</td>`;
+    }
     return `<tr>
       <td class="hcrr-rp-hc">${rp.hc != null ? rp.hc : ''}</td>
       <td class="hcrr-rp-name">${esc(rp.name)} <span class="hcrr-rp-init">${esc(rp.initials || '')}</span></td>
       ${cells}
       <td class="hcrr-total" id="hcrr-tot-${g.id}-${rp.pid}">${_hcrrTotal(g, rp.pid)}</td>
-      ${ro ? '' : `<td><button class="hcrr-x" title="Remove player" onclick="hcrrRemovePlayer('${g.id}','${rp.pid}')">×</button></td>`}
+      ${ro ? netCell : `<td><button class="hcrr-x" title="Remove player" onclick="hcrrRemovePlayer('${g.id}','${rp.pid}')">×</button></td>`}
     </tr>`;
   }).join('');
 
@@ -303,7 +346,7 @@ function _hcrrRenderGroup(g, ro) {
            <th class="hcrr-name-head">Player</th>
            ${colHead}
            <th class="hcrr-total-head">Total</th>
-           ${ro ? '' : '<th></th>'}
+           ${ro ? '<th class="hcrr-net-head" title="Net points vs opponents — over/under handicap">± HC</th>' : '<th></th>'}
          </tr></thead>
          <tbody>${bodyRows}</tbody>
        </table></div>`

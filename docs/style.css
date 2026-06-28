@@ -2196,6 +2196,22 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 .hcrr-pick-empty { padding: 12px; color: #94a3b8; font-size: 13px; text-align: center; }
 
 .hcrr-cell-ro { min-width: 36px; padding: 5px 2px !important; }
+/* Performance-vs-handicap shading */
+.hcrr-over  { background: #dcfce7 !important; }   /* over-performed (green) */
+.hcrr-under { background: #fef3c7 !important; }   /* under-performed (amber) */
+.hcrr-net-head { background: #1B2A6B !important; }
+.hcrr-net { font-weight: 800; min-width: 34px; }
+.hcrr-net.hcrr-over  { color: #15803d; }
+.hcrr-net.hcrr-under { color: #b45309; }
+.hcrr-legend {
+  display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center;
+  font-size: 12px; color: #475569; margin: 0 0 12px; padding: 0 2px;
+}
+.hcrr-legend .hcrr-sw {
+  display: inline-block; width: 14px; height: 14px; border-radius: 3px;
+  border: 1px solid #e2e8f0; vertical-align: -2px; margin-right: 4px; background: #fff;
+}
+.hcrr-legend-net { color: #64748b; font-style: italic; }
 .hcrr-group-name-ro { flex: 1; font-size: 15px; font-weight: 700; color: #1B2A6B; }
 .hcrr-total { font-weight: 800; background: #f8fafc; min-width: 36px; }
 .hcrr-x { border: none; background: none; color: #cbd5e1; cursor: pointer; font-size: 15px; padding: 0 4px; }
