@@ -2139,7 +2139,7 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
   background: repeating-linear-gradient(135deg, #e8edf5, #e8edf5 12px, #eef2f8 12px, #eef2f8 24px);
   min-height: 150px;
 }
-.hcrr-banner-img { display: block; width: 100%; max-height: 360px; object-fit: cover; }
+.hcrr-banner-img { display: block; width: 100%; height: auto; max-height: 75vh; object-fit: contain; }
 .hcrr-banner-ph {
   display: flex; align-items: center; justify-content: center; min-height: 150px;
   color: #94a3b8; font-size: 14px; letter-spacing: 0.5px;
