@@ -195,6 +195,18 @@ async function hcrrViewForMonth(month) {
   renderHcrrView();
 }
 
+// Copy a shareable deep link to this month's results. Recipients who aren't
+// logged in go through the phone-login flow first, then land here.
+function hcrrCopyLink(month) {
+  const url = location.origin + location.pathname + '#hcrr=' + (month || '').slice(0, 7);
+  const done = () => alert('Link copied:\n' + url);
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(done, () => prompt('Copy this link:', url));
+  } else {
+    prompt('Copy this link:', url);
+  }
+}
+
 function renderHcrrView() {
   const wrap = document.getElementById('hcrr-wrap');
   const v = _hcrrView;
@@ -212,6 +224,7 @@ function renderHcrrView() {
       <div class="hcrr-editor-head">
         <button class="hcrr-back-btn" onclick="navTo('hof')">← Hall of Fame</button>
         <div class="hcrr-editor-month">${_hcrrMonthLabel(v.month)} HCRR</div>
+        <button class="hcrr-share-btn" onclick="hcrrCopyLink('${v.month}')">🔗 Copy link</button>
       </div>
       ${v.data.photo ? `<img src="${v.data.photo}" class="hcrr-photo" alt="Winners">` : ''}
       ${groupsHtml}

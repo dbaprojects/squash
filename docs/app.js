@@ -1,8 +1,17 @@
 /* app.js — Squash Club SPA (Supabase, phone login) */
 'use strict';
 
+// ── Deep link capture — must run before the cache-bust reload (which drops the
+// hash) and before login. Shareable link form: <site>/#hcrr=YYYY-MM. Stashed in
+// sessionStorage so it survives the reload + the phone-login flow, then consumed
+// by _routePendingDeepLink() once the user is authenticated.
+(function captureDeepLink() {
+  const m = location.hash.match(/hcrr=(\d{4}-\d{2})/);
+  if (m) sessionStorage.setItem('_pending_hcrr', m[1]);
+})();
+
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '5.92';
+const APP_VERSION = '5.93';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -432,6 +441,16 @@ function loginSuccess(player, source = 'session_start') {
   showInstallBanner();
   if (!isStandalone()) {
     document.getElementById('btn-install-footer')?.classList.remove('hidden');
+  }
+  _routePendingDeepLink();
+}
+
+// Consume a stashed deep link (e.g. #hcrr=YYYY-MM) once the user is signed in.
+function _routePendingDeepLink() {
+  const hcrr = sessionStorage.getItem('_pending_hcrr');
+  if (hcrr && /^\d{4}-\d{2}$/.test(hcrr) && typeof hcrrViewForMonth === 'function') {
+    sessionStorage.removeItem('_pending_hcrr');
+    hcrrViewForMonth(hcrr + '-01');
   }
 }
 

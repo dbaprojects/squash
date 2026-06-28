@@ -5,7 +5,7 @@
 - **Owner:** Club admin — personal project
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `[local project directory]`
-- **Current version:** v5.92
+- **Current version:** v5.93
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -565,6 +565,7 @@ echo "{\"version\":\"4.XX\",\"build\":\"$(date +%s)\"}" > docs/version.json
 | v5.72 | Ladders home tile: flashing red "Don't be shy — sign up! Ping David B" nudge for players not on the ladder |
 | v5.73 | Ladders home tile: moved to after Sign-Up tile; quip flashes red when ladder player has no active challenges |
 | v5.74 | Serial ghoster rule: 3 consecutive forfeits as challenged → demoted to last place; 👻 badge on their row and home tile chips; `_serialGhosters` Set rebuilt after every challenge load |
+| v5.93 | HCRR shareable deep link: `<site>/#hcrr=YYYY-MM` opens that month's results. `captureDeepLink()` (top of app.js, before the cache-bust reload) stashes the month in `sessionStorage._pending_hcrr` so it survives the reload + phone-login flow; `_routePendingDeepLink()` (end of `loginSuccess`) consumes it via `hcrrViewForMonth`. "🔗 Copy link" button in the HCRR view (`hcrrCopyLink`). Not-logged-in recipients pass through login first, then land on the result |
 | v5.89 | HCRR winners photo: editor lets super_admins add/replace/remove a photo per HCRR. Image is **resized client-side** (canvas, longest edge ≤1080px, JPEG q0.82) then uploaded to the **`squash-photos`** Supabase Storage bucket at `hcrr/{event_month}.jpg` (upsert); public URL stored in `hcrr_data.photo` (cache-busted with `?t=`). Shown at top of the read-only results view + editor. Requires `db/storage-squash-photos.sql` (open storage policies) + bucket set public. `_hcrrResizeImage`/`hcrrPhotoSelected`/`hcrrRemovePhoto` in hcrr.js |
 | v5.88 | HoF: whole month card clickable to open the HCRR results view (`.hof-card-clickable` + card-level onclick); right-column text is just the affordance |
 | v5.87 | HoF card: shortened results link to "📋 Results →" + smaller fonts/tighter gaps to stop champion-name line-breaks |
