@@ -2158,6 +2158,21 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 .hcrr-cell { width: 36px; border: none; text-align: center; font-size: 12px; padding: 4px 2px; -moz-appearance: textfield; }
 .hcrr-cell::-webkit-outer-spin-button, .hcrr-cell::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .hcrr-cell:focus { outline: 2px solid #5b9bd5; background: #eff6ff; }
+/* HCRR winners photo */
+.hcrr-photo {
+  display: block; width: 100%; max-width: 480px; margin: 0 auto 12px;
+  border-radius: 10px; box-shadow: 0 1px 5px rgba(0,0,0,0.15);
+}
+.hcrr-photo-section { margin-bottom: 14px; }
+.hcrr-photo-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.hcrr-photo-btn {
+  display: inline-block; background: #1B2A6B; color: #fff; border-radius: 8px;
+  font-size: 13px; font-weight: 600; padding: 8px 14px; cursor: pointer;
+}
+.hcrr-photo-btn:hover { background: #142052; }
+.hcrr-photo-remove { background: none; border: none; color: #dc2626; font-size: 13px; cursor: pointer; }
+.hcrr-photo-status { font-size: 12px; color: #64748b; }
+
 /* Player picker (type-to-filter) */
 .hcrr-pick-search { width: 100%; }
 .hcrr-pick-list { max-height: 260px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; margin-top: 6px; }

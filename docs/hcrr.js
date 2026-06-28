@@ -213,6 +213,7 @@ function renderHcrrView() {
         <button class="hcrr-back-btn" onclick="navTo('hof')">← Hall of Fame</button>
         <div class="hcrr-editor-month">${_hcrrMonthLabel(v.month)} HCRR</div>
       </div>
+      ${v.data.photo ? `<img src="${v.data.photo}" class="hcrr-photo" alt="Winners">` : ''}
       ${groupsHtml}
       ${editBtn}
     </div>`;
@@ -232,6 +233,17 @@ function renderHcrrEditor() {
       <div class="hcrr-editor-head">
         <button class="hcrr-back-btn" onclick="hcrrViewForMonth('${e.event_month}')">← Done</button>
         <div class="hcrr-editor-month">Editing ${_hcrrMonthLabel(e.event_month)} HCRR</div>
+      </div>
+
+      <div class="hcrr-photo-section">
+        ${e.data.photo ? `<img src="${e.data.photo}" class="hcrr-photo" alt="Winners">` : ''}
+        <div class="hcrr-photo-controls">
+          <label class="hcrr-photo-btn">${e.data.photo ? '🔄 Replace photo' : '📷 Add winners photo'}
+            <input type="file" accept="image/*" style="display:none" onchange="hcrrPhotoSelected(this)">
+          </label>
+          ${e.data.photo ? `<button class="hcrr-photo-remove" onclick="hcrrRemovePhoto()">Remove</button>` : ''}
+          <span id="hcrr-photo-status" class="hcrr-photo-status"></span>
+        </div>
       </div>
 
       ${groupsHtml}
@@ -446,4 +458,54 @@ async function hcrrSave() {
   if (res.error) { alert('Save failed: ' + res.error.message); return; }
   alert('HCRR saved.');
   renderHcrrEditor();   // stay in the editor
+}
+
+// ── Winners photo: resize client-side, upload to the squash-photos bucket ─────
+const HCRR_PHOTO_MAX = 1080;   // longest edge — plenty for a phone screen
+const HCRR_PHOTO_Q   = 0.82;   // JPEG quality
+
+function _hcrrResizeImage(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      let w = img.naturalWidth, h = img.naturalHeight;
+      if (w > HCRR_PHOTO_MAX || h > HCRR_PHOTO_MAX) {
+        if (w >= h) { h = Math.round(h * HCRR_PHOTO_MAX / w); w = HCRR_PHOTO_MAX; }
+        else        { w = Math.round(w * HCRR_PHOTO_MAX / h); h = HCRR_PHOTO_MAX; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(img.src);
+      canvas.toBlob(b => b ? resolve(b) : reject(new Error('Could not process image')), 'image/jpeg', HCRR_PHOTO_Q);
+    };
+    img.onerror = () => { URL.revokeObjectURL(img.src); reject(new Error('Could not read image')); };
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+async function hcrrPhotoSelected(input) {
+  const file = input.files && input.files[0];
+  if (!file || !_hcrrEditing) return;
+  const statusEl = document.getElementById('hcrr-photo-status');
+  if (statusEl) statusEl.textContent = 'Uploading…';
+  try {
+    const blob = await _hcrrResizeImage(file);
+    const path = `hcrr/${_hcrrEditing.event_month}.jpg`;
+    const up = await sb.storage.from('squash-photos')
+      .upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
+    if (up.error) throw up.error;
+    const pub = sb.storage.from('squash-photos').getPublicUrl(path);
+    _hcrrEditing.data.photo = pub.data.publicUrl + '?t=' + Date.now();  // cache-bust on replace
+    renderHcrrEditor();
+  } catch (err) {
+    if (statusEl) statusEl.textContent = '';
+    alert('Photo upload failed: ' + (err.message || err));
+  }
+}
+
+function hcrrRemovePhoto() {
+  if (!_hcrrEditing) return;
+  delete _hcrrEditing.data.photo;
+  renderHcrrEditor();
 }

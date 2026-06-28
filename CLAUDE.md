@@ -5,7 +5,7 @@
 - **Owner:** Club admin — personal project
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `[local project directory]`
-- **Current version:** v5.88
+- **Current version:** v5.89
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -55,6 +55,7 @@ db/
   schema-audit.sql    — DDL for audit_log table + RLS
   schema-ladder.sql   — DDL for ladder_positions + ladder_config tables + RLS
   schema-hcrr.sql     — ALTER: adds hof_results.hcrr_data JSONB (detailed HCRR results)
+  storage-squash-photos.sql — Storage RLS policies for the squash-photos bucket (HCRR winners photos)
   seed-ladder.sql     — One-time seed of initial ladder order from whiteboard
   load-hof.js         — seeds hof_results from hof.xlsx (run once with service role key)
   reseed.js           — rebuilds historical signups/handicap data
@@ -564,6 +565,9 @@ echo "{\"version\":\"4.XX\",\"build\":\"$(date +%s)\"}" > docs/version.json
 | v5.72 | Ladders home tile: flashing red "Don't be shy — sign up! Ping David B" nudge for players not on the ladder |
 | v5.73 | Ladders home tile: moved to after Sign-Up tile; quip flashes red when ladder player has no active challenges |
 | v5.74 | Serial ghoster rule: 3 consecutive forfeits as challenged → demoted to last place; 👻 badge on their row and home tile chips; `_serialGhosters` Set rebuilt after every challenge load |
+| v5.89 | HCRR winners photo: editor lets super_admins add/replace/remove a photo per HCRR. Image is **resized client-side** (canvas, longest edge ≤1080px, JPEG q0.82) then uploaded to the **`squash-photos`** Supabase Storage bucket at `hcrr/{event_month}.jpg` (upsert); public URL stored in `hcrr_data.photo` (cache-busted with `?t=`). Shown at top of the read-only results view + editor. Requires `db/storage-squash-photos.sql` (open storage policies) + bucket set public. `_hcrrResizeImage`/`hcrrPhotoSelected`/`hcrrRemovePhoto` in hcrr.js |
+| v5.88 | HoF: whole month card clickable to open the HCRR results view (`.hof-card-clickable` + card-level onclick); right-column text is just the affordance |
+| v5.87 | HoF card: shortened results link to "📋 Results →" + smaller fonts/tighter gaps to stop champion-name line-breaks |
 | v5.86 | HoF card: moved the results link into a right-hand column beneath the score (`.hof-card-right`) to save a row; link is compact && right-aligned (was a full-width footer). |
 | v5.85 | HoF/HCRR polish: (1) **one result per month** — `submitHofForm` blocks adding when `hofResults` already has that `event_month` (clear error; insert not upsert). (2) Removed the "Detailed box results" button from the add/edit modal (`hcrrFromHofForm` deleted) — details are reached from the tiles. (3) HoF month cards restructured to a `.hof-card-top` row + explicit footer link `.hof-card-results`: "📋 Full results →" when results exist; "➕ Add detailed results" (orange) for super_admins on empty months; muted "No detailed results" otherwise. Card is now a flex column; footer is a full-width tap target (mobile-friendly) |
 | v5.84 | HoF "+ Add HCRR Result" button moved inline into the leaders `.hof-leaders-status` row (right of All Time / Active Players Only), same size/shape as those (`.hof-lstatus-btn`) with an orange `.hof-add-orange` modifier; removed `.hof-su-tools`/`.hof-hcrr-add-btn`. Also: Jan–May 2026 HCRR detailed results entered into `hof_results.hcrr_data` via REST PATCH (totals reconciled to source sheets; player_id left null) |
