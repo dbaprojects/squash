@@ -2140,6 +2140,9 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
   min-height: 150px;
 }
 .hcrr-banner-img { display: block; width: 100%; height: auto; max-height: 75vh; object-fit: contain; }
+@media (min-width: 640px) {
+  .hcrr-banner { max-width: 420px; margin-left: auto; margin-right: auto; }
+}
 .hcrr-banner-ph {
   display: flex; align-items: center; justify-content: center; min-height: 150px;
   color: #94a3b8; font-size: 14px; letter-spacing: 0.5px;
