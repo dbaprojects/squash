@@ -11,7 +11,7 @@
 })();
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '5.96';
+const APP_VERSION = '5.97';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -2015,6 +2015,7 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
     ? `<div class="home-hof-row">
          <img src="winner02-small.png" class="home-hof-trophy-img" alt="">
          <div class="home-hof-info">
+           <div class="home-hof-champlabel">Current champ</div>
            <div class="home-card-main" style="font-size:12px">${esc(latestHof.winner_name || '–')}</div>
            <div class="home-card-sub" style="font-size:11px">${fmtHofMonth(latestHof.event_month)}</div>
          </div>
@@ -2025,9 +2026,9 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
        </div>`;
   const hofCard = `
     <div class="home-card home-card-hof" id="home-hof-tile">
-      <div class="home-card-label">Current HCRR Champ</div>
+      <div class="home-card-label">Monthly HCRR Comp</div>
       ${hofInner}
-      <div class="home-card-link">Hall of Fame →</div>
+      <div class="home-card-link">Results &amp; Hall of Fame →</div>
     </div>`;
 
   // ── Card 5: Admin (admin only) ────────────────────────────────────────────
