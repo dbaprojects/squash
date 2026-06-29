@@ -546,6 +546,15 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 .ev-names-group { display: flex; flex-wrap: wrap; gap: 4px; }
 .ev-names-reserves { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
 .ev-names-reserves::before { content: 'Reserve:'; font-size: 12px; color: #92400e; font-weight: 600; margin-right: 4px; }
+.ev-guest-add-row { margin-top: 8px; }
+.ev-guest-btn { background: none; border: 1px dashed #9ca3af; color: #6b7280; border-radius: 8px; padding: 3px 10px; font-size: 13px; cursor: pointer; }
+.ev-guest-btn:active { background: #f3f4f6; }
+.ev-guest-form { margin-top: 8px; }
+.ev-guest-input { width: 100%; box-sizing: border-box; border: 1px solid #d1d5db; border-radius: 8px; padding: 7px 10px; font-size: 15px; outline: none; }
+.ev-guest-input:focus { border-color: var(--bc-navy); }
+.ev-guest-actions { display: flex; gap: 8px; margin-top: 6px; }
+.ev-guest-submit { background: var(--bc-navy); color: #fff; border: none; border-radius: 8px; padding: 6px 16px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.ev-guest-cancel { background: none; border: 1px solid #d1d5db; color: #6b7280; border-radius: 8px; padding: 6px 14px; font-size: 14px; cursor: pointer; }
 .ev-name-item {
   display: inline-flex;
   align-items: center;

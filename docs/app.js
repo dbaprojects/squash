@@ -11,7 +11,7 @@
 })();
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '5.99';
+const APP_VERSION = '6.00';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -2231,17 +2231,25 @@ function eventCard(ev) {
 
   const showHc = ev.title?.toUpperCase().includes('HCRR');
   const confirmedNames = confirmed.map(s => {
-    const name = s.player_first ? esc(shortName(s.player_first, s.player_last)) : esc(s.guest_name || 'Guest');
+    const bookerShort = s.booker ? shortName(s.booker.first_name, s.booker.last_name) : '';
+    const name = s.player_first
+      ? esc(shortName(s.player_first, s.player_last))
+      : esc((s.guest_name || 'Guest') + (bookerShort ? `, guest of ${bookerShort}` : ''));
     const hc   = showHc && s.player_handicap != null ? ` <span class="chip-hc">(${s.player_handicap})</span>` : '';
-    const del  = isAdmin
+    const canDel = isAdmin || s.signed_up_by === ST.player?.id;
+    const del  = canDel
       ? `<button class="chip-del" onclick="event.stopPropagation();removeSignupChip('${s.id}','${ev.id}','${name.replace(/'/g, '&#39;')}')" title="Remove">×</button>`
       : '';
     return `<span class="ev-name-item">${name}${hc}${del}</span>`;
   }).join('');
 
   const reserveNames = reserves.length ? reserves.map(s => {
-    const name = s.player_first ? esc(shortName(s.player_first, s.player_last)) : esc(s.guest_name || 'Guest');
-    const del  = isAdmin
+    const bookerShort = s.booker ? shortName(s.booker.first_name, s.booker.last_name) : '';
+    const name = s.player_first
+      ? esc(shortName(s.player_first, s.player_last))
+      : esc((s.guest_name || 'Guest') + (bookerShort ? `, guest of ${bookerShort}` : ''));
+    const canDel = isAdmin || s.signed_up_by === ST.player?.id;
+    const del  = canDel
       ? `<button class="chip-del" onclick="event.stopPropagation();removeSignupChip('${s.id}','${ev.id}','${name.replace(/'/g, '&#39;')}')" title="Remove">×</button>`
       : '';
     return `<span class="ev-name-item ev-name-reserve">${name}${del}</span>`;
@@ -2253,6 +2261,8 @@ function eventCard(ev) {
         ${confirmed.length ? confirmedNames : '<span style="color:#bbb;font-style:italic">No signups yet</span>'}
       </div>
       ${reserveNames ? `<div class="ev-names-reserves">${reserveNames}</div>` : ''}
+      ${enrolled ? `<div class="ev-guest-add-row"><button class="ev-guest-btn" onclick="addGuestInCard('${ev.id}')">+ Add Guest</button></div>` : ''}
+      <div id="ev-guest-form-${ev.id}" class="ev-guest-form" style="display:none"></div>
     </div>`;
 
   return `
@@ -2347,9 +2357,53 @@ async function removeSignupChip(signupId, eventId, name) {
   } catch (err) { alert(err.message); }
 }
 
-function addGuestInCard() {}
-function cancelGuestInCard() {}
-async function submitGuestInCard() {}
+function addGuestInCard(eventId) {
+  const btn = document.querySelector(`#ev-names-${eventId} .ev-guest-btn`);
+  if (btn) btn.style.display = 'none';
+  const form = document.getElementById(`ev-guest-form-${eventId}`);
+  if (!form) return;
+  form.style.display = '';
+  form.innerHTML = `
+    <input id="ev-guest-input-${eventId}" class="ev-guest-input" type="text" placeholder="Guest name" maxlength="60" autocomplete="off">
+    <div class="ev-guest-actions">
+      <button class="ev-guest-submit" onclick="submitGuestInCard('${eventId}')">Add</button>
+      <button class="ev-guest-cancel" onclick="cancelGuestInCard('${eventId}')">Cancel</button>
+    </div>`;
+  document.getElementById(`ev-guest-input-${eventId}`)?.focus();
+}
+
+function cancelGuestInCard(eventId) {
+  const form = document.getElementById(`ev-guest-form-${eventId}`);
+  if (form) { form.style.display = 'none'; form.innerHTML = ''; }
+  const btn = document.querySelector(`#ev-names-${eventId} .ev-guest-btn`);
+  if (btn) btn.style.display = '';
+}
+
+async function submitGuestInCard(eventId) {
+  const input = document.getElementById(`ev-guest-input-${eventId}`);
+  const guestName = (input?.value || '').trim();
+  if (!guestName) { input?.focus(); return; }
+  try {
+    const ev = ST.events.find(x => x.id === eventId);
+    const { count } = await sb.from('signups')
+      .select('id', { count: 'exact', head: true })
+      .eq('event_id', eventId).eq('is_reserve', false);
+    const isReserve = !!(ev?.max_signups && count >= ev.max_signups);
+    const { error } = await sb.from('signups').insert({
+      event_id: eventId,
+      signed_up_by: ST.player.id,
+      guest_name: guestName,
+      player_id: null,
+      is_reserve: isReserve
+    });
+    if (error) throw error;
+    refreshCard(eventId, await fetchEventSignups(eventId));
+    // panel will be rebuilt — re-open it
+    const panel = document.getElementById(`ev-names-${eventId}`);
+    if (panel) panel.hidden = false;
+    document.getElementById(`ev-card-${eventId}`)?.classList.add('ev-names-open');
+  } catch (err) { alert(err.message); }
+}
 
 async function promoteFirstReserve(eventId) {
   const { data: ev } = await sb.from('events').select('max_signups').eq('id', eventId).single();
