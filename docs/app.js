@@ -11,7 +11,7 @@
 })();
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '6.01';
+const APP_VERSION = '6.02';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -549,7 +549,9 @@ function normaliseSignup(s) {
 }
 
 function normaliseEvent(ev) {
-  return { ...ev, signups: (ev.signups || []).map(normaliseSignup) };
+  const signups = (ev.signups || []).map(normaliseSignup)
+    .sort((a, b) => (a.signed_up_at || '') < (b.signed_up_at || '') ? -1 : 1);
+  return { ...ev, signups };
 }
 
 // ── Schedule in-flight guards (prevent double-tap duplicate signups) ──────────
