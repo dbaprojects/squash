@@ -11,7 +11,7 @@
 })();
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '6.00';
+const APP_VERSION = '6.01';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -2240,7 +2240,8 @@ function eventCard(ev) {
     const del  = canDel
       ? `<button class="chip-del" onclick="event.stopPropagation();removeSignupChip('${s.id}','${ev.id}','${name.replace(/'/g, '&#39;')}')" title="Remove">×</button>`
       : '';
-    return `<span class="ev-name-item">${name}${hc}${del}</span>`;
+    const guestCls = s.player_first ? '' : ' ev-name-guest';
+    return `<span class="ev-name-item${guestCls}">${name}${hc}${del}</span>`;
   }).join('');
 
   const reserveNames = reserves.length ? reserves.map(s => {
@@ -2252,7 +2253,8 @@ function eventCard(ev) {
     const del  = canDel
       ? `<button class="chip-del" onclick="event.stopPropagation();removeSignupChip('${s.id}','${ev.id}','${name.replace(/'/g, '&#39;')}')" title="Remove">×</button>`
       : '';
-    return `<span class="ev-name-item ev-name-reserve">${name}${del}</span>`;
+    const guestResCls = s.player_first ? '' : ' ev-name-guest';
+    return `<span class="ev-name-item ev-name-reserve${guestResCls}">${name}${del}</span>`;
   }).join('') : '';
 
   const namesPanel = `

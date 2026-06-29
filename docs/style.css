@@ -567,6 +567,7 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
   white-space: nowrap;
 }
 .ev-name-reserve { background: #fff3cd; color: #92400e; }
+.ev-name-guest { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
 
 /* ── Attendee chips (kept for compatibility) ────────────────────────────── */
 .attendee-chip {
