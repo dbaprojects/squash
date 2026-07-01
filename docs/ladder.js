@@ -677,7 +677,7 @@ function _renderResultsList() {
         const ln = c.winner_id === c.challenger_id ? dn : cn;
         label = `🍺 ${wn} 👻 ${ln} ghosted`; break;
       }
-      case 'voided': label = `🐌 ${cn} too slow to play ${dn} — voided`; break;
+      case 'voided': label = `🐌 ${cn} too slow to play ${dn}`; break;
       case 'superseded': label = `🦘 ${dn} got jumped!`; break;
       default: label = `⚔️ ${cn} v ${dn}`;
     }
