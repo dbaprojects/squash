@@ -104,6 +104,7 @@ let _recentCompleted   = [];
 let _myChallenges      = [];
 let _resultsFilter     = 'all';
 let _formModalLocked   = false;
+let _pendingVoidCause  = null; // set before loadDivisionLadder so _processAutoForfeits can pass it to _voidOutOfRangeChallenges
 let _notifiedChallengeIds = new Set();
 
 // ── Challenge messages ─────────────────────────────────────────────────────
@@ -243,7 +244,7 @@ async function _loadChallenges() {
       .in('status', ['pending', 'accepted'])
       .order('issued_at', { ascending: false }),
     sb.from('ladder_challenges')
-      .select(`id, challenger_id, challenged_id, status, completed_at, responded_at, winner_id, winner_pos_change,
+      .select(`id, challenger_id, challenged_id, message, status, completed_at, responded_at, winner_id, winner_pos_change,
                challenger:players!challenger_id(first_name, last_name),
                challenged:players!challenged_id(first_name, last_name)`)
       .in('status', ['completed', 'forfeited', 'declined', 'declined_injury', 'voided', 'superseded'])
@@ -318,7 +319,7 @@ function _isJumped(playerId) {
 
 // Called after any ladder reshuffle: void all active challenges now out of range.
 // Challengers whose challenge gets voided earn a 🐌 badge.
-async function _voidOutOfRangeChallenges() {
+async function _voidOutOfRangeChallenges(causedBy) {
   const outOfRange = _activeChallenges.filter(c => {
     const myPos     = _ladderPositions.find(p => p.player_id === c.challenger_id)?.position;
     const targetPos = _ladderPositions.find(p => p.player_id === c.challenged_id)?.position;
@@ -328,7 +329,9 @@ async function _voidOutOfRangeChallenges() {
   if (outOfRange.length === 0) return;
   const now = new Date().toISOString();
   for (const c of outOfRange) {
-    await sb.from('ladder_challenges').update({ status: 'voided', completed_at: now }).eq('id', c.id);
+    const update = { status: 'voided', completed_at: now };
+    if (causedBy) update.message = causedBy;
+    await sb.from('ladder_challenges').update(update).eq('id', c.id);
   }
 }
 
@@ -666,7 +669,7 @@ function _renderResultsList() {
         const ln = c.winner_id === c.challenger_id ? dn : cn;
         label = `🍺 ${wn} 👻 ${ln} ghosted`; break;
       }
-      case 'voided': label = `🐌 ${cn} challenge voided`; break;
+      case 'voided': label = `🐌 ${cn} vs ${dn} voided${c.message ? ` — ${c.message}` : ''}`; break;
       case 'superseded': label = `🦘 ${dn} got jumped!`; break;
       default: label = `⚔️ ${cn} v ${dn}`;
     }
@@ -1034,7 +1037,8 @@ async function respondToChallenge(challengeId, response) {
   await _loadChallenges();
   if (response === 'decline') {
     // Decline reshuffles positions — check for newly out-of-range challenges
-    await _voidOutOfRangeChallenges();
+    const declinerName = ST.player ? `${ST.player.first_name} ${(ST.player.last_name||'')[0]||''.trim()}.`.trim() : 'a player';
+    await _voidOutOfRangeChallenges(`${declinerName} declined a challenge`);
     await _loadChallenges();
   }
   await _loadMyChallenges();
@@ -1091,6 +1095,10 @@ async function submitChallengeResult(challengeId, winnerId) {
   const c = _activeChallenges.find(x => x.id === challengeId);
   if (!c) return;
   const loserId = winnerId === c.challenger_id ? c.challenged_id : c.challenger_id;
+  const winnerEntry = _ladderPositions.find(p => p.player_id === winnerId);
+  const winnerName = winnerEntry?.players
+    ? `${winnerEntry.players.first_name} ${(winnerEntry.players.last_name||'')[0]||''.trim()}.`.trim()
+    : 'another player';
   const posChange = await _applyLadderResult(winnerId, loserId);
   const { error } = await sb.from('ladder_challenges').update({
     status: 'completed',
@@ -1105,9 +1113,11 @@ async function submitChallengeResult(challengeId, winnerId) {
   // mark those 'superseded' (🦘 "got jumped") before loadDivisionLadder's
   // reshuffle pass runs, so they aren't mistaken for out-of-range 🐌 voids.
   await _supersedeJumpedChallenges(winnerId, challengeId);
+  _pendingVoidCause = `${winnerName} won their match`;
   closeFormModal();
   await _loadMyChallenges();
   await loadDivisionLadder();
+  _pendingVoidCause = null;
   _injectLadderHomeCard();
   _injectMyChallenges();
 }
@@ -1221,7 +1231,9 @@ async function _processAutoForfeits() {
   }
   // Always check — any reshuffle (forfeit, serial ghost demotion, or none)
   // may leave active challenges out of range; void them and rebuild snail badges
-  await _voidOutOfRangeChallenges();
+  const voidCause = _pendingVoidCause
+    || (expired.length > 0 ? 'a forfeit/ghost reshuffle' : null);
+  await _voidOutOfRangeChallenges(voidCause);
   await _loadChallenges();
 }
 
