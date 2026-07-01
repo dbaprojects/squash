@@ -11,7 +11,7 @@
 })();
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '6.04';
+const APP_VERSION = '6.05';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {

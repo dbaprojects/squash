@@ -339,7 +339,6 @@ async function _voidOutOfRangeChallenges(causedBy) {
   const now = new Date().toISOString();
   for (const c of outOfRange) {
     const update = { status: 'voided', completed_at: now };
-    if (causedBy) update.message = causedBy;
     await sb.from('ladder_challenges').update(update).eq('id', c.id);
   }
 }
@@ -678,7 +677,7 @@ function _renderResultsList() {
         const ln = c.winner_id === c.challenger_id ? dn : cn;
         label = `🍺 ${wn} 👻 ${ln} ghosted`; break;
       }
-      case 'voided': label = `🐌 ${cn} vs ${dn} voided${c.message ? ` — ${c.message}` : ''}`; break;
+      case 'voided': label = `🐌 ${cn} vs ${dn} voided`; break;
       case 'superseded': label = `🦘 ${dn} got jumped!`; break;
       default: label = `⚔️ ${cn} v ${dn}`;
     }
