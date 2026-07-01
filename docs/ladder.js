@@ -42,7 +42,7 @@ const _CHALLENGES_ENABLED = true;
     _myChallenges = [];
     _recentCompleted = [];
     _serialGhosters = new Set();
-    _snailBadges = new Set();
+    _snailBadges = new Map();
     _jumpedBadges = new Set();
     _notifiedChallengeIds = new Set();
     const basePromises = [
@@ -93,7 +93,7 @@ let _ladderPositions  = [];
 let _ladderDivSize    = 9;
 let _challengeRange   = 3;
 let _serialGhosters   = new Set();
-let _snailBadges      = new Set();
+let _snailBadges      = new Map(); // player_id → opponent name string
 let _jumpedBadges     = new Set();
 let _ladderInList     = [];
 let _ladderPool       = [];
@@ -279,7 +279,7 @@ function _isSerialGhoster(playerId) {
 }
 
 function _rebuildSnailBadges() {
-  _snailBadges = new Set();
+  _snailBadges = new Map();
   // For each player, look at their most recent challenge as *challenger*.
   // If it's voided → 🐌. Any other terminal status clears it.
   const latestAsChallengerByPlayer = {};
@@ -289,12 +289,21 @@ function _rebuildSnailBadges() {
     }
   }
   for (const [pid, c] of Object.entries(latestAsChallengerByPlayer)) {
-    if (c.status === 'voided') _snailBadges.add(pid);
+    if (c.status === 'voided') {
+      const opp = c.challenged?.first_name
+        ? `${c.challenged.first_name} ${(c.challenged.last_name||'')[0]||''}`.trim()
+        : 'opponent';
+      _snailBadges.set(pid, opp);
+    }
   }
 }
 
 function _isSnailBadged(playerId) {
   return _snailBadges.has(playerId);
+}
+
+function _snailOpponent(playerId) {
+  return _snailBadges.get(playerId) || '';
 }
 
 function _rebuildJumpedBadges() {
@@ -762,7 +771,7 @@ function renderDivisionLadder() {
       }
       return `<div class="div-player-row${cls}"${rowClick ? ` onclick="${rowClick}" style="cursor:pointer"` : ''}>
         <span class="div-pos">${recentIconMap[p.player_id] || ''}</span>
-        <span class="div-player-name">${first} ${last}<span class="div-hc">${hc}</span>${_isSerialGhoster(p.player_id) ? '<span class="div-ghost-badge" title="3 consecutive ghosts — moved to last place">🪦</span>' : ''}${_isSnailBadged(p.player_id) ? '<span class="div-snail-badge" title="Challenge voided — ladder reshuffled before match was played">🐌</span>' : ''}${_isJumped(p.player_id) ? '<span class="div-jumped-badge" title="Got jumped — challenger won another match and leapt above them; match no longer played">🦘</span>' : ''}</span>
+        <span class="div-player-name">${first} ${last}<span class="div-hc">${hc}</span>${_isSerialGhoster(p.player_id) ? '<span class="div-ghost-badge" title="3 consecutive ghosts — moved to last place">🪦</span>' : ''}${_isSnailBadged(p.player_id) ? `<span class="div-snail-badge" title="Too slow to challenge ${_snailOpponent(p.player_id)} — ladder reshuffled before the match was played">🐌</span>` : ''}${_isJumped(p.player_id) ? '<span class="div-jumped-badge" title="Got jumped — challenger won another match and leapt above them; match no longer played">🦘</span>' : ''}</span>
         ${badge}
       </div>`;
     }).join('');
