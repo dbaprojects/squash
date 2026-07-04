@@ -1489,38 +1489,50 @@ async function undoChallengeResult(challengeId) {
   const cd = `${c.challenged?.first_name||'?'} ${c.challenged?.last_name||''}`.trim();
   if (!confirm(`Undo result for ${cr} vs ${cd}?\n\nThis will:\n• Reverse the position change\n• Restore the challenge to accepted\n• Restore any challenges voided by this result`)) return;
 
-  // 1. Reverse the position cascade
+  // 1. Reverse position cascade
+  // Re-fetch the full challenge record to get winner_id (may not be in cached _adminChallengesData)
+  const { data: full } = await sb.from('ladder_challenges')
+    .select('id, challenger_id, challenged_id, winner_id, winner_pos_change')
+    .eq('id', challengeId).single();
+  if (!full) { alert('Could not load challenge record.'); return; }
+
   const { data: pos } = await sb.from('ladder_positions')
     .select('player_id, position').order('position');
   if (!pos) { alert('Could not load ladder positions.'); return; }
 
-  const winnerId = c.winner_id;
-  const loserId  = winnerId === c.challenger_id ? c.challenged_id : c.challenger_id;
+  const winnerId = full.winner_id;
+  const loserId  = winnerId === full.challenger_id ? full.challenged_id : full.challenger_id;
   const winnerRow = pos.find(p => p.player_id === winnerId);
   const loserRow  = pos.find(p => p.player_id === loserId);
 
-  if (winnerRow && loserRow) {
+  let positionsFixed = false;
+  if (!winnerId) {
+    alert('⚠️ winner_id not recorded — positions could not be reversed automatically.\nPlease fix positions manually using the drag-and-drop reorder above.\n\nThe challenge and voided challenges will still be restored.');
+  } else if (!winnerRow || !loserRow) {
+    alert('⚠️ One or both players not found in ladder — positions could not be reversed.\nPlease fix positions manually.\n\nThe challenge and voided challenges will still be restored.');
+  } else {
     const wp = winnerRow.position;
     const lp = loserRow.position;
     let updates;
     if (wp < lp) {
-      // Challenger won: winner jumped up from (wp + winner_pos_change) to wp
-      const origWp = wp + (c.winner_pos_change || 1);
+      // Challenger won: winner jumped up — reverse by moving winner back down
+      const origWp = wp + (full.winner_pos_change || 1);
       updates = pos.map(p => {
         if (p.player_id === winnerId) return { player_id: p.player_id, position: origWp };
         if (p.position > wp && p.position <= origWp) return { player_id: p.player_id, position: p.position - 1 };
         return p;
       });
     } else {
-      // Challenged won: loser (challenger) dropped 1
+      // Challenged won: challenger dropped 1 — move them back up
       const origLp = lp - 1;
       updates = pos.map(p => {
-        if (p.player_id === loserId)        return { player_id: p.player_id, position: origLp };
-        if (p.position === origLp)          return { player_id: p.player_id, position: lp };
+        if (p.player_id === loserId)   return { player_id: p.player_id, position: origLp };
+        if (p.position === origLp)     return { player_id: p.player_id, position: lp };
         return p;
       });
     }
     await _savePositions(updates);
+    positionsFixed = true;
   }
 
   // 2. Restore this challenge to accepted
@@ -1534,7 +1546,8 @@ async function undoChallengeResult(challengeId) {
   }).eq('id', challengeId);
   if (chErr) { alert('Challenge restore failed: ' + chErr.message); return; }
 
-  // 3. Restore any challenges voided within 60s of this completion
+  // 3. Restore voided challenges from the same 60s window
+  let restoredCount = 0;
   if (c.completed_at) {
     const t = new Date(c.completed_at);
     const from = new Date(t.getTime() - 60000).toISOString();
@@ -1549,13 +1562,17 @@ async function undoChallengeResult(challengeId) {
         status: v.responded_at ? 'accepted' : 'pending',
         completed_at: null
       }).eq('id', v.id);
+      restoredCount++;
     }
   }
 
+  // 4. Reload everything — positions are now correct so _processAutoForfeits won't re-void
   await loadAdminChallenges();
-  await _loadChallenges();
-  renderDivisionLadder();
-  alert('✅ Result undone. Positions, challenge status, and any voided challenges have been restored.');
+  await loadDivisionLadder();
+  _injectLadderHomeCard();
+
+  const posMsg = positionsFixed ? '✅ Positions reversed.' : '⚠️ Positions NOT reversed — fix manually.';
+  alert(`${posMsg}\n✅ Challenge restored to accepted.\n✅ ${restoredCount} voided challenge(s) restored.`);
 }
 
 
