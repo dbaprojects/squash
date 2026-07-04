@@ -1520,9 +1520,7 @@ async function undoChallengeResult(challengeId) {
         return p;
       });
     }
-    const { error: posErr } = await sb.from('ladder_positions')
-      .upsert(updates.map(p => ({ ...p, updated_at: new Date().toISOString() })));
-    if (posErr) { alert('Position update failed: ' + posErr.message); return; }
+    await _savePositions(updates);
   }
 
   // 2. Restore this challenge to accepted
