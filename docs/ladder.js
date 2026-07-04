@@ -1385,6 +1385,7 @@ async function loadAdminChallenges() {
 
   const { data, error } = await sb.from('ladder_challenges')
     .select(`id, status, issued_at, responded_at, completed_at,
+             challenger_id, challenged_id, winner_id, winner_pos_change,
              challenger:players!challenger_id(first_name, last_name),
              challenged:players!challenged_id(first_name, last_name)`)
     .order('issued_at', { ascending: false });
@@ -1414,12 +1415,16 @@ function _renderAdminChallenges(filter) {
     const cr = `${c.challenger?.first_name||'?'} ${c.challenger?.last_name||''}`.trim();
     const cd = `${c.challenged?.first_name||'?'} ${c.challenged?.last_name||''}`.trim();
     const date = (c.completed_at || c.responded_at || c.issued_at || '').slice(0, 10);
+    const undoBtn = c.status === 'completed'
+      ? `<button class="btn-icon-sm" style="font-size:11px;margin-right:4px" onclick="undoChallengeResult('${c.id}')" title="Undo result — reverses positions and restores challenge">↩ Undo</button>`
+      : '';
     return `<tr>
       <td><input type="checkbox" class="ac-chk" data-id="${c.id}" onchange="_acUpdateBulkBtn()"></td>
       <td>${statusLabel[c.status] || c.status}</td>
       <td>${cr}</td>
       <td>${cd}</td>
       <td>${date}</td>
+      <td>${undoBtn}</td>
     </tr>`;
   }).join('');
 
@@ -1439,7 +1444,7 @@ function _renderAdminChallenges(filter) {
       <button id="ac-bulk-delete" class="btn-icon-sm btn-icon-danger" style="display:none" onclick="deleteAdminChallengesSelected()">Delete selected (0)</button>
     </div>
     <table class="data-table" style="font-size:12px">
-      <thead><tr><th></th><th>Status</th><th>Challenger</th><th>Challenged</th><th>Date</th></tr></thead>
+      <thead><tr><th></th><th>Status</th><th>Challenger</th><th>Challenged</th><th>Date</th><th></th></tr></thead>
       <tbody>${rows}</tbody>
     </table>` : '<p style="color:#888;font-size:13px">No challenges found.</p>'}`;
 }
@@ -1477,7 +1482,85 @@ async function deleteAdminChallenge(id) {
   await loadAdminChallenges();
 }
 
-// ── Drag and drop (mouse) + touch drag (iOS/mobile) ───────────────────────
+async function undoChallengeResult(challengeId) {
+  const c = _adminChallengesData.find(x => x.id === challengeId);
+  if (!c || c.status !== 'completed') return;
+  const cr = `${c.challenger?.first_name||'?'} ${c.challenger?.last_name||''}`.trim();
+  const cd = `${c.challenged?.first_name||'?'} ${c.challenged?.last_name||''}`.trim();
+  if (!confirm(`Undo result for ${cr} vs ${cd}?\n\nThis will:\n• Reverse the position change\n• Restore the challenge to accepted\n• Restore any challenges voided by this result`)) return;
+
+  // 1. Reverse the position cascade
+  const { data: pos } = await sb.from('ladder_positions')
+    .select('player_id, position').order('position');
+  if (!pos) { alert('Could not load ladder positions.'); return; }
+
+  const winnerId = c.winner_id;
+  const loserId  = winnerId === c.challenger_id ? c.challenged_id : c.challenger_id;
+  const winnerRow = pos.find(p => p.player_id === winnerId);
+  const loserRow  = pos.find(p => p.player_id === loserId);
+
+  if (winnerRow && loserRow) {
+    const wp = winnerRow.position;
+    const lp = loserRow.position;
+    let updates;
+    if (wp < lp) {
+      // Challenger won: winner jumped up from (wp + winner_pos_change) to wp
+      const origWp = wp + (c.winner_pos_change || 1);
+      updates = pos.map(p => {
+        if (p.player_id === winnerId) return { player_id: p.player_id, position: origWp };
+        if (p.position > wp && p.position <= origWp) return { player_id: p.player_id, position: p.position - 1 };
+        return p;
+      });
+    } else {
+      // Challenged won: loser (challenger) dropped 1
+      const origLp = lp - 1;
+      updates = pos.map(p => {
+        if (p.player_id === loserId)        return { player_id: p.player_id, position: origLp };
+        if (p.position === origLp)          return { player_id: p.player_id, position: lp };
+        return p;
+      });
+    }
+    const { error: posErr } = await sb.from('ladder_positions')
+      .upsert(updates.map(p => ({ ...p, updated_at: new Date().toISOString() })));
+    if (posErr) { alert('Position update failed: ' + posErr.message); return; }
+  }
+
+  // 2. Restore this challenge to accepted
+  const { error: chErr } = await sb.from('ladder_challenges').update({
+    status: 'accepted',
+    winner_id: null,
+    completed_at: null,
+    result_recorded_by: null,
+    winner_pos_change: null,
+    loser_pos_change: null
+  }).eq('id', challengeId);
+  if (chErr) { alert('Challenge restore failed: ' + chErr.message); return; }
+
+  // 3. Restore any challenges voided within 60s of this completion
+  if (c.completed_at) {
+    const t = new Date(c.completed_at);
+    const from = new Date(t.getTime() - 60000).toISOString();
+    const to   = new Date(t.getTime() + 60000).toISOString();
+    const { data: voided } = await sb.from('ladder_challenges')
+      .select('id, responded_at')
+      .eq('status', 'voided')
+      .gte('completed_at', from)
+      .lte('completed_at', to);
+    for (const v of voided || []) {
+      await sb.from('ladder_challenges').update({
+        status: v.responded_at ? 'accepted' : 'pending',
+        completed_at: null
+      }).eq('id', v.id);
+    }
+  }
+
+  await loadAdminChallenges();
+  await _loadChallenges();
+  renderDivisionLadder();
+  alert('✅ Result undone. Positions, challenge status, and any voided challenges have been restored.');
+}
+
+
 let _ladderDragSrcIdx  = null;
 let _ladderPoolDragIdx = null;
 
