@@ -11,7 +11,7 @@
 })();
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '6.10';
+const APP_VERSION = '6.11';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -1959,14 +1959,15 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
       </div>`;
   } else {
     const rows = myBookings.map(ev => {
-      const confirmed = (ev.signups || []).filter(s => !s.is_reserve);
-      const countStr  = ev.max_signups ? `${confirmed.length}/${ev.max_signups}` : `${confirmed.length}`;
+      const total     = (ev.signups || []).length;
+      const over      = ev.max_signups && total > ev.max_signups;
+      const countStr  = ev.max_signups ? `${total}/${ev.max_signups}` : `${total}`;
       const dayName = days[new Date(ev.event_date + 'T12:00:00').getDay()];
       return `<div class="home-sess-row">
         <span class="home-sess-date">${dayName}</span>
         <span class="home-sess-title">${esc(ev.title)}</span>
         <span class="home-sess-tick">✓</span>
-        <span class="home-sess-right">${countStr}</span>
+        <span class="home-sess-right${over ? ' ev-players-over' : ''}">${countStr}</span>
       </div>`;
     }).join('');
     const avail = upcomingEvents.length - myBookings.length;
@@ -2041,13 +2042,14 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
     adminSessionRows = upcomingEvents.slice(0, 6).map(ev => {
       const d = new Date(ev.event_date + 'T12:00:00');
       const dateStr = `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`;
-      const confirmed = (ev.signups || []).filter(s => !s.is_reserve).length;
-      const countStr = ev.max_signups ? `${confirmed}/${ev.max_signups}` : `${confirmed}`;
-      const full = ev.max_signups && confirmed >= ev.max_signups;
+      const total = (ev.signups || []).length;
+      const countStr = ev.max_signups ? `${total}/${ev.max_signups}` : `${total}`;
+      const full = ev.max_signups && total >= ev.max_signups;
+      const over = ev.max_signups && total > ev.max_signups;
       return `<div class="home-admin-session">
         <span class="has-date">${dateStr}</span>
         <span class="has-title">${esc(ev.title)}</span>
-        <span class="has-count${full ? ' full' : ''}">${countStr}</span>
+        <span class="has-count${over ? ' ev-players-over' : full ? ' full' : ''}">${countStr}</span>
       </div>`;
     }).join('');
   }
@@ -2208,10 +2210,11 @@ function renderSchedule() {
 
 function eventCard(ev) {
   const signups   = ev.signups || [];
-  const confirmed = signups.filter(s => !s.is_reserve);
-  const reserves  = signups.filter(s =>  s.is_reserve);
-  const count     = confirmed.length;
-  const full      = ev.max_signups && count >= ev.max_signups;
+  // Oversubscription allowed — everyone who signed up is a player (legacy
+  // reserves included); the count reflects the true total.
+  const confirmed = signups;
+  const count     = signups.length;
+  const over      = ev.max_signups && count > ev.max_signups;
   const mySignup  = signups.find(s => s.player_id === ST.player.id);
   const isAdmin   = ST.player?.is_admin || ST.player?.is_super_admin;
   const enrolled  = !!mySignup;
@@ -2222,6 +2225,7 @@ function eventCard(ev) {
   const timeH = `${h12}:${mm.toString().padStart(2, '0')}`;
 
   const countLabel = ev.max_signups ? `${count} / ${ev.max_signups} players` : `${count} players`;
+  const countCls   = over ? ' ev-players-over' : '';
 
   const rowClick = enrolled
     ? `onclick="toggleAttendees('${ev.id}')"`
@@ -2246,25 +2250,11 @@ function eventCard(ev) {
     return `<span class="ev-name-item${guestCls}">${name}${hc}${del}</span>`;
   }).join('');
 
-  const reserveNames = reserves.length ? reserves.map(s => {
-    const bookerShort = s.booker ? shortName(s.booker.first_name, s.booker.last_name) : '';
-    const name = s.player_first
-      ? esc(shortName(s.player_first, s.player_last))
-      : esc((s.guest_name || 'Guest') + (bookerShort ? `, guest of ${bookerShort}` : ''));
-    const canDel = isAdmin || s.signed_up_by === ST.player?.id;
-    const del  = canDel
-      ? `<button class="chip-del" onclick="event.stopPropagation();removeSignupChip('${s.id}','${ev.id}','${name.replace(/'/g, '&#39;')}')" title="Remove">×</button>`
-      : '';
-    const guestResCls = s.player_first ? '' : ' ev-name-guest';
-    return `<span class="ev-name-item ev-name-reserve${guestResCls}">${name}${del}</span>`;
-  }).join('') : '';
-
   const namesPanel = `
     <div class="ev-names-panel" id="ev-names-${ev.id}" hidden onclick="event.stopPropagation()">
       <div class="ev-names-group">
         ${confirmed.length ? confirmedNames : '<span style="color:#bbb;font-style:italic">No signups yet</span>'}
       </div>
-      ${reserveNames ? `<div class="ev-names-reserves">${reserveNames}</div>` : ''}
       ${enrolled ? `<div class="ev-guest-add-row"><button class="ev-guest-btn" onclick="addGuestInCard('${ev.id}')">+ Add Guest</button></div>` : ''}
       <div id="ev-guest-form-${ev.id}" class="ev-guest-form" style="display:none"></div>
     </div>`;
@@ -2280,7 +2270,7 @@ function eventCard(ev) {
           <div class="ev-row-title">${esc(ev.title)}</div>
           <div class="ev-meta-row" onclick="event.stopPropagation();toggleAttendees('${ev.id}')">
             <span class="ev-players-icon">&#128101;</span>
-            <span class="ev-players-text">${countLabel}</span>
+            <span class="ev-players-text${countCls}">${countLabel}</span>
             <span class="ev-chevron-hint">&#9660;</span>
           </div>
         </div>
@@ -2326,14 +2316,11 @@ async function joinEvent(e, eventId) {
       .select('id', { count: 'exact', head: true })
       .eq('event_id', eventId).eq('player_id', ST.player.id);
     if (already > 0) return;
-    const { data: ev } = await sb.from('events').select('max_signups').eq('id', eventId).single();
-    const { count }    = await sb.from('signups')
-      .select('id', { count: 'exact', head: true })
-      .eq('event_id', eventId).eq('is_reserve', false);
+    // Oversubscription allowed — everyone who signs up is a confirmed player.
     const { error } = await sb.from('signups').insert({
       event_id: eventId, signed_up_by: ST.player.id,
       player_id: ST.player.id,
-      is_reserve: !!(ev.max_signups && count >= ev.max_signups)
+      is_reserve: false
     });
     if (error) throw error;
     refreshCard(eventId, await fetchEventSignups(eventId));
@@ -2388,17 +2375,12 @@ async function submitGuestInCard(eventId) {
   const guestName = (input?.value || '').trim();
   if (!guestName) { input?.focus(); return; }
   try {
-    const ev = ST.events.find(x => x.id === eventId);
-    const { count } = await sb.from('signups')
-      .select('id', { count: 'exact', head: true })
-      .eq('event_id', eventId).eq('is_reserve', false);
-    const isReserve = !!(ev?.max_signups && count >= ev.max_signups);
     const { error } = await sb.from('signups').insert({
       event_id: eventId,
       signed_up_by: ST.player.id,
       guest_name: guestName,
       player_id: null,
-      is_reserve: isReserve
+      is_reserve: false
     });
     if (error) throw error;
     refreshCard(eventId, await fetchEventSignups(eventId));
@@ -2458,8 +2440,10 @@ async function openEvent(id) {
 
 function renderEventDetail(ev) {
   const signups   = ev.signups || [];
-  const confirmed = signups.filter(s => !s.is_reserve);
-  const reserves  = signups.filter(s => s.is_reserve);
+  // Oversubscription allowed — everyone is a player (legacy reserves included).
+  const confirmed = signups;
+  const reserves  = [];
+  const over      = ev.max_signups && confirmed.length > ev.max_signups;
   const mySignup  = signups.find(s => s.player_id === ST.player.id);
 
   document.getElementById('event-detail').innerHTML = `
@@ -2471,7 +2455,7 @@ function renderEventDetail(ev) {
       ${ev.notes ? `<div class="ev-meta" style="margin-top:6px">${esc(ev.notes)}</div>` : ''}
     </div>
     <div class="signup-list">
-      <h3>Confirmed (${confirmed.length})</h3>
+      <h3>Players (${confirmed.length}${ev.max_signups ? `/${ev.max_signups}` : ''})${over ? ' <span class="ev-players-over">· over capacity</span>' : ''}</h3>
       ${confirmed.length ? confirmed.map(s => signupRow(s)).join('') : '<p style="color:#888;font-size:13px">None yet</p>'}
     </div>
     ${reserves.length ? `
@@ -3316,7 +3300,8 @@ async function submitEditEvent(id) {
   };
   const { error } = await sb.from('events').update(body).eq('id', id);
   if (error) { alert(error.message); return; }
-  await demoteOverflowSignups(id);
+  // Oversubscription allowed — do not demote overflow to reserves. Promote any
+  // legacy reserves into the (now-uncapped) player list.
   await promoteFirstReserve(id);
   closeFormModal();
   await renderAdminEvents();
