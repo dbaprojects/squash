@@ -11,7 +11,7 @@
 })();
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '6.15';
+const APP_VERSION = '6.16';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -122,24 +122,15 @@ const ST = {
 };
 
 // ── Init ──────────────────────────────────────────────────────────────────
+// Only records the remote build stamp — never redirects (redirects belong
+// solely in the synchronous version guard above, which fires at most once
+// per version and uses a predictable ?_cb=VERSION URL).
 async function _checkRemoteVersion() {
   try {
     const res = await fetch('version.json?_t=' + Date.now(), { cache: 'no-store' });
-    const { version, build } = await res.json();
-    const storedBuild = localStorage.getItem('_app_build');
-    const versionMismatch = version && version !== APP_VERSION;
-    const buildMismatch   = build && build !== storedBuild;
-    if (versionMismatch || buildMismatch) {
-      if (build) localStorage.setItem('_app_build', build);
-      const newCb = build || version || APP_VERSION;
-      // Guard against redirect loop during CDN propagation: don't redirect if
-      // the URL already has this exact cache-bust value.
-      if (!location.search.includes('_cb=' + newCb)) {
-        location.replace(location.pathname + '?_cb=' + newCb);
-        return true;
-      }
-    }
-  } catch (e) { /* offline or fetch failed — continue normally */ }
+    const { build } = await res.json();
+    if (build) localStorage.setItem('_app_build', build);
+  } catch (e) { /* offline — ignore */ }
   return false;
 }
 
