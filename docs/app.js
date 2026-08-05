@@ -11,7 +11,7 @@
 })();
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '6.12';
+const APP_VERSION = '6.13';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -3688,6 +3688,7 @@ document.getElementById('view-app').addEventListener('click', () => ensurePlayer
 
 // ── Reports tab ───────────────────────────────────────────────────────────
 let reportsFilter = 'last12';  // 'last12' | 'last2y' | 'last3y' | 'all' | 'YYYY'
+let reportsExcludeEmpty = true; // exclude sessions with 0 confirmed signups from all stats
 
 function getReportsDateRange(filter) {
   const today = new Date();
@@ -3742,6 +3743,10 @@ async function renderReportsTab(filter) {
       `<button class="reports-period-btn${reportsFilter === o.value ? ' active' : ''}"
         onclick="renderReportsTab('${o.value}')">${o.label}</button>`
     ).join('')}
+    <span style="color:#ccc;align-self:center;margin:0 2px">|</span>
+    <button class="reports-period-btn${!reportsExcludeEmpty ? ' active' : ''}"
+      onclick="reportsExcludeEmpty=!reportsExcludeEmpty;renderReportsTab()"
+      title="Sessions with 0 sign-ups are currently ${reportsExcludeEmpty ? 'excluded' : 'included'}">Include empty</button>
   </div>`;
 
   el.innerHTML = filterBar + '<p style="color:#888;padding:8px 0">Loading…</p>';
@@ -3762,11 +3767,15 @@ async function renderReportsTab(filter) {
     return;
   }
 
+  const statsEvList = reportsExcludeEmpty
+    ? evList.filter(ev => (ev.signups || []).some(s => !s.is_reserve))
+    : evList;
+
   const weekMap   = {};
   const tmplMap   = {};
   const tmplNames = Object.fromEntries((templates || []).map(t => [t.id, t.name]));
 
-  for (const ev of evList) {
+  for (const ev of statsEvList) {
     const confirmed = (ev.signups || []).filter(s => !s.is_reserve).length;
     const reserve   = (ev.signups || []).filter(s =>  s.is_reserve).length;
     const d   = new Date(ev.event_date + 'T12:00:00');
@@ -3789,15 +3798,15 @@ async function renderReportsTab(filter) {
     }
   }
 
-  const totalSessions  = evList.length;
-  const totalConfirmed = evList.reduce((s, ev) => s + (ev.signups||[]).filter(x=>!x.is_reserve).length, 0);
-  const totalCapacity  = evList.reduce((s, ev) => s + (ev.max_signups || 0), 0);
+  const totalSessions  = statsEvList.length;
+  const totalConfirmed = statsEvList.reduce((s, ev) => s + (ev.signups||[]).filter(x=>!x.is_reserve).length, 0);
+  const totalCapacity  = statsEvList.reduce((s, ev) => s + (ev.max_signups || 0), 0);
   const avgFill = totalCapacity ? Math.round((totalConfirmed / totalCapacity) * 100) : 0;
   const avgPerSession = totalSessions ? Math.round(totalConfirmed / totalSessions * 10) / 10 : 0;
 
   // Attendance frequency — derived from events in period
   const playerCounts = {};
-  for (const ev of evList) {
+  for (const ev of statsEvList) {
     for (const s of (ev.signups || []).filter(s => !s.is_reserve && s.player_id && s.player)) {
       const pid = s.player_id;
       if (!playerCounts[pid]) {
