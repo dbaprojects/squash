@@ -11,7 +11,7 @@
 })();
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '6.13';
+const APP_VERSION = '6.14';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -3174,7 +3174,9 @@ async function renderAdminEvents() {
         const sups      = signupMap[ev.id] || [];
         const confirmed = sups.filter(s => !s.is_reserve);
         const reserves  = sups.filter(s =>  s.is_reserve);
-        const countStr  = ev.max_signups ? `${confirmed.length}/${ev.max_signups}` : `${confirmed.length}`;
+        const total     = sups.length;
+        const over      = ev.max_signups && total > ev.max_signups;
+        const countStr  = ev.max_signups ? `${total}/${ev.max_signups}` : `${total}`;
         const chips = [...confirmed, ...reserves].map(s => {
           const name = s.player
             ? `${s.player.first_name} ${s.player.last_name}`
@@ -3186,7 +3188,7 @@ async function renderAdminEvents() {
         <div class="ae-main">
           <div class="ev-info">${esc(ev.title)}</div>
           <div class="ev-sub">${fmtDate(ev.event_date)} · ${ev.start_time}–${ev.end_time}
-            · <span class="ae-count-btn" onclick="toggleAeSignups('${ev.id}')">${countStr} registered ▾</span></div>
+            · <span class="ae-count-btn${over ? ' ev-players-over' : ''}" onclick="toggleAeSignups('${ev.id}')">${countStr} registered ▾</span></div>
         </div>
         <div class="btn-row">
           <button class="btn-secondary" style="font-size:12px;padding:4px 8px"
