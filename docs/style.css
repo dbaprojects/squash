@@ -890,10 +890,14 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 
 .ae-main        { flex: 1; min-width: 0; }
 .ae-count-btn   { color: var(--bc-navy); cursor: pointer; text-decoration: underline; font-size: 12px; }
-.ae-signup-list { padding: 0 16px 10px; display: flex; flex-wrap: wrap; gap: 4px; margin-top: -4px; }
+.ae-signup-list { padding: 0 16px 10px; display: flex; flex-wrap: wrap; gap: 4px; margin-top: -4px; align-items: center; }
 .ae-signup-list.hidden { display: none; }
-.ae-sup-chip    { font-size: 12px; background: var(--bc-navy-lt); color: var(--bc-navy); padding: 2px 8px; border-radius: 10px; }
+.ae-sup-chip    { font-size: 12px; background: var(--bc-navy-lt); color: var(--bc-navy); padding: 2px 6px 2px 8px; border-radius: 10px; display: inline-flex; align-items: center; }
 .ae-sup-reserve { background: #f0f0f0; color: #888; }
+.ae-chip-del    { background: none; border: none; cursor: pointer; color: #aaa; font-size: 13px; padding: 0 0 0 3px; line-height: 1; }
+.ae-chip-del:hover { color: #c0392b; }
+.ae-add-attend-btn { font-size: 11px; padding: 2px 10px; background: none; border: 1.5px dashed var(--bc-border); border-radius: 10px; color: #888; cursor: pointer; }
+.ae-add-attend-btn:hover { background: var(--bc-navy-lt); color: var(--bc-navy); border-style: solid; }
 
 /* ── HoF admin cards ──────────────────────────────────────────────────────── */
 .hof-admin-card   { background: var(--bc-surface); border: 1px solid var(--bc-border); border-radius: 8px; padding: 10px 14px; margin-bottom: 8px; }

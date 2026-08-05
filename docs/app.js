@@ -11,7 +11,7 @@
 })();
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '6.16';
+const APP_VERSION = '6.17';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -3106,6 +3106,7 @@ async function deleteHcRow(id, playerId) {
 
 // ── Admin events tab ──────────────────────────────────────────────────────
 let adminEventsFilter = { mode: 'upcoming', from: '', to: '' };
+let _aeExpandedEvents = new Set();
 
 function setAdminFilter(mode) {
   adminEventsFilter.mode = mode;
@@ -3144,7 +3145,7 @@ async function renderAdminEvents() {
   let signupMap = {};
   if (eventIds.length) {
     const { data: sups } = await sb.from('signups')
-      .select('event_id, is_reserve, guest_name, player:players!player_id(first_name, last_name)')
+      .select('id, event_id, is_reserve, guest_name, player_id, player:players!player_id(first_name, last_name)')
       .in('event_id', eventIds);
     for (const s of (sups || [])) {
       if (!signupMap[s.event_id]) signupMap[s.event_id] = [];
@@ -3177,7 +3178,8 @@ async function renderAdminEvents() {
           const name = s.player
             ? `${s.player.first_name} ${s.player.last_name}`
             : (s.guest_name || 'Guest');
-          return `<span class="ae-sup-chip${s.is_reserve ? ' ae-sup-reserve' : ''}">${esc(name)}</span>`;
+          return `<span class="ae-sup-chip${s.is_reserve ? ' ae-sup-reserve' : ''}">` +
+            `${esc(name)}<button class="ae-chip-del" onclick="removeAeSignup('${s.id}','${ev.id}')" title="Remove">×</button></span>`;
         }).join('');
         return `
       <div class="admin-event-row">
@@ -3192,17 +3194,71 @@ async function renderAdminEvents() {
           <button class="btn-danger" onclick="deleteEvent('${ev.id}')">Del</button>
         </div>
       </div>
-      <div id="ae-sups-${ev.id}" class="ae-signup-list hidden">${chips || '<span style="color:#aaa;font-size:12px">No signups yet</span>'}</div>`;
+      <div id="ae-sups-${ev.id}" class="ae-signup-list hidden">
+        ${chips || '<span style="color:#aaa;font-size:12px">No signups yet</span>'}
+        <button class="ae-add-attend-btn" onclick="openAeAddForm('${ev.id}')">+ Add</button>
+      </div>`;
       }).join('')
     : '<p style="color:#666;margin-top:8px">No events in this period.</p>');
 
   document.getElementById('btn-generate-week').onclick = generateWeek;
   document.getElementById('btn-add-event').onclick = openAddEventForm;
+  for (const id of _aeExpandedEvents) {
+    document.getElementById('ae-sups-' + id)?.classList.remove('hidden');
+  }
 }
 
 function toggleAeSignups(id) {
   const el = document.getElementById('ae-sups-' + id);
-  if (el) el.classList.toggle('hidden');
+  if (!el) return;
+  el.classList.toggle('hidden');
+  if (el.classList.contains('hidden')) _aeExpandedEvents.delete(id);
+  else _aeExpandedEvents.add(id);
+}
+
+async function removeAeSignup(signupId, eventId) {
+  if (!confirm('Remove this attendance record?')) return;
+  const { error } = await sb.from('signups').delete().eq('id', signupId);
+  if (error) { alert(error.message); return; }
+  _aeExpandedEvents.add(eventId);
+  await renderAdminEvents();
+}
+
+async function openAeAddForm(eventId) {
+  await ensurePlayers();
+  const players = (ST.players || [])
+    .filter(p => p.active)
+    .sort((a, b) => `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`));
+  showFormModal('Add Attendance', `
+    <div class="form-group">
+      <label>Player</label>
+      <select id="ae-add-player">
+        <option value="">— select player —</option>
+        ${players.map(p => `<option value="${p.id}">${esc(p.first_name)} ${esc(p.last_name)}</option>`).join('')}
+      </select>
+    </div>
+    <div style="text-align:center;color:#aaa;font-size:12px;margin:4px 0">— or —</div>
+    <div class="form-group">
+      <label>Guest name</label>
+      <input type="text" id="ae-add-guest" placeholder="e.g. John Smith (guest)">
+    </div>
+    <div style="text-align:right;margin-top:12px">
+      <button class="btn-primary" onclick="submitAeAttendance('${eventId}')">Add</button>
+    </div>`);
+}
+
+async function submitAeAttendance(eventId) {
+  const playerId  = document.getElementById('ae-add-player').value;
+  const guestName = document.getElementById('ae-add-guest').value.trim();
+  if (!playerId && !guestName) { alert('Select a player or enter a guest name.'); return; }
+  if (playerId && guestName)   { alert('Choose either a player or a guest name, not both.'); return; }
+  const row = { event_id: eventId, signed_up_by: ST.player.id, is_reserve: false };
+  if (playerId) row.player_id = playerId; else row.guest_name = guestName;
+  const { error } = await sb.from('signups').insert(row);
+  if (error) { alert(error.message); return; }
+  closeFormModal();
+  _aeExpandedEvents.add(eventId);
+  await renderAdminEvents();
 }
 
 async function generateWeek() {
