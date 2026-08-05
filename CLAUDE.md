@@ -5,7 +5,7 @@
 - **Owner:** Club admin — personal project
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `[local project directory]`
-- **Current version:** v6.11
+- **Current version:** v6.12
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -565,7 +565,7 @@ echo "{\"version\":\"4.XX\",\"build\":\"$(date +%s)\"}" > docs/version.json
 | v5.72 | Ladders home tile: flashing red "Don't be shy — sign up! Ping David B" nudge for players not on the ladder |
 | v5.73 | Ladders home tile: moved to after Sign-Up tile; quip flashes red when ladder player has no active challenges |
 | v5.74 | Serial ghoster rule: 3 consecutive forfeits as challenged → demoted to last place; 👻 badge on their row and home tile chips; `_serialGhosters` Set rebuilt after every challenge load |
-| v6.11 | Oversubscription model: sessions can go over `max_signups` and everyone who signs up is a **confirmed player** (no more auto-`is_reserve`). `joinEvent`/`submitGuestInCard` always insert `is_reserve:false`; `demoteOverflowSignups` call removed from event-save. Counts now show the **true total** (`signups.length`, legacy reserves included) everywhere — event card, home Sign-Up tile, admin home tile, event detail — and turn **amber/bold** (`.ev-players-over`) when over capacity (e.g. `13 / 12`). eventCard renders all signups in one list (reserve section dropped). `promoteFirstReserve` kept to clean up any legacy reserves |
+| v6.12 | Oversubscription model: sessions can go over `max_signups` and everyone who signs up is a **confirmed player** (no more auto-`is_reserve`). `joinEvent`/`submitGuestInCard` always insert `is_reserve:false`; `demoteOverflowSignups` call removed from event-save. Counts now show the **true total** (`signups.length`, legacy reserves included) everywhere — event card, home Sign-Up tile, admin home tile, event detail — and turn **amber/bold** (`.ev-players-over`) when over capacity (e.g. `13 / 12`). eventCard renders all signups in one list (reserve section dropped). `promoteFirstReserve` kept to clean up any legacy reserves |
 | v6.10 | Admin Ladder challenges: ↩ Undo button on completed rows (super_admin); `undoChallengeResult()` reverses position cascade using stored `winner_pos_change`, restores challenge to `accepted`, restores challenges voided within 60s window back to `pending`/`accepted` |
 | v6.00 | Guest signup: enrolled players can add a guest from the expanded names panel; guest shown as "Name, guest of David B." chip; admin or original booker can delete; `addGuestInCard`/`cancelGuestInCard`/`submitGuestInCard` inline form; reserve logic applied same as regular signups |
 | v5.96 | HCRR editor restyled to match the new view's look-and-feel: header now uses `.hcrr-back2` + `.hcrr-vtop`/`.hcrr-vtitle` + an "Editing" tag; box cards lighter (14px radius, divider under group head); matrix re-themed from the blue Excel header to airy chips — grey uppercase column initials, rounded bordered `.hcrr-cell` inputs, light-grey diagonal, navy bold totals; Save button uses the navy full-width `.hcrr-edit-btn`. Functionality unchanged |

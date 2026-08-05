@@ -11,7 +11,7 @@
 })();
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '6.11';
+const APP_VERSION = '6.12';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -3127,7 +3127,8 @@ async function renderAdminEvents() {
   const today = new Date().toISOString().slice(0, 10);
   const { mode, from, to } = adminEventsFilter;
 
-  let query = sb.from('events').select('*').order('event_date').order('start_time');
+  const desc = mode !== 'upcoming';
+  let query = sb.from('events').select('*').order('event_date', { ascending: !desc }).order('start_time', { ascending: !desc });
   if (mode === 'upcoming') {
     query = query.gte('event_date', today);
   } else if (mode === 'past') {
