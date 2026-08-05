@@ -11,7 +11,7 @@
 })();
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '6.14';
+const APP_VERSION = '6.15';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -131,8 +131,13 @@ async function _checkRemoteVersion() {
     const buildMismatch   = build && build !== storedBuild;
     if (versionMismatch || buildMismatch) {
       if (build) localStorage.setItem('_app_build', build);
-      location.replace(location.pathname + '?_cb=' + (build || version || APP_VERSION));
-      return true;
+      const newCb = build || version || APP_VERSION;
+      // Guard against redirect loop during CDN propagation: don't redirect if
+      // the URL already has this exact cache-bust value.
+      if (!location.search.includes('_cb=' + newCb)) {
+        location.replace(location.pathname + '?_cb=' + newCb);
+        return true;
+      }
     }
   } catch (e) { /* offline or fetch failed — continue normally */ }
   return false;
