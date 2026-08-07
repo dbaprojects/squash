@@ -11,7 +11,7 @@
 })();
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '6.18';
+const APP_VERSION = '6.19';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -3933,17 +3933,17 @@ async function renderReportsTab(filter) {
       </div>
     </div>
     <div class="report-card" style="margin-top:16px">
+      <div class="report-title">Attendance by Day of Week</div>
+      <table class="data-table">
+        <thead><tr><th>Day</th><th style="text-align:right">Sessions</th><th style="text-align:right">Total Regs</th><th style="text-align:right">Avg / Day</th><th></th></tr></thead>
+        <tbody>${dowRows || '<tr><td colspan="5" style="color:#888">No data</td></tr>'}</tbody>
+      </table>
+    </div>
+    <div class="report-card" style="margin-top:16px">
       <div class="report-title">Most Frequent Players</div>
       <table class="data-table attendance-table">
         <thead><tr><th>#</th><th>Player</th><th style="text-align:right">Sessions</th><th style="text-align:right">Attendance %</th></tr></thead>
         <tbody>${attendeeRows || '<tr><td colspan="4" style="color:#888">No data</td></tr>'}</tbody>
-      </table>
-    </div>
-    <div class="report-card" style="margin-top:16px">
-      <div class="report-title">Attendance by Day of Week</div>
-      <table class="data-table">
-        <thead><tr><th>Day</th><th style="text-align:right">Sessions</th><th style="text-align:right">Total Regs</th><th style="text-align:right">Avg / Session</th><th></th></tr></thead>
-        <tbody>${dowRows || '<tr><td colspan="5" style="color:#888">No data</td></tr>'}</tbody>
       </table>
     </div>`;
 
