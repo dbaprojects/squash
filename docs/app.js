@@ -3105,12 +3105,17 @@ async function deleteHcRow(id, playerId) {
 }
 
 // ── Admin events tab ──────────────────────────────────────────────────────
-let adminEventsFilter = { mode: 'upcoming', from: '', to: '' };
+let adminEventsFilter = { mode: 'upcoming', from: '', to: '', dow: '' };
 let _aeExpandedEvents = new Set();
 
 function setAdminFilter(mode) {
   adminEventsFilter.mode = mode;
   if (mode !== 'range') { adminEventsFilter.from = ''; adminEventsFilter.to = ''; }
+  renderAdminEvents();
+}
+
+function setAdminDow(val) {
+  adminEventsFilter.dow = val;
   renderAdminEvents();
 }
 
@@ -3122,7 +3127,7 @@ function applyAdminDateRange() {
 
 async function renderAdminEvents() {
   const today = new Date().toISOString().slice(0, 10);
-  const { mode, from, to } = adminEventsFilter;
+  const { mode, from, to, dow } = adminEventsFilter;
 
   const desc = mode !== 'upcoming';
   let query = sb.from('events').select('*').order('event_date', { ascending: !desc }).order('start_time', { ascending: !desc });
@@ -3137,7 +3142,14 @@ async function renderAdminEvents() {
     if (!from && !to) query = query.gte('event_date', '2000-01-01');
   }
 
-  const { data: events } = await query;
+  const { data: rawEvents } = await query;
+
+  // Client-side DOW filter (0=Sun … 6=Sat) — parse date in local time to avoid UTC shift
+  const events = dow === '' ? (rawEvents || []) : (rawEvents || []).filter(ev => {
+    const [y, m, d] = ev.event_date.split('-').map(Number);
+    return new Date(y, m - 1, d).getDay() === parseInt(dow, 10);
+  });
+
   const el = document.getElementById('admin-event-list');
 
   // Fetch signups for all visible events
@@ -3153,6 +3165,14 @@ async function renderAdminEvents() {
     }
   }
 
+  const dowOptions = [
+    ['', 'All days'], ['1','Monday'], ['2','Tuesday'], ['3','Wednesday'],
+    ['4','Thursday'], ['5','Friday'], ['6','Saturday'], ['0','Sunday']
+  ];
+  const dowSelect = `<select class="admin-filter-select" onchange="setAdminDow(this.value)">
+    ${dowOptions.map(([v, label]) => `<option value="${v}"${dow === v ? ' selected' : ''}>${label}</option>`).join('')}
+  </select>`;
+
   const rangeInputs = mode === 'range' ? `
     <span class="admin-range-span">
       <input type="date" id="admin-from" value="${from}">
@@ -3166,6 +3186,7 @@ async function renderAdminEvents() {
     <button class="admin-filter-btn${mode==='past'?' active':''}" onclick="setAdminFilter('past')">Past</button>
     <button class="admin-filter-btn${mode==='range'?' active':''}" onclick="setAdminFilter('range')">Date Range</button>
     ${rangeInputs}
+    ${dowSelect}
   </div>` + ((events||[]).length
     ? (events||[]).map(ev => {
         const sups      = signupMap[ev.id] || [];
