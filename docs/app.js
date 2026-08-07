@@ -11,7 +11,7 @@
 })();
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '6.17';
+const APP_VERSION = '6.18';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -3827,12 +3827,14 @@ async function renderReportsTab(filter) {
 
   const weekMap   = {};
   const tmplMap   = {};
+  const dayMap    = {};  // day-of-week (0=Sun…6=Sat) → { sessions, total }
   const tmplNames = Object.fromEntries((templates || []).map(t => [t.id, t.name]));
 
   for (const ev of statsEvList) {
     const confirmed = (ev.signups || []).filter(s => !s.is_reserve).length;
     const reserve   = (ev.signups || []).filter(s =>  s.is_reserve).length;
     const d   = new Date(ev.event_date + 'T12:00:00');
+    const dow = d.getDay();
     const mon = getMondayOfDate(d);
     const key = mon.toISOString().slice(0, 10);
     if (!weekMap[key]) {
@@ -3843,6 +3845,9 @@ async function renderReportsTab(filter) {
     }
     weekMap[key].confirmed += confirmed;
     weekMap[key].reserve   += reserve;
+    if (!dayMap[dow]) dayMap[dow] = { sessions: 0, total: 0 };
+    dayMap[dow].sessions++;
+    dayMap[dow].total += confirmed;
     if (ev.template_id && ev.max_signups) {
       if (!tmplMap[ev.template_id]) {
         tmplMap[ev.template_id] = { name: tmplNames[ev.template_id] || ev.title, total: 0, count: 0 };
@@ -3893,6 +3898,23 @@ async function renderReportsTab(filter) {
       <td style="text-align:right;color:#888;font-size:12px">${totalSessions ? Math.round(p.count/totalSessions*100) + '%' : ''}</td>
     </tr>`).join('');
 
+  const DOW_SHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const dowEntries = [1,2,3,4,5,6,0]
+    .filter(d => dayMap[d])
+    .map(d => ({ name: DOW_SHORT[d], sessions: dayMap[d].sessions, total: dayMap[d].total,
+                 avg: Math.round(dayMap[d].total / dayMap[d].sessions * 10) / 10 }));
+  const maxAvg = Math.max(...dowEntries.map(e => e.avg), 1);
+  const dowRows = dowEntries.map(e => `
+    <tr>
+      <td style="font-weight:600">${e.name}</td>
+      <td style="text-align:right">${e.sessions}</td>
+      <td style="text-align:right;font-weight:600">${e.total}</td>
+      <td style="text-align:right">${e.avg}</td>
+      <td style="padding-left:8px;width:100px">
+        <div style="height:8px;width:${Math.round(e.avg/maxAvg*90)}px;background:var(--bc-navy);border-radius:3px;opacity:.7"></div>
+      </td>
+    </tr>`).join('');
+
   el.innerHTML = filterBar + `
     <div class="stats-row">
       <div class="stat-box"><div class="stat-num">${totalSessions}</div><div class="stat-label">Sessions (${periodLabel})</div></div>
@@ -3915,6 +3937,13 @@ async function renderReportsTab(filter) {
       <table class="data-table attendance-table">
         <thead><tr><th>#</th><th>Player</th><th style="text-align:right">Sessions</th><th style="text-align:right">Attendance %</th></tr></thead>
         <tbody>${attendeeRows || '<tr><td colspan="4" style="color:#888">No data</td></tr>'}</tbody>
+      </table>
+    </div>
+    <div class="report-card" style="margin-top:16px">
+      <div class="report-title">Attendance by Day of Week</div>
+      <table class="data-table">
+        <thead><tr><th>Day</th><th style="text-align:right">Sessions</th><th style="text-align:right">Total Regs</th><th style="text-align:right">Avg / Session</th><th></th></tr></thead>
+        <tbody>${dowRows || '<tr><td colspan="5" style="color:#888">No data</td></tr>'}</tbody>
       </table>
     </div>`;
 
