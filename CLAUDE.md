@@ -5,7 +5,7 @@
 - **Owner:** Club admin — personal project
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `[local project directory]`
-- **Current version:** v6.12
+- **Current version:** v6.20
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -565,6 +565,14 @@ echo "{\"version\":\"4.XX\",\"build\":\"$(date +%s)\"}" > docs/version.json
 | v5.72 | Ladders home tile: flashing red "Don't be shy — sign up! Ping David B" nudge for players not on the ladder |
 | v5.73 | Ladders home tile: moved to after Sign-Up tile; quip flashes red when ladder player has no active challenges |
 | v5.74 | Serial ghoster rule: 3 consecutive forfeits as challenged → demoted to last place; 👻 badge on their row and home tile chips; `_serialGhosters` Set rebuilt after every challenge load |
+| v6.20 | Reports: Attendance by Day of Week replaced table with Chart.js grouped bar chart (navy = Total Regs, gold = Avg/Day); avg denominator fixed to `distinct_calendar_days` (not sessions) using `dates: new Set()` per dow entry; dual y-axes (y=Total Regs left, y2=Avg/Day right) |
+| v6.19 | Reports: Attendance by Day of Week card — sessions/total/avg per day of week; "Avg / Session" → "Avg / Day"; moved above Most Frequent Players |
+| v6.18 | Reports: Attendance by Day of Week table card — sessions/total/avg per day |
+| v6.17 | Admin events: add/remove attendance for past sessions — `×` delete chip button + `+ Add` opens modal (player select or guest name); `_aeExpandedEvents` Set persists expanded state across re-renders |
+| v6.16 | Remove redirect from `_checkRemoteVersion` — eliminate loop risk; now only records build stamp, returns false always; version guard IIFE is sole redirect mechanism |
+| v6.15 | Fix redirect loop during CDN propagation — URL guard `!location.search.includes('_cb='+newCb)` in `_checkRemoteVersion` |
+| v6.14 | Admin events: show true signup count including legacy reserves — `sups.length` (not `confirmed.length`); amber `.ev-players-over` on oversubscribed |
+| v6.13 | Reports: exclude/include 0-signup sessions toggle (`reportsExcludeEmpty`, default true); `statsEvList` derived from `evList`; applies to all stats/charts/tables |
 | v6.12 | Oversubscription model: sessions can go over `max_signups` and everyone who signs up is a **confirmed player** (no more auto-`is_reserve`). `joinEvent`/`submitGuestInCard` always insert `is_reserve:false`; `demoteOverflowSignups` call removed from event-save. Counts now show the **true total** (`signups.length`, legacy reserves included) everywhere — event card, home Sign-Up tile, admin home tile, event detail — and turn **amber/bold** (`.ev-players-over`) when over capacity (e.g. `13 / 12`). eventCard renders all signups in one list (reserve section dropped). `promoteFirstReserve` kept to clean up any legacy reserves |
 | v6.10 | Admin Ladder challenges: ↩ Undo button on completed rows (super_admin); `undoChallengeResult()` reverses position cascade using stored `winner_pos_change`, restores challenge to `accepted`, restores challenges voided within 60s window back to `pending`/`accepted` |
 | v6.00 | Guest signup: enrolled players can add a guest from the expanded names panel; guest shown as "Name, guest of David B." chip; admin or original booker can delete; `addGuestInCard`/`cancelGuestInCard`/`submitGuestInCard` inline form; reserve logic applied same as regular signups |

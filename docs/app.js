@@ -11,7 +11,7 @@
 })();
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '6.19';
+const APP_VERSION = '6.20';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -3866,9 +3866,10 @@ async function renderReportsTab(filter) {
     }
     weekMap[key].confirmed += confirmed;
     weekMap[key].reserve   += reserve;
-    if (!dayMap[dow]) dayMap[dow] = { sessions: 0, total: 0 };
+    if (!dayMap[dow]) dayMap[dow] = { sessions: 0, total: 0, dates: new Set() };
     dayMap[dow].sessions++;
     dayMap[dow].total += confirmed;
+    dayMap[dow].dates.add(ev.event_date);
     if (ev.template_id && ev.max_signups) {
       if (!tmplMap[ev.template_id]) {
         tmplMap[ev.template_id] = { name: tmplNames[ev.template_id] || ev.title, total: 0, count: 0 };
@@ -3923,18 +3924,7 @@ async function renderReportsTab(filter) {
   const dowEntries = [1,2,3,4,5,6,0]
     .filter(d => dayMap[d])
     .map(d => ({ name: DOW_SHORT[d], sessions: dayMap[d].sessions, total: dayMap[d].total,
-                 avg: Math.round(dayMap[d].total / dayMap[d].sessions * 10) / 10 }));
-  const maxAvg = Math.max(...dowEntries.map(e => e.avg), 1);
-  const dowRows = dowEntries.map(e => `
-    <tr>
-      <td style="font-weight:600">${e.name}</td>
-      <td style="text-align:right">${e.sessions}</td>
-      <td style="text-align:right;font-weight:600">${e.total}</td>
-      <td style="text-align:right">${e.avg}</td>
-      <td style="padding-left:8px;width:100px">
-        <div style="height:8px;width:${Math.round(e.avg/maxAvg*90)}px;background:var(--bc-navy);border-radius:3px;opacity:.7"></div>
-      </td>
-    </tr>`).join('');
+                 avg: Math.round(dayMap[d].total / dayMap[d].dates.size * 10) / 10 }));
 
   el.innerHTML = filterBar + `
     <div class="stats-row">
@@ -3955,10 +3945,7 @@ async function renderReportsTab(filter) {
     </div>
     <div class="report-card" style="margin-top:16px">
       <div class="report-title">Attendance by Day of Week</div>
-      <table class="data-table">
-        <thead><tr><th>Day</th><th style="text-align:right">Sessions</th><th style="text-align:right">Total Regs</th><th style="text-align:right">Avg / Day</th><th></th></tr></thead>
-        <tbody>${dowRows || '<tr><td colspan="5" style="color:#888">No data</td></tr>'}</tbody>
-      </table>
+      <div class="chart-wrap"><canvas id="chart-dow"></canvas></div>
     </div>
     <div class="report-card" style="margin-top:16px">
       <div class="report-title">Most Frequent Players</div>
@@ -4010,6 +3997,28 @@ async function renderReportsTab(filter) {
       }
     }
   });
+
+  if (dowEntries.length) {
+    new Chart(document.getElementById('chart-dow'), {
+      type: 'bar',
+      data: {
+        labels: dowEntries.map(e => e.name),
+        datasets: [
+          { label: 'Total Regs', data: dowEntries.map(e => e.total), backgroundColor: 'rgba(27,42,107,0.85)', borderRadius: 4, yAxisID: 'y' },
+          { label: 'Avg / Day',  data: dowEntries.map(e => e.avg),  backgroundColor: 'rgba(196,147,42,0.75)', borderRadius: 4, yAxisID: 'y2' }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'top', labels: { font: { size: 12 } } } },
+        scales: {
+          x:  { ticks: { font: { size: 12 } } },
+          y:  { beginAtZero: true, title: { display: true, text: 'Total Regs', font: { size: 11 } } },
+          y2: { beginAtZero: true, position: 'right', title: { display: true, text: 'Avg / Day', font: { size: 11 } }, grid: { drawOnChartArea: false } }
+        }
+      }
+    });
+  }
 }
 
 function getMondayOfDate(d) {
