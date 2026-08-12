@@ -11,7 +11,7 @@
 })();
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '6.23';
+const APP_VERSION = '6.24';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -2877,7 +2877,7 @@ function openEditPlayerForm(id) {
   const toggleBtn = p.active
     ? `<button type="button" class="btn-icon-sm btn-icon-danger" style="margin-left:10px" onclick="deactivatePlayerFromForm('${id}')">Deactivate</button>`
     : `<button type="button" class="btn-icon-sm" style="margin-left:10px" onclick="reactivatePlayerFromForm('${id}')">Re-activate</button>
-       ${ST.player.is_super_admin ? `<button type="button" class="btn-icon-sm btn-icon-danger" style="margin-left:4px" onclick="deletePlayer('${id}','${esc(p.first_name)} ${esc(p.last_name)}')">Delete</button>` : ''}`;
+       ${ST.player.is_super_admin ? `<button type="button" class="btn-icon-sm btn-icon-danger" style="margin-left:4px" onclick="deletePlayer('${id}')">Delete</button>` : ''}`;
   showFormModal('Edit Player', `
     <div class="form-group"><label>First name</label><input type="text" id="ep-first" value="${esc(p.first_name)}"></div>
     <div class="form-group"><label>Last name</label><input type="text" id="ep-last" value="${esc(p.last_name)}"></div>
@@ -2894,7 +2894,7 @@ function openEditPlayerForm(id) {
       <label>Handicap</label>
       <div style="display:flex;align-items:center;gap:10px">
         <span class="hcap-badge" style="font-size:15px;padding:4px 12px">${hcDisplay}</span>
-        <button type="button" class="btn-icon-sm" onclick="closeFormModal();openHandicapModal('${id}','${esc(p.first_name)} ${esc(p.last_name)}')">Edit HC</button>
+        <button type="button" class="btn-icon-sm" onclick="closeFormModal();openHandicapModal('${id}')">Edit HC</button>
       </div>
     </div>
     <div class="form-group">
@@ -2955,7 +2955,8 @@ async function reactivatePlayerFromForm(id) {
 }
 
 async function deletePlayer(id, name) {
-  if (!confirm(`Permanently delete ${name}? This cannot be undone.`)) return;
+  const displayName = name || (() => { const p = allPlayers.find(x => x.id === id); return p ? `${p.first_name} ${p.last_name}` : id; })();
+  if (!confirm(`Permanently delete ${displayName}? This cannot be undone.`)) return;
   // Remove related records first
   await sb.from('handicap_history').delete().eq('player_id', id);
   await sb.from('signups').delete().eq('player_id', id);
@@ -2991,7 +2992,8 @@ async function rejectPlayer(id) {
 // ── Handicap modal ────────────────────────────────────────────────────────
 async function openHandicapModal(playerId, playerName) {
   _editingHcId = null;
-  document.getElementById('modal-title').textContent = `Handicap — ${playerName}`;
+  const displayName = playerName || (() => { const p = allPlayers.find(x => x.id === playerId); return p ? `${p.first_name} ${p.last_name}` : ''; })();
+  document.getElementById('modal-title').textContent = `Handicap — ${displayName}`;
   const { data: history } = await sb.from('handicap_history')
     .select('*, changed_by_player:players!changed_by (first_name, last_name)')
     .eq('player_id', playerId)
