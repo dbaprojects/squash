@@ -90,8 +90,9 @@ const _CHALLENGES_ENABLED = true;
 
 // ── State ──────────────────────────────────────────────────────────────────
 let _ladderPositions  = [];
-let _ladderDivSize    = 9;
-let _challengeRange   = 3;
+let _ladderDivSize         = 9;
+let _challengeRange        = 3;
+let _maxChallengesIssued   = 3;
 let _serialGhosters   = new Set();
 let _snailBadges      = new Map(); // player_id → opponent name string
 let _jumpedBadges     = new Set();
@@ -215,8 +216,10 @@ function _applyConfig(cfgData) {
   const rows = cfgData || [];
   const ds = rows.find(r => r.key === 'division_size');
   const cr = rows.find(r => r.key === 'challenge_range');
-  if (ds) _ladderDivSize  = parseInt(ds.value, 10);
-  if (cr) _challengeRange = parseInt(cr.value, 10);
+  const mc = rows.find(r => r.key === 'max_challenges_issued');
+  if (ds) _ladderDivSize          = parseInt(ds.value, 10);
+  if (cr) _challengeRange         = parseInt(cr.value, 10);
+  if (mc) _maxChallengesIssued    = parseInt(mc.value, 10);
 }
 
 // D1 uses base range; each lower division gets +1. Effective range is
@@ -955,14 +958,14 @@ async function submitChallenge(targetId) {
     );
     if (duplicate) { closeFormModal(); return; }
 
-    const myCount     = active.filter(c => c.challenger_id === myId    || c.challenged_id === myId).length;
-    const theirCount  = active.filter(c => c.challenger_id === targetId || c.challenged_id === targetId).length;
-    if (myCount >= 5) {
-      if (err) err.textContent = 'You already have 5 active challenges — complete or wait for those first.';
+    const myIssued    = active.filter(c => c.challenger_id === myId).length;
+    const theirIssued = active.filter(c => c.challenger_id === targetId).length;
+    if (myIssued >= _maxChallengesIssued) {
+      if (err) err.textContent = `You already have ${_maxChallengesIssued} active challenges issued — complete or wait for those first.`;
       return;
     }
-    if (theirCount >= 5) {
-      if (err) err.textContent = 'That player already has 5 active challenges — try again later.';
+    if (theirIssued >= _maxChallengesIssued) {
+      if (err) err.textContent = `That player already has ${_maxChallengesIssued} active challenges issued — try again later.`;
       return;
     }
   }
@@ -1329,6 +1332,9 @@ function renderLadderAdmin() {
       <label class="ladder-cfg-label">D1 challenge range
         <input type="number" id="cfg-challenge-range" class="ladder-cfg-input" value="${_challengeRange}" min="1" max="10">
       </label>
+      <label class="ladder-cfg-label">Max challenges issued
+        <input type="number" id="cfg-max-challenges" class="ladder-cfg-input" value="${_maxChallengesIssued}" min="1" max="20">
+      </label>
       <button class="btn-secondary" onclick="saveAdminConfig()" style="align-self:flex-end">Save Settings</button>
       <span id="cfg-save-msg" style="font-size:12px;color:#15803d;align-self:flex-end"></span>
     </div>
@@ -1686,16 +1692,19 @@ function ladderRemove(inIdx) {
 async function saveAdminConfig() {
   const ds  = parseInt(document.getElementById('cfg-div-size')?.value, 10);
   const cr  = parseInt(document.getElementById('cfg-challenge-range')?.value, 10);
+  const mc  = parseInt(document.getElementById('cfg-max-challenges')?.value, 10);
   const msg = document.getElementById('cfg-save-msg');
-  if (!ds || !cr || ds < 1 || cr < 1) { if (msg) msg.textContent = 'Invalid values'; return; }
+  if (!ds || !cr || !mc || ds < 1 || cr < 1 || mc < 1) { if (msg) msg.textContent = 'Invalid values'; return; }
   const rows = [
-    { key: 'division_size',   value: String(ds) },
-    { key: 'challenge_range', value: String(cr) }
+    { key: 'division_size',         value: String(ds) },
+    { key: 'challenge_range',       value: String(cr) },
+    { key: 'max_challenges_issued', value: String(mc) }
   ];
   const { error } = await sb.from('ladder_config').upsert(rows, { onConflict: 'key' });
   if (error) { if (msg) { msg.style.color = '#dc2626'; msg.textContent = error.message; } return; }
-  _ladderDivSize  = ds;
-  _challengeRange = cr;
+  _ladderDivSize         = ds;
+  _challengeRange        = cr;
+  _maxChallengesIssued   = mc;
   if (msg) { msg.style.color = '#15803d'; msg.textContent = 'Saved'; setTimeout(() => { msg.textContent = ''; }, 2000); }
   renderLadderAdmin();
 }
