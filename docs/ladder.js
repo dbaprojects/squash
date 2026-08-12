@@ -1703,6 +1703,18 @@ async function saveAdminConfig() {
 async function saveLadderOrder() {
   const msg = document.getElementById('ladder-save-msg');
   if (msg) msg.textContent = 'Saving…';
+
+  // Void pending/accepted challenges for any players being removed from the ladder
+  const prevIds  = (_ladderPositions || []).map(p => p.player_id);
+  const newIdSet = new Set(_ladderInList);
+  const removed  = prevIds.filter(id => !newIdSet.has(id));
+  for (const pid of removed) {
+    await sb.from('ladder_challenges')
+      .update({ status: 'voided' })
+      .in('status', ['pending', 'accepted'])
+      .or(`challenger_id.eq.${pid},challenged_id.eq.${pid}`);
+  }
+
   const rows = _ladderInList.map((playerId, i) => ({
     player_id: playerId,
     position: i + 1,
