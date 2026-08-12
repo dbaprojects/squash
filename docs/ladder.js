@@ -587,7 +587,7 @@ function _injectMyChallenges() {
     return ['pending', 'accepted'].includes(c.status);
   });
   if (active.length === 0) return;
-  const rows = active.slice(0, 3).map(c => {
+  const rows = active.slice(0, 5).map(c => {
     const opp = c.challenger_id === myId ? c.challenged : c.challenger;
     const oppName = `${opp?.first_name || ''} ${(opp?.last_name || '')[0] || ''}`.trim();
     const statusHtml = _myChallengeStatusLabel(c, myId);
@@ -943,7 +943,7 @@ async function submitChallenge(targetId) {
     if (err) err.textContent = 'That player is outside your challenge range.';
     return;
   }
-  // Max 3 active (pending/accepted) challenges per player
+  // Max 5 active (pending/accepted) challenges per player
   const { data: active } = await sb.from('ladder_challenges')
     .select('id, challenger_id, challenged_id')
     .in('status', ['pending', 'accepted']);
@@ -957,12 +957,12 @@ async function submitChallenge(targetId) {
 
     const myCount     = active.filter(c => c.challenger_id === myId    || c.challenged_id === myId).length;
     const theirCount  = active.filter(c => c.challenger_id === targetId || c.challenged_id === targetId).length;
-    if (myCount >= 3) {
-      if (err) err.textContent = 'You already have 3 active challenges — complete or wait for those first.';
+    if (myCount >= 5) {
+      if (err) err.textContent = 'You already have 5 active challenges — complete or wait for those first.';
       return;
     }
-    if (theirCount >= 3) {
-      if (err) err.textContent = 'That player already has 3 active challenges — try again later.';
+    if (theirCount >= 5) {
+      if (err) err.textContent = 'That player already has 5 active challenges — try again later.';
       return;
     }
   }

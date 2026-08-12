@@ -5,7 +5,7 @@
 - **Owner:** Club admin — personal project
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `[local project directory]`
-- **Current version:** v6.20
+- **Current version:** v6.21
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -565,6 +565,7 @@ echo "{\"version\":\"4.XX\",\"build\":\"$(date +%s)\"}" > docs/version.json
 | v5.72 | Ladders home tile: flashing red "Don't be shy — sign up! Ping David B" nudge for players not on the ladder |
 | v5.73 | Ladders home tile: moved to after Sign-Up tile; quip flashes red when ladder player has no active challenges |
 | v5.74 | Serial ghoster rule: 3 consecutive forfeits as challenged → demoted to last place; 👻 badge on their row and home tile chips; `_serialGhosters` Set rebuilt after every challenge load |
+| v6.21 | Max active challenges per player raised from 3 to 5; Me tile shows up to 5 active challenges |
 | v6.20 | Reports: Attendance by Day of Week replaced table with Chart.js grouped bar chart (navy = Total Regs, gold = Avg/Day); avg denominator fixed to `distinct_calendar_days` (not sessions) using `dates: new Set()` per dow entry; dual y-axes (y=Total Regs left, y2=Avg/Day right) |
 | v6.19 | Reports: Attendance by Day of Week card — sessions/total/avg per day of week; "Avg / Session" → "Avg / Day"; moved above Most Frequent Players |
 | v6.18 | Reports: Attendance by Day of Week table card — sessions/total/avg per day |
