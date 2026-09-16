@@ -11,7 +11,7 @@
 })();
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '6.25';
+const APP_VERSION = '6.26';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -2735,13 +2735,25 @@ function renderPlayersTable() {
           placeholder="Search by name…" autocomplete="off">
         <div id="players-status-btns" class="players-status-btns"></div>
         <div id="players-role-btns" class="players-role-btns"></div>
-        <button class="admin-filter-btn" onclick="exportPlayersCSV()" style="margin-left:auto;white-space:nowrap">⬇ Export</button>
       </div>
       <div id="players-list"></div>`;
     document.getElementById('players-search').addEventListener('input', e => {
       playersFilter.search = e.target.value;
       renderPlayersTable();
     });
+  }
+  // Ensure export button exists (may be absent from cached toolbar)
+  if (!document.getElementById('btn-export-players')) {
+    const toolbar = wrap.querySelector('.players-toolbar');
+    if (toolbar) {
+      const btn = document.createElement('button');
+      btn.id = 'btn-export-players';
+      btn.className = 'admin-filter-btn';
+      btn.style.cssText = 'margin-left:auto;white-space:nowrap';
+      btn.textContent = '⬇ Export';
+      btn.onclick = exportPlayersCSV;
+      toolbar.appendChild(btn);
+    }
   }
 
   document.getElementById('players-status-btns').innerHTML = `
