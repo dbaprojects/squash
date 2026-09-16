@@ -11,7 +11,7 @@
 })();
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '6.24';
+const APP_VERSION = '6.25';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -2735,6 +2735,7 @@ function renderPlayersTable() {
           placeholder="Search by name…" autocomplete="off">
         <div id="players-status-btns" class="players-status-btns"></div>
         <div id="players-role-btns" class="players-role-btns"></div>
+        <button class="admin-filter-btn" onclick="exportPlayersCSV()" style="margin-left:auto;white-space:nowrap">⬇ Export</button>
       </div>
       <div id="players-list"></div>`;
     document.getElementById('players-search').addEventListener('input', e => {
@@ -2802,6 +2803,46 @@ function renderPlayersTable() {
         }).join('')}
       </div>`
     : '<p style="color:#888;padding:12px 0">No players match.</p>';
+}
+
+function exportPlayersCSV() {
+  const { status, search, sortBy, sortDir, role } = playersFilter;
+  const q = search.toLowerCase();
+  const isPending = p => p.pending === true;
+  let players = allPlayers.filter(p => {
+    if (status === 'active'   && !p.active) return false;
+    if (status === 'inactive' && (p.active || isPending(p))) return false;
+    if (status === 'pending'  && !isPending(p)) return false;
+    if (role === 'superadmin' && !p.is_super_admin) return false;
+    if (role === 'admin'      && !(p.is_admin && !p.is_super_admin)) return false;
+    if (role === 'regular'    && p.is_admin) return false;
+    if (q) {
+      const name = `${p.first_name} ${p.last_name}`.toLowerCase();
+      const phone = (p.phone || '').replace(/\D/g, '');
+      const qDigits = q.replace(/\D/g, '');
+      if (!name.includes(q) && !(qDigits && phone.includes(qDigits))) return false;
+    }
+    return true;
+  });
+  players = [...players].sort((a, b) => {
+    let av, bv;
+    if (sortBy === 'hc') { av = a.current_handicap ?? 999; bv = b.current_handicap ?? 999; }
+    else { av = `${a.last_name} ${a.first_name}`.toLowerCase(); bv = `${b.last_name} ${b.first_name}`.toLowerCase(); }
+    if (av < bv) return sortDir === 'asc' ? -1 : 1;
+    if (av > bv) return sortDir === 'asc' ?  1 : -1;
+    return 0;
+  });
+  const csvEsc = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const lines = [
+    ['First Name', 'Last Name', 'Phone', 'Handicap'].map(csvEsc).join(','),
+    ...players.map(p => [p.first_name, p.last_name, p.phone || '', p.current_handicap ?? ''].map(csvEsc).join(','))
+  ];
+  const blob = new Blob([lines.join('\r\n')], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `bc-squash-players-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
 }
 
 function setPlayersStatus(status) {
