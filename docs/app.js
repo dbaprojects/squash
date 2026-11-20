@@ -11,7 +11,7 @@
 })();
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '6.32';
+const APP_VERSION = '6.33';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -3826,18 +3826,106 @@ function showFormModal(title, bodyHtml) {
 }
 
 // ── Announcements / News ────────────────────────────────────────────────────
-// Body is plain text. An announcement may have one optional link_url — when set,
-// the whole body becomes a single clickable link. With no link_url, any bare
-// http(s):// URL typed in the body is still auto-linked.
-function renderAnnouncementBody(text, linkUrl) {
-  const s = esc(text || '').replace(/\n/g, '<br>');
-  if (linkUrl) {
-    let href = String(linkUrl).trim();
-    if (!/^https?:\/\//i.test(href)) href = 'https://' + href;
-    return `<a href="${esc(href)}" target="_blank" rel="noopener" class="announce-body-link">${s}</a>`;
+// Bodies are authored in a small rich-text editor and stored as HTML. Content is
+// run through _sanitizeHtml (safe tag/attr allowlist) before it is stored AND
+// before display. Legacy plain-text bodies (no tags) are shown with newlines +
+// bare URLs auto-linked for backward compatibility.
+const _RTE_ALLOWED = {
+  A: ['href', 'target', 'rel'], B: [], STRONG: [], I: [], EM: [], U: [],
+  BR: [], P: [], UL: [], OL: [], LI: [], DIV: [], SPAN: []
+};
+function _sanitizeHtml(html) {
+  const tpl = document.createElement('template');
+  tpl.innerHTML = html || '';
+  const scrub = (root) => {
+    let changed = false;
+    [...root.childNodes].forEach(node => {
+      if (node.nodeType === 8) { node.remove(); changed = true; return; }  // comments
+      if (node.nodeType !== 1) return;                                      // keep text
+      const tag = node.tagName;
+      if (!_RTE_ALLOWED[tag]) {
+        if (tag === 'SCRIPT' || tag === 'STYLE') { node.remove(); }
+        else {                                                              // unwrap unknown tag
+          const parent = node.parentNode;
+          while (node.firstChild) parent.insertBefore(node.firstChild, node);
+          parent.removeChild(node);
+        }
+        changed = true;
+        return;
+      }
+      [...node.attributes].forEach(attr => {
+        if (!_RTE_ALLOWED[tag].includes(attr.name.toLowerCase())) node.removeAttribute(attr.name);
+      });
+      if (tag === 'A') {
+        const href = node.getAttribute('href') || '';
+        if (!/^https?:\/\//i.test(href)) node.removeAttribute('href');
+        else { node.setAttribute('target', '_blank'); node.setAttribute('rel', 'noopener'); }
+      }
+      if (scrub(node)) changed = true;
+    });
+    return changed;
+  };
+  for (let i = 0; i < 4 && scrub(tpl.content); i++) { /* passes until stable */ }
+  return tpl.innerHTML.trim();
+}
+function _plainText(html) {
+  const d = document.createElement('div');
+  d.innerHTML = html || '';
+  return (d.textContent || '').trim();
+}
+function renderAnnouncementBody(body) {
+  const s0 = body || '';
+  if (!/<[a-z][\s\S]*>/i.test(s0)) {                 // legacy plain text
+    let s = esc(s0).replace(/\n/g, '<br>');
+    return s.replace(/(^|[\s(])(https?:\/\/[^\s<]+)/g,
+      '$1<a href="$2" target="_blank" rel="noopener">$2</a>');
   }
-  return s.replace(/(^|[\s(])(https?:\/\/[^\s<]+)/g,
-    '$1<a href="$2" target="_blank" rel="noopener">$2</a>');
+  return _sanitizeHtml(s0);
+}
+
+// ── Rich-text editor (announcement body) — works on PC + mobile ──────────────
+let _rteRange = null;
+function _rteSaveSel() {
+  const ed = document.getElementById('an-body');
+  const sel = window.getSelection();
+  if (ed && sel && sel.rangeCount) {
+    const r = sel.getRangeAt(0);
+    if (ed.contains(r.commonAncestorContainer)) _rteRange = r.cloneRange();
+  }
+}
+function _rteRestoreSel() {
+  const ed = document.getElementById('an-body');
+  if (!ed) return;
+  ed.focus();
+  if (_rteRange) {
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(_rteRange);
+  }
+}
+function _rteCmd(cmd) {
+  _rteRestoreSel();
+  try { document.execCommand(cmd, false, null); } catch (_) {}
+  _rteSaveSel();
+}
+function _rteLink() {
+  _rteRestoreSel();
+  const sel = window.getSelection();
+  const hasText = !!(sel && sel.toString().trim());
+  let url = (window.prompt('Link address:', 'https://') || '').trim();
+  if (!url || url === 'https://') return;
+  if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+  _rteRestoreSel();
+  try {
+    if (hasText) document.execCommand('createLink', false, url);
+    else document.execCommand('insertHTML', false,
+      `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(url)}</a>&nbsp;`);
+  } catch (_) {}
+  const ed = document.getElementById('an-body');
+  ed?.querySelectorAll('a').forEach(aEl => {
+    aEl.setAttribute('target', '_blank'); aEl.setAttribute('rel', 'noopener');
+  });
+  _rteSaveSel();
 }
 
 // Reader overlay — opened from the home News tile
@@ -3848,7 +3936,7 @@ function openAnnouncements() {
     : list.map(a => `
         <div class="announce-item">
           <div class="announce-item-title">${esc(a.title)}</div>
-          <div class="announce-item-body">${renderAnnouncementBody(a.body, a.link_url)}</div>
+          <div class="announce-item-body">${renderAnnouncementBody(a.body)}</div>
           ${a.expiry_date ? `<div class="announce-item-meta">Until ${fmtDate(a.expiry_date)}</div>` : ''}
         </div>`).join('');
   const manage = ST.player?.is_super_admin
@@ -3886,7 +3974,8 @@ async function renderAnnounceAdmin() {
   const today = new Date().toISOString().slice(0, 10);
   wrap.innerHTML = _announceAdmin.map(a => {
     const expired = a.expiry_date && a.expiry_date < today;
-    const bodyShort = (a.body || '').length > 120 ? esc(a.body.slice(0, 120)) + '…' : esc(a.body || '');
+    const plain = _plainText(a.body);
+    const bodyShort = esc(plain.length > 120 ? plain.slice(0, 120) + '…' : plain);
     return `<div class="announce-admin-card${expired ? ' announce-expired' : ''}">
       <div class="aac-top">
         <span class="aac-seq">#${a.sequence}</span>
@@ -3895,7 +3984,7 @@ async function renderAnnounceAdmin() {
       </div>
       <div class="aac-body">${bodyShort}</div>
       <div class="aac-foot">
-        <span class="aac-exp">${a.link_url ? '🔗 Linked · ' : ''}${a.expiry_date ? 'Expires ' + fmtDate(a.expiry_date) : 'No expiry'}</span>
+        <span class="aac-exp">${a.expiry_date ? 'Expires ' + fmtDate(a.expiry_date) : 'No expiry'}</span>
         <span class="aac-actions">
           <button class="btn-icon-sm" onclick="openAnnounceForm('${a.id}')">Edit</button>
           <button class="btn-icon-sm btn-icon-danger" onclick="deleteAnnounce('${a.id}')">Delete</button>
@@ -3907,6 +3996,7 @@ async function renderAnnounceAdmin() {
 
 function openAnnounceForm(id) {
   if (!ST.player?.is_super_admin) return;
+  _rteRange = null;
   const a = id ? (_announceAdmin || []).find(x => x.id === id) : null;
   const nextSeq = a ? a.sequence
     : ((_announceAdmin || []).reduce((m, x) => Math.max(m, x.sequence || 0), 0) + 1);
@@ -3918,12 +4008,17 @@ function openAnnounceForm(id) {
       </div>
       <div class="form-group">
         <label>Body</label>
-        <textarea id="an-body" rows="6" required>${a ? esc(a.body) : ''}</textarea>
-      </div>
-      <div class="form-group">
-        <label>Link <span style="color:#999;font-weight:400">(optional)</span></label>
-        <input type="text" id="an-link" placeholder="https://… — makes the whole announcement tappable" value="${a?.link_url ? esc(a.link_url) : ''}">
-        <div class="form-hint">Add a web address here and the whole announcement becomes a clickable link to it. Leave blank for a plain notice.</div>
+        <div class="rte-toolbar">
+          <button type="button" class="rte-btn" onmousedown="event.preventDefault()" onclick="_rteCmd('bold')" title="Bold"><b>B</b></button>
+          <button type="button" class="rte-btn" onmousedown="event.preventDefault()" onclick="_rteCmd('italic')" title="Italic"><i>I</i></button>
+          <button type="button" class="rte-btn" onmousedown="event.preventDefault()" onclick="_rteCmd('insertUnorderedList')" title="Bullet list">• List</button>
+          <button type="button" class="rte-btn" onmousedown="event.preventDefault()" onclick="_rteLink()" title="Insert link">🔗 Link</button>
+          <button type="button" class="rte-btn" onmousedown="event.preventDefault()" onclick="_rteCmd('unlink')" title="Remove link">Unlink</button>
+        </div>
+        <div id="an-body" class="rte-editor" contenteditable="true"
+             onkeyup="_rteSaveSel()" onmouseup="_rteSaveSel()" ontouchend="_rteSaveSel()"
+             data-placeholder="Write your announcement…">${a ? renderAnnouncementBody(a.body) : ''}</div>
+        <div class="form-hint">Select some text then tap <strong>🔗 Link</strong> to turn it into a clickable link. Works on phone and computer.</div>
       </div>
       <div class="announce-form-row">
         <div class="form-group">
@@ -3942,14 +4037,14 @@ function openAnnounceForm(id) {
 async function submitAnnounceForm(e, id) {
   e.preventDefault();
   if (!ST.player?.is_super_admin) return;
-  const title  = document.getElementById('an-title').value.trim();
-  const body   = document.getElementById('an-body').value.trim();
-  const seq    = parseInt(document.getElementById('an-seq').value, 10) || 0;
-  const expiry = document.getElementById('an-expiry').value || null;
-  let link     = document.getElementById('an-link').value.trim();
-  if (link && !/^https?:\/\//i.test(link)) link = 'https://' + link;
-  if (!title || !body) { alert('Title and body are required'); return; }
-  const payload = { title, body, sequence: seq, expiry_date: expiry, link_url: link || null, updated_at: new Date().toISOString() };
+  const title   = document.getElementById('an-title').value.trim();
+  const bodyEl  = document.getElementById('an-body');
+  const body    = _sanitizeHtml(bodyEl.innerHTML);
+  const bodyTxt = _plainText(bodyEl.innerHTML);
+  const seq     = parseInt(document.getElementById('an-seq').value, 10) || 0;
+  const expiry  = document.getElementById('an-expiry').value || null;
+  if (!title || !bodyTxt) { alert('Title and body are required'); return; }
+  const payload = { title, body, sequence: seq, expiry_date: expiry, updated_at: new Date().toISOString() };
   let error;
   if (id) {
     ({ error } = await sb.from('announcements').update(payload).eq('id', id));
