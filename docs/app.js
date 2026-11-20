@@ -11,7 +11,7 @@
 })();
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '6.30';
+const APP_VERSION = '6.31';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -3906,6 +3906,30 @@ async function renderAnnounceAdmin() {
   }).join('');
 }
 
+// Build a [text](url) markdown link from the two helper boxes and drop it into
+// the body at the cursor — saves the admin typing the fiddly bracket syntax.
+function _insertAnnounceLink() {
+  const txtEl  = document.getElementById('an-link-text');
+  const urlEl  = document.getElementById('an-link-url');
+  const bodyEl = document.getElementById('an-body');
+  if (!bodyEl) return;
+  let url = (urlEl.value || '').trim();
+  if (!url) { urlEl.focus(); return; }
+  if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+  const label   = (txtEl.value || '').trim() || url;
+  const snippet = `[${label}](${url})`;
+  const start = bodyEl.selectionStart ?? bodyEl.value.length;
+  const end   = bodyEl.selectionEnd   ?? bodyEl.value.length;
+  const before = bodyEl.value.slice(0, start);
+  const after  = bodyEl.value.slice(end);
+  const sep = (before && !/[\s(]$/.test(before)) ? ' ' : '';
+  bodyEl.value = before + sep + snippet + after;
+  const pos = (before + sep + snippet).length;
+  bodyEl.focus();
+  try { bodyEl.setSelectionRange(pos, pos); } catch (_) {}
+  txtEl.value = ''; urlEl.value = '';
+}
+
 function openAnnounceForm(id) {
   if (!ST.player?.is_super_admin) return;
   const a = id ? (_announceAdmin || []).find(x => x.id === id) : null;
@@ -3920,7 +3944,15 @@ function openAnnounceForm(id) {
       <div class="form-group">
         <label>Body</label>
         <textarea id="an-body" rows="6" required>${a ? esc(a.body) : ''}</textarea>
-        <div class="form-hint">Paste a full web address (https://…) and it becomes a clickable link. For a named link, write <code>[Club calendar](https://…)</code>.</div>
+        <div class="announce-link-builder">
+          <div class="alb-label">Add a clickable link</div>
+          <div class="alb-row">
+            <input type="text" id="an-link-text" placeholder="Link text (e.g. Click here for details)">
+            <input type="text" id="an-link-url" placeholder="Paste web address (https://…)">
+            <button type="button" class="alb-btn" onclick="_insertAnnounceLink()">Insert link</button>
+          </div>
+          <div class="form-hint">Fill both boxes, place the cursor where you want it in the body, then tap <strong>Insert link</strong>. A plain address pasted straight into the body also becomes clickable on its own.</div>
+        </div>
       </div>
       <div class="announce-form-row">
         <div class="form-group">
