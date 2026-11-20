@@ -5,7 +5,7 @@
 - **Owner:** Club admin — personal project
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `[local project directory]`
-- **Current version:** v6.33
+- **Current version:** v6.34
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -567,6 +567,7 @@ echo "{\"version\":\"4.XX\",\"build\":\"$(date +%s)\"}" > docs/version.json
 | v5.72 | Ladders home tile: flashing red "Don't be shy — sign up! Ping David B" nudge for players not on the ladder |
 | v5.73 | Ladders home tile: moved to after Sign-Up tile; quip flashes red when ladder player has no active challenges |
 | v5.74 | Serial ghoster rule: 3 consecutive forfeits as challenged → demoted to last place; 👻 badge on their row and home tile chips; `_serialGhosters` Set rebuilt after every challenge load |
+| v6.34 | Announcements: defensive guard in `renderAnnouncementBody` — a body stored as escaped HTML (`&lt;a&gt;…` with no real tags, e.g. seen by a stale-cached client that saved via the old textarea) is unescaped (via `<textarea>.innerHTML`/`.value`) before the plain-vs-HTML branch, so it renders as formatting instead of raw tags. Version bump also forces stuck mobile PWAs onto the v6.33 rich-text code (the "mobile shows raw `<a>` tags" report was the phone running pre-v6.33 cached JS) |
 | v6.33 | Announcements body = **rich-text editor** (contenteditable, PC + mobile). Toolbar: Bold/Italic/Bullets/Link/Unlink via `document.execCommand`; `_rteCmd`/`_rteLink` with `_rteSaveSel`/`_rteRestoreSel` (saved Range survives `prompt()` + toolbar taps; buttons `onmousedown=preventDefault` keep the selection; editor saves selection on keyup/mouseup/touchend). Body now stores **sanitized HTML** — `_sanitizeHtml` (tag/attr allowlist, forces `target=_blank rel=noopener`, drops non-http hrefs, unwraps unknown tags, strips script/style/comments) runs on save AND display; `renderAnnouncementBody(body)` sanitizes HTML bodies, legacy plain-text bodies still get `<br>` + bare-URL autolink; `_plainText` for admin previews. **Dropped `link_url`** (v6.32) entirely — no DB column needed, body HTML carries links. `.rte-toolbar`/`.rte-btn`/`.rte-editor` CSS (16px font to avoid iOS zoom, `:empty::before` placeholder) |
 | v6.32 | Announcements: scrapped the fiddly markdown link-builder (v6.31) for a single **optional Link field** — `announcements.link_url` (new column, `alter table … add column if not exists link_url text`). When set, the whole announcement body becomes one clickable link (`renderAnnouncementBody(text, linkUrl)` wraps the body in `<a class="announce-body-link">`); blank = plain notice (bare URLs in body still auto-link). Admin form has plain textarea + Link input; admin cards show "🔗 Linked" when set. `link_url` added to `db/schema-announcements.sql` create + ALTER |
 | v6.31 | Announcement form: **link builder** — two boxes (Link text + URL) + "Insert link" button (`_insertAnnounceLink()`) that drops correctly-formatted `[text](url)` markdown into the body at the cursor (auto-prepends `https://`, auto-spaces). Replaces the fiddly hand-typed bracket syntax that users couldn't get right. `.announce-link-builder`/`.alb-*` CSS |

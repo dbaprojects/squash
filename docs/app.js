@@ -11,7 +11,7 @@
 })();
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '6.33';
+const APP_VERSION = '6.34';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -3874,9 +3874,16 @@ function _plainText(html) {
   return (d.textContent || '').trim();
 }
 function renderAnnouncementBody(body) {
-  const s0 = body || '';
+  let s0 = body || '';
+  // Defensive: a body stored as escaped HTML (&lt;a&gt;…, no real tags) — unescape
+  // it so it renders as formatting instead of showing the raw tags.
+  if (!/<[a-z]/i.test(s0) && /&lt;[a-z/]/i.test(s0)) {
+    const t = document.createElement('textarea');
+    t.innerHTML = s0;
+    s0 = t.value;
+  }
   if (!/<[a-z][\s\S]*>/i.test(s0)) {                 // legacy plain text
-    let s = esc(s0).replace(/\n/g, '<br>');
+    const s = esc(s0).replace(/\n/g, '<br>');
     return s.replace(/(^|[\s(])(https?:\/\/[^\s<]+)/g,
       '$1<a href="$2" target="_blank" rel="noopener">$2</a>');
   }
