@@ -9,10 +9,14 @@ create table if not exists announcements (
   body        text    not null,
   sequence    integer not null default 0,   -- display order, ascending
   expiry_date date,                          -- null = never expires
+  link_url    text,                          -- optional; makes the whole body clickable
   created_by  uuid references players(id),
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now()
 );
+
+-- If the table already exists from an earlier run, add the link column:
+alter table announcements add column if not exists link_url text;
 
 create index if not exists announcements_sequence_idx on announcements (sequence);
 create index if not exists announcements_expiry_idx    on announcements (expiry_date);

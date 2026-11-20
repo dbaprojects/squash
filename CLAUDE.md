@@ -5,7 +5,7 @@
 - **Owner:** Club admin — personal project
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `[local project directory]`
-- **Current version:** v6.31
+- **Current version:** v6.32
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -567,6 +567,7 @@ echo "{\"version\":\"4.XX\",\"build\":\"$(date +%s)\"}" > docs/version.json
 | v5.72 | Ladders home tile: flashing red "Don't be shy — sign up! Ping David B" nudge for players not on the ladder |
 | v5.73 | Ladders home tile: moved to after Sign-Up tile; quip flashes red when ladder player has no active challenges |
 | v5.74 | Serial ghoster rule: 3 consecutive forfeits as challenged → demoted to last place; 👻 badge on their row and home tile chips; `_serialGhosters` Set rebuilt after every challenge load |
+| v6.32 | Announcements: scrapped the fiddly markdown link-builder (v6.31) for a single **optional Link field** — `announcements.link_url` (new column, `alter table … add column if not exists link_url text`). When set, the whole announcement body becomes one clickable link (`renderAnnouncementBody(text, linkUrl)` wraps the body in `<a class="announce-body-link">`); blank = plain notice (bare URLs in body still auto-link). Admin form has plain textarea + Link input; admin cards show "🔗 Linked" when set. `link_url` added to `db/schema-announcements.sql` create + ALTER |
 | v6.31 | Announcement form: **link builder** — two boxes (Link text + URL) + "Insert link" button (`_insertAnnounceLink()`) that drops correctly-formatted `[text](url)` markdown into the body at the cursor (auto-prepends `https://`, auto-spaces). Replaces the fiddly hand-typed bracket syntax that users couldn't get right. `.announce-link-builder`/`.alb-*` CSS |
 | v6.30 | Announcements home tile made half-width (dropped `grid-column:1/-1`) so it sits beside the Monthly HCRR tile instead of spanning the full row |
 | v6.29 | **Announcements / News (super_admin only, first pass)**: new `announcements` table (`db/schema-announcements.sql` — title, body, sequence, expiry_date, RLS open-anon). Home tile `📣 Announcements` (super_admin only; full-width, amber top-border, shows up to 3 titles + "+N more"; `openAnnouncements()` reader overlay via `showFormModal`). Admin → **News** tab (`tab-news`, revealed for super_admin in `loadAdminTab`): `renderAnnounceAdmin()` list of cards (seq badge, title, body preview, expiry, Edit/Delete) + `openAnnounceForm`/`submitAnnounceForm`/`deleteAnnounce`. Body links: `renderAnnouncementBody()` escapes then linkifies `[label](url)` + bare `http(s)://` URLs (admin hint in the form). Active-only (non-expired) list fetched in `loadHome` for super_admin via `.or(expiry_date.is.null,expiry_date.gte.today)` — audit/announce fetch indices now computed dynamically (`auditIdx`/`announceIdx`) instead of hardcoded `results[6]`. **Challenge history pagination**: ladder History panel now pages at 10 (`_resultsShown`/`_RESULTS_PAGE`), "Show more (N more)" button (`_moreResults()`), resets to 10 on filter change (`.ch-more-btn`). All in core (app.js/index.html/dev.html) — in production but gated to super_admin until ready for all users |

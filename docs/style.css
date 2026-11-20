@@ -1385,12 +1385,8 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 .aac-actions { display: flex; gap: 4px; flex-shrink: 0; }
 .announce-form-row { display: flex; gap: 10px; }
 .announce-form-row .form-group { flex: 1; }
-.announce-link-builder { margin-top: 8px; padding: 8px 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; }
-.alb-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #64748b; margin-bottom: 5px; }
-.alb-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: stretch; }
-.alb-row input { flex: 1 1 140px; min-width: 0; font-size: 13px; padding: 7px 9px; border: 1px solid #cbd5e1; border-radius: 6px; }
-.alb-btn { flex: 0 0 auto; background: var(--bc-navy); color: #fff; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; padding: 7px 12px; cursor: pointer; white-space: nowrap; }
-.alb-btn:hover { background: #142052; }
+.announce-body-link { color: #1d4ed8; text-decoration: underline; }
+.announce-item-body a.announce-body-link:hover { color: #1e3a8a; }
 .form-hint { font-size: 11px; color: #94a3b8; margin-top: 4px; line-height: 1.4; }
 .form-hint code { background: #f1f5f9; border-radius: 4px; padding: 0 3px; font-size: 11px; }
 

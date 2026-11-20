@@ -11,7 +11,7 @@
 })();
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '6.31';
+const APP_VERSION = '6.32';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -3826,19 +3826,18 @@ function showFormModal(title, bodyHtml) {
 }
 
 // ── Announcements / News ────────────────────────────────────────────────────
-// Render an announcement body as safe HTML: escape first, then turn
-// [label](https://…) and bare http(s) URLs into links, and newlines into <br>.
-function renderAnnouncementBody(text) {
-  let s = esc(text || '');
-  // Escaping turned "(" / ")" into themselves but "&" into "&amp;"; markdown
-  // link URLs here contain no "&amp;" split issues for typical links.
-  s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
-    '<a href="$2" target="_blank" rel="noopener">$1</a>');
-  // Bare URLs not already inside an href (simple guard: not preceded by =" )
-  s = s.replace(/(^|[\s(])(https?:\/\/[^\s<]+)/g,
+// Body is plain text. An announcement may have one optional link_url — when set,
+// the whole body becomes a single clickable link. With no link_url, any bare
+// http(s):// URL typed in the body is still auto-linked.
+function renderAnnouncementBody(text, linkUrl) {
+  const s = esc(text || '').replace(/\n/g, '<br>');
+  if (linkUrl) {
+    let href = String(linkUrl).trim();
+    if (!/^https?:\/\//i.test(href)) href = 'https://' + href;
+    return `<a href="${esc(href)}" target="_blank" rel="noopener" class="announce-body-link">${s}</a>`;
+  }
+  return s.replace(/(^|[\s(])(https?:\/\/[^\s<]+)/g,
     '$1<a href="$2" target="_blank" rel="noopener">$2</a>');
-  s = s.replace(/\n/g, '<br>');
-  return s;
 }
 
 // Reader overlay — opened from the home News tile
@@ -3849,7 +3848,7 @@ function openAnnouncements() {
     : list.map(a => `
         <div class="announce-item">
           <div class="announce-item-title">${esc(a.title)}</div>
-          <div class="announce-item-body">${renderAnnouncementBody(a.body)}</div>
+          <div class="announce-item-body">${renderAnnouncementBody(a.body, a.link_url)}</div>
           ${a.expiry_date ? `<div class="announce-item-meta">Until ${fmtDate(a.expiry_date)}</div>` : ''}
         </div>`).join('');
   const manage = ST.player?.is_super_admin
@@ -3896,7 +3895,7 @@ async function renderAnnounceAdmin() {
       </div>
       <div class="aac-body">${bodyShort}</div>
       <div class="aac-foot">
-        <span class="aac-exp">${a.expiry_date ? 'Expires ' + fmtDate(a.expiry_date) : 'No expiry'}</span>
+        <span class="aac-exp">${a.link_url ? '🔗 Linked · ' : ''}${a.expiry_date ? 'Expires ' + fmtDate(a.expiry_date) : 'No expiry'}</span>
         <span class="aac-actions">
           <button class="btn-icon-sm" onclick="openAnnounceForm('${a.id}')">Edit</button>
           <button class="btn-icon-sm btn-icon-danger" onclick="deleteAnnounce('${a.id}')">Delete</button>
@@ -3904,30 +3903,6 @@ async function renderAnnounceAdmin() {
       </div>
     </div>`;
   }).join('');
-}
-
-// Build a [text](url) markdown link from the two helper boxes and drop it into
-// the body at the cursor — saves the admin typing the fiddly bracket syntax.
-function _insertAnnounceLink() {
-  const txtEl  = document.getElementById('an-link-text');
-  const urlEl  = document.getElementById('an-link-url');
-  const bodyEl = document.getElementById('an-body');
-  if (!bodyEl) return;
-  let url = (urlEl.value || '').trim();
-  if (!url) { urlEl.focus(); return; }
-  if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
-  const label   = (txtEl.value || '').trim() || url;
-  const snippet = `[${label}](${url})`;
-  const start = bodyEl.selectionStart ?? bodyEl.value.length;
-  const end   = bodyEl.selectionEnd   ?? bodyEl.value.length;
-  const before = bodyEl.value.slice(0, start);
-  const after  = bodyEl.value.slice(end);
-  const sep = (before && !/[\s(]$/.test(before)) ? ' ' : '';
-  bodyEl.value = before + sep + snippet + after;
-  const pos = (before + sep + snippet).length;
-  bodyEl.focus();
-  try { bodyEl.setSelectionRange(pos, pos); } catch (_) {}
-  txtEl.value = ''; urlEl.value = '';
 }
 
 function openAnnounceForm(id) {
@@ -3944,15 +3919,11 @@ function openAnnounceForm(id) {
       <div class="form-group">
         <label>Body</label>
         <textarea id="an-body" rows="6" required>${a ? esc(a.body) : ''}</textarea>
-        <div class="announce-link-builder">
-          <div class="alb-label">Add a clickable link</div>
-          <div class="alb-row">
-            <input type="text" id="an-link-text" placeholder="Link text (e.g. Click here for details)">
-            <input type="text" id="an-link-url" placeholder="Paste web address (https://…)">
-            <button type="button" class="alb-btn" onclick="_insertAnnounceLink()">Insert link</button>
-          </div>
-          <div class="form-hint">Fill both boxes, place the cursor where you want it in the body, then tap <strong>Insert link</strong>. A plain address pasted straight into the body also becomes clickable on its own.</div>
-        </div>
+      </div>
+      <div class="form-group">
+        <label>Link <span style="color:#999;font-weight:400">(optional)</span></label>
+        <input type="text" id="an-link" placeholder="https://… — makes the whole announcement tappable" value="${a?.link_url ? esc(a.link_url) : ''}">
+        <div class="form-hint">Add a web address here and the whole announcement becomes a clickable link to it. Leave blank for a plain notice.</div>
       </div>
       <div class="announce-form-row">
         <div class="form-group">
@@ -3975,8 +3946,10 @@ async function submitAnnounceForm(e, id) {
   const body   = document.getElementById('an-body').value.trim();
   const seq    = parseInt(document.getElementById('an-seq').value, 10) || 0;
   const expiry = document.getElementById('an-expiry').value || null;
+  let link     = document.getElementById('an-link').value.trim();
+  if (link && !/^https?:\/\//i.test(link)) link = 'https://' + link;
   if (!title || !body) { alert('Title and body are required'); return; }
-  const payload = { title, body, sequence: seq, expiry_date: expiry, updated_at: new Date().toISOString() };
+  const payload = { title, body, sequence: seq, expiry_date: expiry, link_url: link || null, updated_at: new Date().toISOString() };
   let error;
   if (id) {
     ({ error } = await sb.from('announcements').update(payload).eq('id', id));
