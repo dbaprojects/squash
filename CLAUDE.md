@@ -5,7 +5,7 @@
 - **Owner:** Club admin — personal project
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `[local project directory]`
-- **Current version:** v6.27
+- **Current version:** v6.28
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -565,6 +565,7 @@ echo "{\"version\":\"4.XX\",\"build\":\"$(date +%s)\"}" > docs/version.json
 | v5.72 | Ladders home tile: flashing red "Don't be shy — sign up! Ping David B" nudge for players not on the ladder |
 | v5.73 | Ladders home tile: moved to after Sign-Up tile; quip flashes red when ladder player has no active challenges |
 | v5.74 | Serial ghoster rule: 3 consecutive forfeits as challenged → demoted to last place; 👻 badge on their row and home tile chips; `_serialGhosters` Set rebuilt after every challenge load |
+| v6.28 | Ladder row icons: collapsed the four stacked status systems (result 🍺/😢/👻/🐔, snail 🐌, jumped 🦘, serial-ghoster 🪦) into **one** icon = the player's genuine most-recent event. New `_eventIconFor(c,pid)` (role-aware: voided→🐌 challenger only, superseded→🦘 challenged only, injury→null/skip-to-prior) + `_rebuildRecentEventIcons()` (one pass over newest-first `_recentCompleted`) + `_rowStatusIcon(pid)` (serial-ghoster 🪦 persists & takes precedence, else most-recent). Applied to main ladder rows + home-tile "can challenge" chips. **Removed** `_rebuildSnailBadges`/`_rebuildJumpedBadges`/`_isSnailBadged`/`_isJumped`/`_snailOpponent` + `_snailBadges`/`_jumpedBadges` state (badge display now derives from status directly; voided/superseded statuses still set by `_voidOutOfRangeChallenges`/`_supersedeJumpedChallenges`). Injury = no ladder icon, still in history. Fixes Alex K showing snail+jumped+result at once |
 | v6.27 | Realign version strings — the `?v=` asset query strings in `index.html`/`dev.html` had drifted (stuck at 6.20 since the bump checklist's 3 `sed`-missed spots were skipped) while APP_VERSION/version.json/display were 6.26. Bumped **all** refs to 6.27 (asset `?v=`, display labels, APP_VERSION, version.json). No code change — process/cache-bust hygiene fix |
 | v6.26 | Fix export button missing from cached toolbar — injected via DOM if absent rather than relying on one-time HTML build |
 | v6.25 | Admin players: Export button downloads filtered list as CSV (name, phone, handicap); filename includes today's date |

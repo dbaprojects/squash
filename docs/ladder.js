@@ -42,8 +42,7 @@ const _CHALLENGES_ENABLED = true;
     _myChallenges = [];
     _recentCompleted = [];
     _serialGhosters = new Set();
-    _snailBadges = new Map();
-    _jumpedBadges = new Set();
+    _recentEventMap = {};
     _notifiedChallengeIds = new Set();
     const basePromises = [
       _origLoadHome(),
@@ -94,8 +93,7 @@ let _ladderDivSize         = 9;
 let _challengeRange        = 3;
 let _maxChallengesIssued   = 3;
 let _serialGhosters   = new Set();
-let _snailBadges      = new Map(); // player_id → opponent name string
-let _jumpedBadges     = new Set();
+let _recentEventMap   = {};        // player_id → { icon, title } for their single most-recent event
 let _ladderInList     = [];
 let _ladderPool       = [];
 let _ladderAllPlayers = [];
@@ -258,8 +256,7 @@ async function _loadChallenges() {
     new Date(b.completed_at || b.responded_at || 0) - new Date(a.completed_at || a.responded_at || 0)
   );
   _rebuildSerialGhosters();
-  _rebuildSnailBadges();
-  _rebuildJumpedBadges();
+  _rebuildRecentEventIcons();
 }
 
 function _rebuildSerialGhosters() {
@@ -281,52 +278,68 @@ function _isSerialGhoster(playerId) {
   return _serialGhosters.has(playerId);
 }
 
-function _rebuildSnailBadges() {
-  _snailBadges = new Map();
-  // For each player, look at their most recent challenge as *challenger*.
-  // If it's voided → 🐌. Any other terminal status clears it.
-  const latestAsChallengerByPlayer = {};
+
+// Short "First L" name for a joined player object.
+function _shortNm(p) {
+  return p ? `${p.first_name || ''} ${(p.last_name || '')[0] || ''}`.trim() : 'opponent';
+}
+
+// Single-event → icon for a player, role-aware. Returns {icon,title} or null.
+// Returning null means "not their event" (or injury) → caller falls through to
+// the player's next-most-recent event. This is what collapses the old stacked
+// snail/jumped/result badges into one icon = the genuine latest event.
+function _eventIconFor(c, pid) {
+  const asChallenger = c.challenger_id === pid;
+  const asChallenged = c.challenged_id === pid;
+  if (!asChallenger && !asChallenged) return null;
+  switch (c.status) {
+    case 'completed':
+      return c.winner_id === pid
+        ? { icon: '🍺', title: 'Won their last match' }
+        : { icon: '😢', title: 'Lost their last match' };
+    case 'forfeited':
+      return c.winner_id === pid
+        ? { icon: '🍺', title: 'Won — opponent no-showed' }
+        : { icon: '👻', title: 'Ghosted — no-showed their last challenge' };
+    case 'declined':
+      return asChallenged
+        ? { icon: '🐔', title: 'Declined their last challenge' }
+        : { icon: '🍺', title: 'Opponent declined — walkover' };
+    case 'voided':   // snail — only the (too-slow) challenger carries it
+      return asChallenger
+        ? { icon: '🐌', title: `Too slow to challenge ${_shortNm(c.challenged)} — voided before the match` }
+        : null;
+    case 'superseded': // got jumped — only the leapt-over challenged player
+      return asChallenged
+        ? { icon: '🦘', title: `Got jumped by ${_shortNm(c.challenger)} — they won another match and leapt above` }
+        : null;
+    case 'declined_injury': // no ladder icon (no fault) — shown in history only
+      return null;
+    default:
+      return null;
+  }
+}
+
+// Most-recent single event per player. _recentCompleted is already newest-first,
+// so take the first entry per player that yields an icon.
+function _rebuildRecentEventIcons() {
+  _recentEventMap = {};
   for (const c of _recentCompleted) {
-    if (!latestAsChallengerByPlayer[c.challenger_id]) {
-      latestAsChallengerByPlayer[c.challenger_id] = c;
-    }
-  }
-  for (const [pid, c] of Object.entries(latestAsChallengerByPlayer)) {
-    if (c.status === 'voided') {
-      const opp = c.challenged?.first_name
-        ? `${c.challenged.first_name} ${(c.challenged.last_name||'')[0]||''}`.trim()
-        : 'opponent';
-      _snailBadges.set(pid, opp);
+    for (const pid of [c.challenger_id, c.challenged_id]) {
+      if (_recentEventMap[pid]) continue;      // already have their most recent
+      const r = _eventIconFor(c, pid);
+      if (r) _recentEventMap[pid] = r;
     }
   }
 }
 
-function _isSnailBadged(playerId) {
-  return _snailBadges.has(playerId);
-}
-
-function _snailOpponent(playerId) {
-  return _snailBadges.get(playerId) || '';
-}
-
-function _rebuildJumpedBadges() {
-  _jumpedBadges = new Set();
-  // For each player, look at their most recent challenge as *challenged*.
-  // If it's superseded (challenger won another match and leapt above them
-  // before this match was played) → 🦘 "got jumped". Any other terminal status clears it.
-  const latestAsChallengedByPlayer = {};
-  for (const c of _recentCompleted) {
-    if (!latestAsChallengedByPlayer[c.challenged_id]) {
-      latestAsChallengedByPlayer[c.challenged_id] = c;
-    }
+// The single status icon for a ladder row / chip: persistent serial-ghoster 🪦
+// takes precedence (stays until they play a game), otherwise the most-recent event.
+function _rowStatusIcon(pid) {
+  if (_isSerialGhoster(pid)) {
+    return { icon: '🪦', title: '3 consecutive ghosts — parked at the bottom until they play again' };
   }
-  for (const [pid, c] of Object.entries(latestAsChallengedByPlayer)) {
-    if (c.status === 'superseded') _jumpedBadges.add(pid);
-  }
-}
-
-function _isJumped(playerId) {
-  return _jumpedBadges.has(playerId);
+  return _recentEventMap[pid] || { icon: '', title: '' };
 }
 
 // Called after any ladder reshuffle: void all active challenges now out of range.
@@ -509,7 +522,7 @@ function _injectLadderHomeCard() {
       if (challengeable.length > 0) {
         rows += `<div class="divladder-section-label" style="padding:0 2px;margin-top:${myActive.length ? 6 : 6}px">Can challenge</div>`;
         rows += `<div class="dlhc-tiles">` + challengeable.map(p => `<div class="dlhc-tile dlhc-can">`
-          + `<span class="dlhc-tile-name">${fn1(p.players)}${_isSerialGhoster(p.player_id) ? ' 🪦' : ''}${_isSnailBadged(p.player_id) ? ' 🐌' : ''}${_isJumped(p.player_id) ? ' 🦘' : ''}</span>`
+          + `<span class="dlhc-tile-name">${fn1(p.players)}${_rowStatusIcon(p.player_id).icon ? ' ' + _rowStatusIcon(p.player_id).icon : ''}</span>`
           + `</div>`).join('') + `</div>`;
       }
 
@@ -709,21 +722,6 @@ function renderDivisionLadder() {
     }
   }
 
-  // Build most-recent-result icon map per player (skip injury/pending)
-  const recentIconMap = {};
-  for (const c of _recentCompleted) {
-    const relevant = c.status === 'completed' || c.status === 'forfeited' || c.status === 'declined';
-    if (!relevant) continue;
-    for (const pid of [c.challenger_id, c.challenged_id]) {
-      if (recentIconMap[pid]) continue; // already have most recent
-      let icon = '';
-      if (c.status === 'completed')  icon = c.winner_id === pid ? '🍺' : '😢';
-      else if (c.status === 'forfeited') icon = c.winner_id === pid ? '🍺' : '👻';
-      else if (c.status === 'declined')  icon = c.challenged_id === pid ? '🐔' : '🍺';
-      if (icon) recentIconMap[pid] = icon;
-    }
-  }
-
   const divCards = [];
   for (let d = 1; d <= numDivisions; d++) {
     const start = (d - 1) * _ladderDivSize + 1;
@@ -771,9 +769,10 @@ function renderDivisionLadder() {
           }
         }
       }
+      const si = _rowStatusIcon(p.player_id);
       return `<div class="div-player-row${cls}"${rowClick ? ` onclick="${rowClick}" style="cursor:pointer"` : ''}>
-        <span class="div-pos">${recentIconMap[p.player_id] || ''}</span>
-        <span class="div-player-name">${first} ${last}<span class="div-hc">${hc}</span>${_isSerialGhoster(p.player_id) ? '<span class="div-ghost-badge" title="3 consecutive ghosts — moved to last place">🪦</span>' : ''}${_isSnailBadged(p.player_id) ? `<span class="div-snail-badge" title="Too slow to challenge ${_snailOpponent(p.player_id)} — ladder reshuffled before the match was played">🐌</span>` : ''}${_isJumped(p.player_id) ? '<span class="div-jumped-badge" title="Got jumped — challenger won another match and leapt above them; match no longer played">🦘</span>' : ''}</span>
+        <span class="div-pos"${si.title ? ` title="${si.title}"` : ''}>${si.icon}</span>
+        <span class="div-player-name">${first} ${last}<span class="div-hc">${hc}</span></span>
         ${badge}
       </div>`;
     }).join('');
@@ -1241,7 +1240,8 @@ async function _processAutoForfeits() {
     }
   }
   // Always check — any reshuffle (forfeit, serial ghost demotion, or none)
-  // may leave active challenges out of range; void them and rebuild snail badges
+  // may leave active challenges out of range; void them (the 🐌 shows via the
+  // single most-recent-event icon)
   const voidCause = _pendingVoidCause
     || (expired.length > 0 ? 'a forfeit/ghost reshuffle' : null);
   await _voidOutOfRangeChallenges(voidCause);
