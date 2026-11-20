@@ -5,7 +5,7 @@
 - **Owner:** Club admin — personal project
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `[local project directory]`
-- **Current version:** v6.26
+- **Current version:** v6.27
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -565,6 +565,7 @@ echo "{\"version\":\"4.XX\",\"build\":\"$(date +%s)\"}" > docs/version.json
 | v5.72 | Ladders home tile: flashing red "Don't be shy — sign up! Ping David B" nudge for players not on the ladder |
 | v5.73 | Ladders home tile: moved to after Sign-Up tile; quip flashes red when ladder player has no active challenges |
 | v5.74 | Serial ghoster rule: 3 consecutive forfeits as challenged → demoted to last place; 👻 badge on their row and home tile chips; `_serialGhosters` Set rebuilt after every challenge load |
+| v6.27 | Realign version strings — the `?v=` asset query strings in `index.html`/`dev.html` had drifted (stuck at 6.20 since the bump checklist's 3 `sed`-missed spots were skipped) while APP_VERSION/version.json/display were 6.26. Bumped **all** refs to 6.27 (asset `?v=`, display labels, APP_VERSION, version.json). No code change — process/cache-bust hygiene fix |
 | v6.26 | Fix export button missing from cached toolbar — injected via DOM if absent rather than relying on one-time HTML build |
 | v6.25 | Admin players: Export button downloads filtered list as CSV (name, phone, handicap); filename includes today's date |
 | v6.24 | Fix apostrophe in player names breaking admin onclick handlers — deletePlayer and openHandicapModal now look up name by ID instead of embedding it in HTML attribute |
