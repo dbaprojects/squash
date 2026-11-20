@@ -11,7 +11,7 @@
 })();
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '6.34';
+const APP_VERSION = '6.35';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -3974,18 +3974,31 @@ async function renderAnnounceAdmin() {
     .order('created_at', { ascending: false });
   if (error) { wrap.innerHTML = `<p style="color:#c00">${esc(error.message)}</p>`; return; }
   _announceAdmin = data || [];
+  _renderAnnounceList();
+}
+
+// Render the admin list from the local _announceAdmin array (used for the
+// initial render and for optimistic re-render after a drag reorder).
+function _renderAnnounceList() {
+  const wrap = document.getElementById('announce-admin-list');
+  if (!wrap) return;
   if (_announceAdmin.length === 0) {
     wrap.innerHTML = '<p style="color:#888">No announcements yet. Use + Add Announcement to create one.</p>';
     return;
   }
   const today = new Date().toISOString().slice(0, 10);
-  wrap.innerHTML = _announceAdmin.map(a => {
+  const hint = _announceAdmin.length > 1
+    ? '<div class="aac-reorder-hint">Drag <span class="aac-handle-ex">⠿</span> to reorder — the order here is the order shown to players.</div>'
+    : '';
+  wrap.innerHTML = hint + _announceAdmin.map((a, i) => {
     const expired = a.expiry_date && a.expiry_date < today;
     const plain = _plainText(a.body);
     const bodyShort = esc(plain.length > 120 ? plain.slice(0, 120) + '…' : plain);
-    return `<div class="announce-admin-card${expired ? ' announce-expired' : ''}">
+    return `<div class="announce-admin-card${expired ? ' announce-expired' : ''}" data-idx="${i}"
+         draggable="true" ondragstart="_annDragStart(event,${i})" ondragover="_annDragOver(event)"
+         ondragleave="_annDragLeave(event)" ondrop="_annDrop(event,${i})" ondragend="_annDragEnd()">
       <div class="aac-top">
-        <span class="aac-seq">#${a.sequence}</span>
+        <span class="aac-handle" title="Drag to reorder">⠿</span>
         <span class="aac-title">${esc(a.title)}</span>
         ${expired ? '<span class="aac-badge">Expired</span>' : ''}
       </div>
@@ -3999,14 +4012,88 @@ async function renderAnnounceAdmin() {
       </div>
     </div>`;
   }).join('');
+  _annAttachTouch();
+}
+
+// ── Drag-to-reorder (PC drag + mobile touch) ─────────────────────────────────
+let _annDragIdx = null, _annTouchIdx = null, _annTouchEl = null;
+
+function _annClearDropMarks() {
+  document.querySelectorAll('.announce-admin-card').forEach(c =>
+    c.classList.remove('ann-drop-target', 'ann-dragging'));
+}
+function _annMove(from, to) {
+  if (from == null || to == null || from === to) { _annClearDropMarks(); return; }
+  const [m] = _announceAdmin.splice(from, 1);
+  _announceAdmin.splice(to, 0, m);
+  _renderAnnounceList();          // optimistic
+  _annPersistOrder();             // background save
+}
+async function _annPersistOrder() {
+  _announceAdmin.forEach((a, i) => { a.sequence = i + 1; });
+  const now = new Date().toISOString();
+  const results = await Promise.all(_announceAdmin.map(a =>
+    sb.from('announcements').update({ sequence: a.sequence, updated_at: now }).eq('id', a.id)));
+  const bad = results.find(r => r.error);
+  if (bad) alert('Could not save the new order: ' + bad.error.message);
+}
+
+// PC HTML5 drag
+function _annDragStart(e, i) {
+  _annDragIdx = i;
+  try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(i)); } catch (_) {}
+  e.currentTarget.classList.add('ann-dragging');
+}
+function _annDragOver(e) {
+  e.preventDefault();
+  try { e.dataTransfer.dropEffect = 'move'; } catch (_) {}
+  const card = e.target.closest('.announce-admin-card');
+  if (card) { _annClearDropMarks(); card.classList.add('ann-drop-target'); }
+}
+function _annDragLeave(e) { e.currentTarget.classList.remove('ann-drop-target'); }
+function _annDrop(e, i) { e.preventDefault(); const from = _annDragIdx; _annDragIdx = null; _annMove(from, i); }
+function _annDragEnd() { _annDragIdx = null; _annClearDropMarks(); }
+
+// Mobile touch (drag by the ⠿ handle)
+function _annAttachTouch() {
+  document.querySelectorAll('#announce-admin-list .aac-handle').forEach(h =>
+    h.addEventListener('touchstart', _annTouchStart, { passive: false }));
+}
+function _annTouchStart(e) {
+  const card = e.target.closest('.announce-admin-card');
+  if (!card) return;
+  e.preventDefault();
+  _annTouchIdx = +card.dataset.idx;
+  _annTouchEl = card;
+  card.classList.add('ann-dragging');
+  document.addEventListener('touchmove', _annTouchMove, { passive: false });
+  document.addEventListener('touchend', _annTouchEnd, { passive: false });
+}
+function _annTouchMove(e) {
+  if (_annTouchIdx == null) return;
+  e.preventDefault();
+  const t = e.touches[0];
+  const over = document.elementFromPoint(t.clientX, t.clientY)?.closest('.announce-admin-card');
+  document.querySelectorAll('.announce-admin-card').forEach(c => {
+    if (c !== _annTouchEl) c.classList.remove('ann-drop-target');
+  });
+  if (over && over !== _annTouchEl) over.classList.add('ann-drop-target');
+}
+function _annTouchEnd(e) {
+  document.removeEventListener('touchmove', _annTouchMove);
+  document.removeEventListener('touchend', _annTouchEnd);
+  const t = e.changedTouches[0];
+  const over = document.elementFromPoint(t.clientX, t.clientY)?.closest('.announce-admin-card');
+  const from = _annTouchIdx;
+  _annTouchIdx = null; _annTouchEl = null;
+  if (over) _annMove(from, +over.dataset.idx);
+  else _annClearDropMarks();
 }
 
 function openAnnounceForm(id) {
   if (!ST.player?.is_super_admin) return;
   _rteRange = null;
   const a = id ? (_announceAdmin || []).find(x => x.id === id) : null;
-  const nextSeq = a ? a.sequence
-    : ((_announceAdmin || []).reduce((m, x) => Math.max(m, x.sequence || 0), 0) + 1);
   showFormModal(a ? 'Edit Announcement' : 'New Announcement', `
     <form id="announce-form" onsubmit="submitAnnounceForm(event, ${a ? `'${a.id}'` : 'null'})">
       <div class="form-group">
@@ -4027,15 +4114,9 @@ function openAnnounceForm(id) {
              data-placeholder="Write your announcement…">${a ? renderAnnouncementBody(a.body) : ''}</div>
         <div class="form-hint">Select some text then tap <strong>🔗 Link</strong> to turn it into a clickable link. Works on phone and computer.</div>
       </div>
-      <div class="announce-form-row">
-        <div class="form-group">
-          <label>Sequence</label>
-          <input type="number" id="an-seq" value="${nextSeq}" step="1">
-        </div>
-        <div class="form-group">
-          <label>Expiry date <span style="color:#999;font-weight:400">(optional)</span></label>
-          <input type="date" id="an-expiry" value="${a?.expiry_date || ''}">
-        </div>
+      <div class="form-group">
+        <label>Expiry date <span style="color:#999;font-weight:400">(optional)</span></label>
+        <input type="date" id="an-expiry" value="${a?.expiry_date || ''}">
       </div>
       <button type="submit" class="btn-primary" style="width:100%">Save</button>
     </form>`);
@@ -4048,9 +4129,12 @@ async function submitAnnounceForm(e, id) {
   const bodyEl  = document.getElementById('an-body');
   const body    = _sanitizeHtml(bodyEl.innerHTML);
   const bodyTxt = _plainText(bodyEl.innerHTML);
-  const seq     = parseInt(document.getElementById('an-seq').value, 10) || 0;
   const expiry  = document.getElementById('an-expiry').value || null;
   if (!title || !bodyTxt) { alert('Title and body are required'); return; }
+  // Keep existing order when editing; new announcements go to the end (reorder by drag).
+  const seq = id
+    ? ((_announceAdmin.find(x => x.id === id)?.sequence) ?? 0)
+    : ((_announceAdmin.reduce((m, x) => Math.max(m, x.sequence || 0), 0)) + 1);
   const payload = { title, body, sequence: seq, expiry_date: expiry, updated_at: new Date().toISOString() };
   let error;
   if (id) {

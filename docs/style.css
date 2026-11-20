@@ -1178,7 +1178,7 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 /* ── Home dashboard ──────────────────────────────────────────────────────── */
 .home-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -1193,6 +1193,7 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
   gap: 4px;
   transition: box-shadow 0.15s, border-color 0.15s;
   min-height: 130px;
+  min-width: 0;
 }
 .home-card:hover { box-shadow: 0 3px 12px rgba(27,42,107,.12); border-color: var(--bc-navy); }
 
@@ -1376,15 +1377,19 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
 .announce-admin-card { border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; background: #fff; }
 .announce-admin-card.announce-expired { opacity: .6; background: #fafafa; }
 .aac-top { display: flex; align-items: center; gap: 8px; }
-.aac-seq { font-size: 11px; font-weight: 700; color: #fff; background: var(--bc-navy); border-radius: 10px; padding: 1px 7px; flex-shrink: 0; }
+.aac-handle { font-size: 17px; line-height: 1; color: #94a3b8; flex-shrink: 0; cursor: grab; padding: 2px 4px; touch-action: none; -webkit-user-select: none; user-select: none; }
+.aac-handle:active { cursor: grabbing; }
 .aac-title { font-size: 15px; font-weight: 700; color: #1e293b; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.announce-admin-card { transition: box-shadow .12s, border-color .12s, opacity .12s; }
+.announce-admin-card.ann-dragging { opacity: .45; }
+.announce-admin-card.ann-drop-target { border-color: var(--bc-navy); box-shadow: 0 0 0 2px rgba(27,42,107,.25); }
+.aac-reorder-hint { font-size: 11px; color: #94a3b8; margin-bottom: 8px; }
+.aac-handle-ex { color: #64748b; }
 .aac-badge { font-size: 10px; font-weight: 700; color: #991b1b; background: #fee2e2; border-radius: 10px; padding: 1px 7px; flex-shrink: 0; }
 .aac-body { font-size: 13px; color: #64748b; margin: 5px 0; line-height: 1.4; word-break: break-word; }
 .aac-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .aac-exp { font-size: 11px; color: #94a3b8; }
 .aac-actions { display: flex; gap: 4px; flex-shrink: 0; }
-.announce-form-row { display: flex; gap: 10px; }
-.announce-form-row .form-group { flex: 1; }
 /* Rich-text editor (announcement body) */
 .rte-toolbar { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 4px; }
 .rte-btn { font-size: 13px; line-height: 1; padding: 7px 10px; min-width: 36px; background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer; touch-action: manipulation; }
@@ -1978,7 +1983,7 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
   .ev-time-h { font-size: 21px; }
 
   /* Home grid */
-  .home-grid { grid-template-columns: repeat(3, 1fr); }
+  .home-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 
   /* Ladder */
   .hc-lb-name { font-size: 14px; }
@@ -2007,7 +2012,7 @@ nav { display: flex; gap: 4px; order: 10; width: 100%; border-top: 1px solid rgb
   .ev-time-h { font-size: 22px; }
 
   /* Home grid */
-  .home-grid { grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .home-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
 }
 
 /* ── HC Calculator ──────────────────────────────────────────────────────── */
