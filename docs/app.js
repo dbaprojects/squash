@@ -11,7 +11,7 @@
 })();
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '6.35';
+const APP_VERSION = '6.36';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -1858,7 +1858,7 @@ async function loadHome() {
       sb.from('players').select('*', { count: 'exact', head: true }).eq('pending', true)
     );
   }
-  let auditIdx = -1, announceIdx = -1;
+  let auditIdx = -1;
   if (me.is_super_admin) {
     const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
     auditIdx = fetches.length;
@@ -1869,23 +1869,23 @@ async function loadHome() {
         .order('created_at', { ascending: false })
         .limit(200)
     );
-    // Active (non-expired) announcements for the News tile
-    announceIdx = fetches.length;
-    fetches.push(
-      sb.from('announcements')
-        .select('*')
-        .or(`expiry_date.is.null,expiry_date.gte.${today}`)
-        .order('sequence', { ascending: true })
-        .order('created_at', { ascending: false })
-    );
   }
+  // Active (non-expired) announcements for the News tile — shown to everyone
+  const announceIdx = fetches.length;
+  fetches.push(
+    sb.from('announcements')
+      .select('*')
+      .or(`expiry_date.is.null,expiry_date.gte.${today}`)
+      .order('sequence', { ascending: true })
+      .order('created_at', { ascending: false })
+  );
 
   const results = await Promise.all(fetches);
   const [eventsRes, playersRes, histRes, hofRes, signupCountRes] = results;
   const myAttendance12m = signupCountRes?.count || 0;
   const pendingCount = me.is_admin ? (results[5]?.count || 0) : 0;
   const auditRows = auditIdx >= 0 ? (results[auditIdx]?.data || []) : null;
-  _announcements = announceIdx >= 0 ? (results[announceIdx]?.data || []) : [];
+  _announcements = results[announceIdx]?.data || [];
 
   // HC trend — use full history from histRes (already fetched) for accurate months
   const currentHc = me.current_handicap;
@@ -2065,21 +2065,26 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
       </div>`;
     }).join('');
   }
-  // ── Announcements / News card (super_admin only for now) ─────────────────
+  // ── Announcements / News card ─────────────────────────────────────────────
+  // Shown to everyone. Admins can manage; non-admins only read. An empty board
+  // is hidden from non-admins (nothing to read) but shown to admins to add one.
+  const canManageAnnounce = me.is_admin || me.is_super_admin;
   let announceCard = '';
-  if (me.is_super_admin) {
+  {
     const list = _announcements || [];
     const n = list.length;
-    const preview = list.slice(0, 3).map(a =>
-      `<div class="home-announce-row">${esc(a.title)}</div>`).join('');
-    announceCard = `
-    <div class="home-card home-card-announce" onclick="openAnnouncements()">
-      <div class="home-card-label">📣 Announcements</div>
-      ${n === 0
-        ? '<div class="home-announce-empty">No current announcements — tap to add one</div>'
-        : preview + (n > 3 ? `<div class="home-announce-more">+${n - 3} more</div>` : '')}
-      <div class="home-card-link" style="margin-top:auto">${n === 0 ? 'Manage →' : 'Read →'}</div>
-    </div>`;
+    if (n > 0 || canManageAnnounce) {
+      const preview = list.slice(0, 3).map(a =>
+        `<div class="home-announce-row">${esc(a.title)}</div>`).join('');
+      announceCard = `
+      <div class="home-card home-card-announce" onclick="openAnnouncements()">
+        <div class="home-card-label">📣 Announcements</div>
+        ${n === 0
+          ? '<div class="home-announce-empty">No current announcements — tap to add one</div>'
+          : preview + (n > 3 ? `<div class="home-announce-more">+${n - 3} more</div>` : '')}
+        <div class="home-card-link" style="margin-top:auto">${n === 0 ? 'Manage →' : 'Read →'}</div>
+      </div>`;
+    }
   }
 
   const adminCard = me.is_admin ? `
@@ -2576,9 +2581,9 @@ async function removeSignup(signupId) {
 
 // ── Admin ─────────────────────────────────────────────────────────────────
 async function loadAdminTab(tabId) {
-  // Reveal super_admin-only tabs
+  // Reveal the News tab for admins (manage announcements)
   const newsBtn = document.getElementById('tab-btn-news');
-  if (newsBtn && ST.player?.is_super_admin) newsBtn.style.display = '';
+  if (newsBtn && (ST.player?.is_admin || ST.player?.is_super_admin)) newsBtn.style.display = '';
 
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
   document.getElementById(tabId)?.classList.remove('hidden');
@@ -3946,7 +3951,7 @@ function openAnnouncements() {
           <div class="announce-item-body">${renderAnnouncementBody(a.body)}</div>
           ${a.expiry_date ? `<div class="announce-item-meta">Until ${fmtDate(a.expiry_date)}</div>` : ''}
         </div>`).join('');
-  const manage = ST.player?.is_super_admin
+  const manage = (ST.player?.is_admin || ST.player?.is_super_admin)
     ? `<div class="announce-manage-row"><button class="btn-primary" onclick="goToNewsAdmin()">Manage announcements →</button></div>`
     : '';
   showFormModal('📣 Announcements', items + manage);
@@ -3954,7 +3959,7 @@ function openAnnouncements() {
 
 function goToNewsAdmin() {
   closeFormModal();
-  if (!ST.player?.is_super_admin) return;
+  if (!(ST.player?.is_admin || ST.player?.is_super_admin)) return;
   showSection('view-admin');
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   const btn = document.getElementById('tab-btn-news');
@@ -3964,7 +3969,7 @@ function goToNewsAdmin() {
 
 // Admin management tab
 async function renderAnnounceAdmin() {
-  if (!ST.player?.is_super_admin) return;
+  if (!(ST.player?.is_admin || ST.player?.is_super_admin)) return;
   const wrap = document.getElementById('announce-admin-list');
   if (!wrap) return;
   wrap.innerHTML = '<p style="color:#888">Loading…</p>';
@@ -4091,7 +4096,7 @@ function _annTouchEnd(e) {
 }
 
 function openAnnounceForm(id) {
-  if (!ST.player?.is_super_admin) return;
+  if (!(ST.player?.is_admin || ST.player?.is_super_admin)) return;
   _rteRange = null;
   const a = id ? (_announceAdmin || []).find(x => x.id === id) : null;
   showFormModal(a ? 'Edit Announcement' : 'New Announcement', `
@@ -4124,7 +4129,7 @@ function openAnnounceForm(id) {
 
 async function submitAnnounceForm(e, id) {
   e.preventDefault();
-  if (!ST.player?.is_super_admin) return;
+  if (!(ST.player?.is_admin || ST.player?.is_super_admin)) return;
   const title   = document.getElementById('an-title').value.trim();
   const bodyEl  = document.getElementById('an-body');
   const body    = _sanitizeHtml(bodyEl.innerHTML);
@@ -4149,7 +4154,7 @@ async function submitAnnounceForm(e, id) {
 }
 
 async function deleteAnnounce(id) {
-  if (!ST.player?.is_super_admin) return;
+  if (!(ST.player?.is_admin || ST.player?.is_super_admin)) return;
   const a = (_announceAdmin || []).find(x => x.id === id);
   if (!confirm(`Delete announcement "${a?.title || ''}"? This cannot be undone.`)) return;
   const { error } = await sb.from('announcements').delete().eq('id', id);
