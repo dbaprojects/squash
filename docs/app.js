@@ -11,7 +11,7 @@
 })();
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '6.29';
+const APP_VERSION = '6.30';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -2073,7 +2073,7 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
     const preview = list.slice(0, 3).map(a =>
       `<div class="home-announce-row">${esc(a.title)}</div>`).join('');
     announceCard = `
-    <div class="home-card home-card-announce" style="grid-column:1/-1" onclick="openAnnouncements()">
+    <div class="home-card home-card-announce" onclick="openAnnouncements()">
       <div class="home-card-label">📣 Announcements</div>
       ${n === 0
         ? '<div class="home-announce-empty">No current announcements — tap to add one</div>'
