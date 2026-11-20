@@ -102,6 +102,8 @@ let _submittingChallenge = false;
 let _recentCompleted   = [];
 let _myChallenges      = [];
 let _resultsFilter     = 'all';
+let _resultsShown      = 10;        // history page size — grows by 10 on "Show more"
+const _RESULTS_PAGE    = 10;
 let _formModalLocked   = false;
 let _pendingVoidCause  = null; // set before loadDivisionLadder so _processAutoForfeits can pass it to _voidOutOfRangeChallenges
 let _notifiedChallengeIds = new Set();
@@ -647,6 +649,12 @@ async function loadDivisionLadder() {
 
 function setLadderResultsFilter(f) {
   _resultsFilter = f;
+  _resultsShown = _RESULTS_PAGE;   // reset paging when the filter changes
+  _renderResultsList();
+}
+
+function _moreResults() {
+  _resultsShown += _RESULTS_PAGE;
   _renderResultsList();
 }
 
@@ -673,7 +681,10 @@ function _renderResultsList() {
     el.innerHTML = '<div class="ch-empty">No results</div>';
     return;
   }
-  el.innerHTML = filtered.map(c => {
+  const total   = filtered.length;
+  const shown   = Math.min(_resultsShown, total);
+  const page     = filtered.slice(0, shown);
+  const rowsHtml = page.map(c => {
     const cn = (c.challenger?.first_name || '') + ' ' + ((c.challenger?.last_name || '')[0] || '');
     const dn = (c.challenged?.first_name || '') + ' ' + ((c.challenged?.last_name || '')[0] || '');
     const date = (c.completed_at || c.responded_at)
@@ -702,6 +713,11 @@ function _renderResultsList() {
       <div class="challenge-date">${date}</div>
     </div>`;
   }).join('');
+  const remaining = total - shown;
+  const moreHtml = remaining > 0
+    ? `<button class="ch-more-btn" onclick="_moreResults()">Show more (${remaining} more)</button>`
+    : '';
+  el.innerHTML = rowsHtml + moreHtml;
 }
 
 function renderDivisionLadder() {

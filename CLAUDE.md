@@ -5,7 +5,7 @@
 - **Owner:** Club admin — personal project
 - **Purpose:** Court session booking, player handicap tracking, weekly schedule management, Hall of Fame
 - **Location:** `[local project directory]`
-- **Current version:** v6.28
+- **Current version:** v6.29
 - **Production URL:** GitHub Pages (static, `docs/` branch)
 
 ---
@@ -55,6 +55,7 @@ db/
   schema-audit.sql    — DDL for audit_log table + RLS
   schema-ladder.sql   — DDL for ladder_positions + ladder_config tables + RLS
   schema-hcrr.sql     — ALTER: adds hof_results.hcrr_data JSONB (detailed HCRR results)
+  schema-announcements.sql — DDL for announcements table + RLS (News/Announcements feature)
   storage-squash-photos.sql — Storage RLS policies for the squash-photos bucket (HCRR winners photos)
   seed-ladder.sql     — One-time seed of initial ladder order from whiteboard
   load-hof.js         — seeds hof_results from hof.xlsx (run once with service role key)
@@ -78,6 +79,7 @@ names and hcs.xlsx    — player name/HC reference data
 | `audit_log` | id, player_id, event_type, metadata (JSONB), created_at |
 | `ladder_positions` | player_id (UUID PK → players), position (INTEGER UNIQUE), updated_at |
 | `ladder_config` | key (TEXT PK), value (TEXT) — stores division_size and challenge_range |
+| `announcements` | id (UUID), title, body, sequence (INT, asc order), expiry_date (DATE, nullable=never), created_by, created_at, updated_at |
 
 **Signup constraint (app-level):** exactly one of `player_id` or `guest_name` must be set.
 `signed_up_by` = who performed the action; `player_id` = who is attending (may differ).
@@ -565,6 +567,7 @@ echo "{\"version\":\"4.XX\",\"build\":\"$(date +%s)\"}" > docs/version.json
 | v5.72 | Ladders home tile: flashing red "Don't be shy — sign up! Ping David B" nudge for players not on the ladder |
 | v5.73 | Ladders home tile: moved to after Sign-Up tile; quip flashes red when ladder player has no active challenges |
 | v5.74 | Serial ghoster rule: 3 consecutive forfeits as challenged → demoted to last place; 👻 badge on their row and home tile chips; `_serialGhosters` Set rebuilt after every challenge load |
+| v6.29 | **Announcements / News (super_admin only, first pass)**: new `announcements` table (`db/schema-announcements.sql` — title, body, sequence, expiry_date, RLS open-anon). Home tile `📣 Announcements` (super_admin only; full-width, amber top-border, shows up to 3 titles + "+N more"; `openAnnouncements()` reader overlay via `showFormModal`). Admin → **News** tab (`tab-news`, revealed for super_admin in `loadAdminTab`): `renderAnnounceAdmin()` list of cards (seq badge, title, body preview, expiry, Edit/Delete) + `openAnnounceForm`/`submitAnnounceForm`/`deleteAnnounce`. Body links: `renderAnnouncementBody()` escapes then linkifies `[label](url)` + bare `http(s)://` URLs (admin hint in the form). Active-only (non-expired) list fetched in `loadHome` for super_admin via `.or(expiry_date.is.null,expiry_date.gte.today)` — audit/announce fetch indices now computed dynamically (`auditIdx`/`announceIdx`) instead of hardcoded `results[6]`. **Challenge history pagination**: ladder History panel now pages at 10 (`_resultsShown`/`_RESULTS_PAGE`), "Show more (N more)" button (`_moreResults()`), resets to 10 on filter change (`.ch-more-btn`). All in core (app.js/index.html/dev.html) — in production but gated to super_admin until ready for all users |
 | v6.28 | Ladder row icons: collapsed the four stacked status systems (result 🍺/😢/👻/🐔, snail 🐌, jumped 🦘, serial-ghoster 🪦) into **one** icon = the player's genuine most-recent event. New `_eventIconFor(c,pid)` (role-aware: voided→🐌 challenger only, superseded→🦘 challenged only, injury→null/skip-to-prior) + `_rebuildRecentEventIcons()` (one pass over newest-first `_recentCompleted`) + `_rowStatusIcon(pid)` (serial-ghoster 🪦 persists & takes precedence, else most-recent). Applied to main ladder rows + home-tile "can challenge" chips. **Removed** `_rebuildSnailBadges`/`_rebuildJumpedBadges`/`_isSnailBadged`/`_isJumped`/`_snailOpponent` + `_snailBadges`/`_jumpedBadges` state (badge display now derives from status directly; voided/superseded statuses still set by `_voidOutOfRangeChallenges`/`_supersedeJumpedChallenges`). Injury = no ladder icon, still in history. Fixes Alex K showing snail+jumped+result at once |
 | v6.27 | Realign version strings — the `?v=` asset query strings in `index.html`/`dev.html` had drifted (stuck at 6.20 since the bump checklist's 3 `sed`-missed spots were skipped) while APP_VERSION/version.json/display were 6.26. Bumped **all** refs to 6.27 (asset `?v=`, display labels, APP_VERSION, version.json). No code change — process/cache-bust hygiene fix |
 | v6.26 | Fix export button missing from cached toolbar — injected via DOM if absent rather than relying on one-time HTML build |

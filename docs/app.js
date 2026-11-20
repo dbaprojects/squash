@@ -11,7 +11,7 @@
 })();
 
 // ── Version guard — forces hard reload when app updates ───────────────────
-const APP_VERSION = '6.28';
+const APP_VERSION = '6.29';
 (function() {
   const stored = localStorage.getItem('_app_ver');
   if (stored !== APP_VERSION) {
@@ -120,6 +120,10 @@ const ST = {
   templates: [],
   currentEvent: null
 };
+
+// Announcements / News
+let _announcements = [];   // active (non-expired) list for the home tile reader
+let _announceAdmin = [];   // full list (incl. expired) for the admin management tab
 
 // ── Init ──────────────────────────────────────────────────────────────────
 // Only records the remote build stamp — never redirects (redirects belong
@@ -1854,8 +1858,10 @@ async function loadHome() {
       sb.from('players').select('*', { count: 'exact', head: true }).eq('pending', true)
     );
   }
+  let auditIdx = -1, announceIdx = -1;
   if (me.is_super_admin) {
     const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
+    auditIdx = fetches.length;
     fetches.push(
       sb.from('audit_log')
         .select('event_type, player_name, phone, created_at, details')
@@ -1863,13 +1869,23 @@ async function loadHome() {
         .order('created_at', { ascending: false })
         .limit(200)
     );
+    // Active (non-expired) announcements for the News tile
+    announceIdx = fetches.length;
+    fetches.push(
+      sb.from('announcements')
+        .select('*')
+        .or(`expiry_date.is.null,expiry_date.gte.${today}`)
+        .order('sequence', { ascending: true })
+        .order('created_at', { ascending: false })
+    );
   }
 
   const results = await Promise.all(fetches);
   const [eventsRes, playersRes, histRes, hofRes, signupCountRes] = results;
   const myAttendance12m = signupCountRes?.count || 0;
   const pendingCount = me.is_admin ? (results[5]?.count || 0) : 0;
-  const auditRows = me.is_super_admin ? (results[6]?.data || []) : null;
+  const auditRows = auditIdx >= 0 ? (results[auditIdx]?.data || []) : null;
+  _announcements = announceIdx >= 0 ? (results[announceIdx]?.data || []) : [];
 
   // HC trend — use full history from histRes (already fetched) for accurate months
   const currentHc = me.current_handicap;
@@ -2049,6 +2065,23 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
       </div>`;
     }).join('');
   }
+  // ── Announcements / News card (super_admin only for now) ─────────────────
+  let announceCard = '';
+  if (me.is_super_admin) {
+    const list = _announcements || [];
+    const n = list.length;
+    const preview = list.slice(0, 3).map(a =>
+      `<div class="home-announce-row">${esc(a.title)}</div>`).join('');
+    announceCard = `
+    <div class="home-card home-card-announce" style="grid-column:1/-1" onclick="openAnnouncements()">
+      <div class="home-card-label">📣 Announcements</div>
+      ${n === 0
+        ? '<div class="home-announce-empty">No current announcements — tap to add one</div>'
+        : preview + (n > 3 ? `<div class="home-announce-more">+${n - 3} more</div>` : '')}
+      <div class="home-card-link" style="margin-top:auto">${n === 0 ? 'Manage →' : 'Read →'}</div>
+    </div>`;
+  }
+
   const adminCard = me.is_admin ? `
     <div class="home-card home-card-admin" style="grid-column:1/-1" onclick="goToAdmin()">
       <div class="home-card-label">Admin</div>
@@ -2084,7 +2117,7 @@ function renderHome(upcomingEvents, hcTrend, sectionStats, latestHof, pendingCou
     </div>`;
   }
 
-  document.getElementById('home-grid').innerHTML = meCard + signupCard + ladderCard + hofCard + adminCard + auditCard;
+  document.getElementById('home-grid').innerHTML = meCard + signupCard + ladderCard + hofCard + announceCard + adminCard + auditCard;
   _initDoomEgg();
 }
 
@@ -2543,6 +2576,10 @@ async function removeSignup(signupId) {
 
 // ── Admin ─────────────────────────────────────────────────────────────────
 async function loadAdminTab(tabId) {
+  // Reveal super_admin-only tabs
+  const newsBtn = document.getElementById('tab-btn-news');
+  if (newsBtn && ST.player?.is_super_admin) newsBtn.style.display = '';
+
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
   document.getElementById(tabId)?.classList.remove('hidden');
   if (tabId === 'tab-players')   await renderPlayersTab();
@@ -2550,9 +2587,13 @@ async function loadAdminTab(tabId) {
   if (tabId === 'tab-templates') await renderTemplatesTab();
   if (tabId === 'tab-hof')       await loadAdminHof();
   if (tabId === 'tab-reports')   await renderReportsTab();
+  if (tabId === 'tab-news')      await renderAnnounceAdmin();
 
   if (tabId === 'tab-hof') {
     document.getElementById('btn-add-hof')?.addEventListener('click', () => openHofForm());
+  }
+  if (tabId === 'tab-news') {
+    document.getElementById('btn-add-announce')?.addEventListener('click', () => openAnnounceForm());
   }
 }
 
@@ -3782,6 +3823,147 @@ function showFormModal(title, bodyHtml) {
   document.getElementById('form-title').textContent = title;
   document.getElementById('form-body').innerHTML = bodyHtml;
   document.getElementById('form-overlay').classList.remove('hidden');
+}
+
+// ── Announcements / News ────────────────────────────────────────────────────
+// Render an announcement body as safe HTML: escape first, then turn
+// [label](https://…) and bare http(s) URLs into links, and newlines into <br>.
+function renderAnnouncementBody(text) {
+  let s = esc(text || '');
+  // Escaping turned "(" / ")" into themselves but "&" into "&amp;"; markdown
+  // link URLs here contain no "&amp;" split issues for typical links.
+  s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+    '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  // Bare URLs not already inside an href (simple guard: not preceded by =" )
+  s = s.replace(/(^|[\s(])(https?:\/\/[^\s<]+)/g,
+    '$1<a href="$2" target="_blank" rel="noopener">$2</a>');
+  s = s.replace(/\n/g, '<br>');
+  return s;
+}
+
+// Reader overlay — opened from the home News tile
+function openAnnouncements() {
+  const list = _announcements || [];
+  const items = list.length === 0
+    ? '<p style="color:#888;text-align:center;padding:12px 0">No current announcements.</p>'
+    : list.map(a => `
+        <div class="announce-item">
+          <div class="announce-item-title">${esc(a.title)}</div>
+          <div class="announce-item-body">${renderAnnouncementBody(a.body)}</div>
+          ${a.expiry_date ? `<div class="announce-item-meta">Until ${fmtDate(a.expiry_date)}</div>` : ''}
+        </div>`).join('');
+  const manage = ST.player?.is_super_admin
+    ? `<div class="announce-manage-row"><button class="btn-primary" onclick="goToNewsAdmin()">Manage announcements →</button></div>`
+    : '';
+  showFormModal('📣 Announcements', items + manage);
+}
+
+function goToNewsAdmin() {
+  closeFormModal();
+  if (!ST.player?.is_super_admin) return;
+  showSection('view-admin');
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('tab-btn-news');
+  if (btn) { btn.style.display = ''; btn.classList.add('active'); }
+  loadAdminTab('tab-news');
+}
+
+// Admin management tab
+async function renderAnnounceAdmin() {
+  if (!ST.player?.is_super_admin) return;
+  const wrap = document.getElementById('announce-admin-list');
+  if (!wrap) return;
+  wrap.innerHTML = '<p style="color:#888">Loading…</p>';
+  const { data, error } = await sb.from('announcements')
+    .select('*')
+    .order('sequence', { ascending: true })
+    .order('created_at', { ascending: false });
+  if (error) { wrap.innerHTML = `<p style="color:#c00">${esc(error.message)}</p>`; return; }
+  _announceAdmin = data || [];
+  if (_announceAdmin.length === 0) {
+    wrap.innerHTML = '<p style="color:#888">No announcements yet. Use + Add Announcement to create one.</p>';
+    return;
+  }
+  const today = new Date().toISOString().slice(0, 10);
+  wrap.innerHTML = _announceAdmin.map(a => {
+    const expired = a.expiry_date && a.expiry_date < today;
+    const bodyShort = (a.body || '').length > 120 ? esc(a.body.slice(0, 120)) + '…' : esc(a.body || '');
+    return `<div class="announce-admin-card${expired ? ' announce-expired' : ''}">
+      <div class="aac-top">
+        <span class="aac-seq">#${a.sequence}</span>
+        <span class="aac-title">${esc(a.title)}</span>
+        ${expired ? '<span class="aac-badge">Expired</span>' : ''}
+      </div>
+      <div class="aac-body">${bodyShort}</div>
+      <div class="aac-foot">
+        <span class="aac-exp">${a.expiry_date ? 'Expires ' + fmtDate(a.expiry_date) : 'No expiry'}</span>
+        <span class="aac-actions">
+          <button class="btn-icon-sm" onclick="openAnnounceForm('${a.id}')">Edit</button>
+          <button class="btn-icon-sm btn-icon-danger" onclick="deleteAnnounce('${a.id}')">Delete</button>
+        </span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openAnnounceForm(id) {
+  if (!ST.player?.is_super_admin) return;
+  const a = id ? (_announceAdmin || []).find(x => x.id === id) : null;
+  const nextSeq = a ? a.sequence
+    : ((_announceAdmin || []).reduce((m, x) => Math.max(m, x.sequence || 0), 0) + 1);
+  showFormModal(a ? 'Edit Announcement' : 'New Announcement', `
+    <form id="announce-form" onsubmit="submitAnnounceForm(event, ${a ? `'${a.id}'` : 'null'})">
+      <div class="form-group">
+        <label>Title</label>
+        <input type="text" id="an-title" required value="${a ? esc(a.title) : ''}">
+      </div>
+      <div class="form-group">
+        <label>Body</label>
+        <textarea id="an-body" rows="6" required>${a ? esc(a.body) : ''}</textarea>
+        <div class="form-hint">Paste a full web address (https://…) and it becomes a clickable link. For a named link, write <code>[Club calendar](https://…)</code>.</div>
+      </div>
+      <div class="announce-form-row">
+        <div class="form-group">
+          <label>Sequence</label>
+          <input type="number" id="an-seq" value="${nextSeq}" step="1">
+        </div>
+        <div class="form-group">
+          <label>Expiry date <span style="color:#999;font-weight:400">(optional)</span></label>
+          <input type="date" id="an-expiry" value="${a?.expiry_date || ''}">
+        </div>
+      </div>
+      <button type="submit" class="btn-primary" style="width:100%">Save</button>
+    </form>`);
+}
+
+async function submitAnnounceForm(e, id) {
+  e.preventDefault();
+  if (!ST.player?.is_super_admin) return;
+  const title  = document.getElementById('an-title').value.trim();
+  const body   = document.getElementById('an-body').value.trim();
+  const seq    = parseInt(document.getElementById('an-seq').value, 10) || 0;
+  const expiry = document.getElementById('an-expiry').value || null;
+  if (!title || !body) { alert('Title and body are required'); return; }
+  const payload = { title, body, sequence: seq, expiry_date: expiry, updated_at: new Date().toISOString() };
+  let error;
+  if (id) {
+    ({ error } = await sb.from('announcements').update(payload).eq('id', id));
+  } else {
+    payload.created_by = ST.player.id;
+    ({ error } = await sb.from('announcements').insert(payload));
+  }
+  if (error) { alert('Error: ' + error.message); return; }
+  closeFormModal();
+  await renderAnnounceAdmin();
+}
+
+async function deleteAnnounce(id) {
+  if (!ST.player?.is_super_admin) return;
+  const a = (_announceAdmin || []).find(x => x.id === id);
+  if (!confirm(`Delete announcement "${a?.title || ''}"? This cannot be undone.`)) return;
+  const { error } = await sb.from('announcements').delete().eq('id', id);
+  if (error) { alert('Error: ' + error.message); return; }
+  await renderAnnounceAdmin();
 }
 
 // ── Utilities ─────────────────────────────────────────────────────────────
